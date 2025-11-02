@@ -1,7 +1,6 @@
 import { loginUser } from "../services/auth.service.js";
 import { createUser } from "../services/user.service.js";
 import { handleSuccess, handleErrorClient, handleErrorServer } from "../Handlers/responseHandlers.js";
-import { userValidation } from "../validations/user.validation.js";
 import { AppDataSource } from "../config/configDb.js";
 
 export async function login(req, res) {
@@ -51,4 +50,4 @@ export async function register(req, res) {
             handleErrorServer(res, 500, "Error interno del servidor", error.message);
         }
     }
-}
+} 
