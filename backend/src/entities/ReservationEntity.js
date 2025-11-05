@@ -3,6 +3,15 @@
 
 import { EntitySchema } from 'typeorm';
 
+const RESERVATION_STATUS = {
+  //* revisar
+  PENDING: 'Pendiente',
+  ACTIVE: 'Activa',
+  COMPLETED: 'Completada',
+  CANCELED: 'Cancelada',
+  EXPIRED: 'Expirada',
+};
+
 export const Reservation = new EntitySchema({
   name: 'reservation',
   tableName: 'reservations',
@@ -15,11 +24,13 @@ export const Reservation = new EntitySchema({
     reservationCode: {
       type: 'varchar',
       length: 100,
+      nullable: false,
+      unique: true,
     },
     dateTimeReservation: {
       //* fecha y hora de cuando se hizo la reserva
       type: 'timestamp',
-      required: true,
+      default: () => 'CURRENT_TIMESTAMP',
     },
     dateTimeEstimatedArrival: {
       //* fecha y hora estimada de llegada (cuando el usuario planea llegar)
@@ -42,13 +53,27 @@ export const Reservation = new EntitySchema({
       nullable: true,
     },
     status: {
-      //* Pendiente, Activa, Completada, Cancelada, Expirada
       type: 'varchar',
       length: 50,
+      default: RESERVATION_STATUS.PENDING,
+      nullable: false,
+    },
+  },
+  relations: {
+    space: {
+      type: 'many-to-one',
+      target: 'Space',
+      inverseSide: 'reservations',
+      nullable: false,
+      joinColumn: {
+        name: 'spaceId',
+      },
     },
   },
 });
 
+export { RESERVATION_STATUS };
 export default Reservation;
 
-//* FALTAN LAS RELACIONES
+//*! FALTA RELACIÓN CON ENTIDAD USUARIO
+//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)

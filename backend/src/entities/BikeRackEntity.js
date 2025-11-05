@@ -27,11 +27,25 @@ export const Bikerack = new EntitySchema({
       nullable: false,
     },
     status: {
-      //* activo, inactivo o en mantenimiento. Aún no se si dejar esto
+      //* activo, inactivo o en mantenimiento. Aún no se si dejar esto (o ver si dejarlo como lleno, vacio o con espacios)
       type: 'varchar',
       length: 50,
+    },
+  },
+  relations: {
+    spaces: {
+      type: 'one-to-many',
+      target: 'Space',
+      inverseSide: 'bikerack',
+    },
+    incidences: {
+      type: 'one-to-many',
+      target: 'Incidence',
+      inverseSide: 'bikerack',
     },
   },
 });
 
 export default Bikerack;
+
+//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)
