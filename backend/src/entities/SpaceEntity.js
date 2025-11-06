@@ -3,6 +3,13 @@
 
 import { EntitySchema } from 'typeorm';
 
+const SPACE_STATUS = {
+  FREE: 'Libre',
+  RESERVED: 'Reservado',
+  OCCUPIED: 'Ocupado',
+  TIME_EXCEEDED: 'Tiempo Excedido',
+};
+
 export const Space = new EntitySchema({
   name: 'space',
   tableName: 'spaces',
@@ -16,17 +23,39 @@ export const Space = new EntitySchema({
       type: 'varchar',
       length: 100,
       nullable: false,
+      unique: true,
     },
     status: {
-      //* Libre, Reservado, Ocupado, En Infracción
       type: 'varchar',
       length: 50,
       nullable: false,
+      default: SPACE_STATUS.FREE,
+    },
+  },
+  relations: {
+    bikerack: {
+      type: 'many-to-one',
+      target: 'Bikerack',
+      inverseSide: 'spaces',
+      nullable: false,
+      joinColumn: {
+        name: 'bikerackId',
+      },
+    },
+    reservations: {
+      type: 'one-to-many',
+      target: 'Reservation',
+      inverseSide: 'space',
+    },
+    incidences: {
+      type: 'one-to-many',
+      target: 'Incidence',
+      inverseSide: 'space',
     },
   },
 });
 
+export { SPACE_STATUS };
 export default Space;
 
-//* FALTAN LAS RELACIONES
-
+//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)

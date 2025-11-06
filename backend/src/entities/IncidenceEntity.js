@@ -3,6 +3,19 @@
 
 import { EntitySchema } from 'typeorm';
 
+const INCIDENCE_STATUS = {
+  OPEN: 'Abierta',
+  IN_PROGRESS: 'En Proceso',
+  RESOLVED: 'Resuelta',
+  CLOSED: 'Cerrada',
+};
+
+const SEVERITY_LEVELS = {
+  LOW: 'Baja',
+  MEDIUM: 'Media',
+  HIGH: 'Alta',
+};
+
 export const Incidence = new EntitySchema({
   name: 'incidence',
   tableName: 'incidences',
@@ -19,10 +32,10 @@ export const Incidence = new EntitySchema({
       nullable: false,
     },
     severity: {
-      //* Será una lista predefinida: baja, media, alta
       type: 'varchar',
       length: 50,
       nullable: false,
+      default: SEVERITY_LEVELS.MEDIUM,
     },
     description: {
       type: 'text',
@@ -37,7 +50,7 @@ export const Incidence = new EntitySchema({
     dateTimeReport: {
       //* fecha y hora de cuando se crea la incidencia (automático)
       type: 'timestamp',
-      nullable: false,
+      default: () => 'CURRENT_TIMESTAMP',
     },
     dateTimeIncident: {
       //* fecha y hora de cuando ocurrió la incidencia (lo ingresa guardia)
@@ -45,14 +58,36 @@ export const Incidence = new EntitySchema({
       nullable: false,
     },
     status: {
-      //* Abierta, En Proceso, Resuelta, Cerrada
       type: 'varchar',
       length: 50,
       nullable: false,
+      default: INCIDENCE_STATUS.OPEN,
+    },
+  },
+  relations: {
+    bikerack: {
+      type: 'many-to-one',
+      target: 'Bikerack',
+      inverseSide: 'incidences',
+      nullable: false,
+      joinColumn: {
+        name: 'bikerackId',
+      },
+    },
+    space: {
+      type: 'many-to-one',
+      target: 'Space',
+      inverseSide: 'incidences',
+      nullable: true,
+      joinColumn: {
+        name: 'spaceId',
+      },
     },
   },
 });
 
+export { INCIDENCE_STATUS, SEVERITY_LEVELS };
 export default Incidence;
 
-//* FALTAN LAS RELACIONES
+//*! FALTA RELACIÓN CON ENTIDAD USUARIO
+//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)
