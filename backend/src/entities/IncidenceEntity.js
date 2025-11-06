@@ -17,7 +17,7 @@ const SEVERITY_LEVELS = {
 };
 
 export const Incidence = new EntitySchema({
-  name: 'incidence',
+  name: 'Incidence',
   tableName: 'incidences',
   columns: {
     id: {

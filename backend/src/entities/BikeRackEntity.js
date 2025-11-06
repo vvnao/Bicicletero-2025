@@ -4,7 +4,7 @@
 import { EntitySchema } from 'typeorm';
 
 export const Bikerack = new EntitySchema({
-  name: 'bikerack',
+  name: 'Bikerack',
   tableName: 'bikeracks',
   columns: {
     id: {

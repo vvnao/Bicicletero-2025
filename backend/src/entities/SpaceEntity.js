@@ -11,7 +11,7 @@ const SPACE_STATUS = {
 };
 
 export const Space = new EntitySchema({
-  name: 'space',
+  name: 'Space',
   tableName: 'spaces',
   columns: {
     id: {

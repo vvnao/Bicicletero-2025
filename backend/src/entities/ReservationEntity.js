@@ -13,7 +13,7 @@ const RESERVATION_STATUS = {
 };
 
 export const Reservation = new EntitySchema({
-  name: 'reservation',
+  name: 'Reservation',
   tableName: 'reservations',
   columns: {
     id: {
