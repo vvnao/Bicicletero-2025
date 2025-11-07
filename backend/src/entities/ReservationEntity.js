@@ -12,7 +12,7 @@ const RESERVATION_STATUS = {
   EXPIRED: 'Expirada',
 };
 
-export const Reservation = new EntitySchema({
+export const ReservationEntity = new EntitySchema({
   name: 'Reservation',
   tableName: 'reservations',
   columns: {
@@ -69,11 +69,19 @@ export const Reservation = new EntitySchema({
         name: 'spaceId',
       },
     },
+    users: {
+      type: 'many-to-one',
+      target: 'User',
+      inverseSide: 'users',
+      nullable: false,
+      joinColumn: {
+        name : 'userId',
+      },
+    },
   },
 });
 
 export { RESERVATION_STATUS };
-export default Reservation;
+export default ReservationEntity;
 
-//*! FALTA RELACIÓN CON ENTIDAD USUARIO
 //*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)

@@ -8,8 +8,16 @@ export async function createUser(data) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     const newUser = userRepository.create({
+    role: data.role,
+    names: data.names,
+    lastName: data.lastName,
+    rut: data.rut,
     email: data.email,
     password: hashedPassword,
+    contact: data.contact,
+    typePerson: data.typePerson,
+    requestStatus: data.requestStatus,
+    
 });
 
     return await userRepository.save(newUser);
@@ -18,3 +26,4 @@ export async function createUser(data) {
 export async function findUserByEmail(email) {
     return await userRepository.findOneBy({ email });
 }
+

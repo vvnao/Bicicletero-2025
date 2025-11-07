@@ -2,12 +2,14 @@ import { loginUser } from "../services/auth.service.js";
 import { createUser } from "../services/user.service.js";
 import { handleSuccess, handleErrorClient, handleErrorServer } from "../Handlers/responseHandlers.js";
 import { AppDataSource } from "../config/configDb.js";
+import { userValidation } from "../validations/user.validation.js";
+import { loginValidation } from "../validations/user.validation.js";
 
 export async function login(req, res) {
     try {
         const { email, password } = req.body;
 
-        const { error } = userValidation.validate({ email, password });
+        const { error } = loginValidation.validate({ email, password });
 
         if (error) {
             const mensaje = error.details[0].message;

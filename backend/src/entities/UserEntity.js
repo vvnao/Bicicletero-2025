@@ -10,7 +10,7 @@ export const UserEntity = new EntitySchema({
             generated: "increment",
         },
         role: {
-            type: String,
+            type: "varchar",
             enum: ['admin', 'guardia', 'user'],
             default: 'user',
         },
@@ -82,6 +82,11 @@ export const UserEntity = new EntitySchema({
     relations: {
         bicycles: {
             target: 'Bicycle',
+            type: 'one-to-many',
+            inverseSide: 'user',
+        },
+        reservation : {
+            target: 'Reservation',
             type: 'one-to-many',
             inverseSide: 'user',
         },
