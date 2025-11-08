@@ -16,6 +16,9 @@ export async function createUser(data) {
     password: hashedPassword,
     contact: data.contact,
     typePerson: data.typePerson,
+    //tnePhoto:data.tnePhoto;
+    position: data.position,
+    positionDescription: data.positionDescription,
     requestStatus: data.requestStatus,
     
 });

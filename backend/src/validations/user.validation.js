@@ -118,6 +118,9 @@ export const userValidation = Joi.object({
         }),
         otherwise: Joi.optional()
     }),
+    //* Esto debe quedar por default como "pendiente", ya que el guardia es el que debe aprobar o rechazar 
+    //* el registro.
+    //* Pero por mientras se podrá ingresar normal
     requestStatus:Joi.string()
     .min(8)
     .max(9)
@@ -132,6 +135,33 @@ export const userValidation = Joi.object({
         "any.required": "El campo 'requestStatus' es obligatorio."
     }),
 })
+    .custom((value, helpers) => {
+    const { typePerson, email, role } = value;
+
+    if (role === "user") {
+        if (typePerson === "estudiante" && !/@alumnos\.ubiobio\.cl$/.test(email)) {
+        return helpers.error("any.custom", {
+            message: "Los estudiantes deben usar correo institucional @alumnos.ubiobio.cl"
+        });
+        }
+
+        if (typePerson === "academico" && !/@ubiobio\.cl$/.test(email)) {
+        return helpers.error("any.custom", {
+            message: "Los académicos deben usar correo institucional @ubiobio.cl"
+        });
+        }
+
+        if (typePerson === "funcionario" && /@ubiobio\.cl$/.test(email)) {
+        return helpers.error("any.custom", {
+            message: "Los funcionarios deben usar correo alternativo como @gmail.com"
+        });
+        }
+    }
+    return value;
+    })
+    .messages({
+    "any.custom": "{{#message}}"
+});
 
 export const loginValidation = Joi.object({
     email: Joi.string()

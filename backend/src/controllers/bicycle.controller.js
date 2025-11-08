@@ -1,0 +1,21 @@
+"use strict";
+import { handleSuccess, handleErrorClient, handleErrorServer } from "../Handlers/responseHandlers.js";
+import { createBicycleService } from "../services/bicycle.service.js";
+import { bicycleValidation } from "../validations/bicycle.validation.js";
+
+export async function createBicycle(req,res){
+    try{
+        const{error} = bicycleValidation.validate(req.body);
+        if(error){
+            return handleErrorClient(res, 400, error.details[0].message);
+        }
+        const userId = req.user?.id;
+        if(!userId){
+            return handleErrorClient(res, 401, "Usuario no autenticado");
+        }
+        const newBicycle = await createBicycleService(req.body, userId);
+        handleSuccess(res, 201, newBicycle);
+    }catch(error){
+        handleErrorServer(res,500, error.message);
+    }
+}

@@ -34,15 +34,16 @@ export const BicycleEntity = new EntitySchema({
             nullable: true, // optional if you store an image URL or path
         },
     },
-    relations: {
-        user: {
-            target: 'User',
-            type: 'many-to-one',
-            joinColumn: true,
-            nullable: false,
-            onDelete: "CASCADE",
-        },
+    user: {
+    target: 'User',
+    type: 'many-to-one',
+    joinColumn: {
+        name: 'userId', //Join con tabla Bicycle
+        referencedColumnName: 'id', //Esta para la tabla User
     },
+    nullable: false,
+    onDelete: "CASCADE",
+    }
 });
 
 export default BicycleEntity;
