@@ -1,7 +1,6 @@
 import { Router } from "express";
 import authRoutes from "./auth.routes.js";
 import bicycleRoutes from "./bicycle.routes.js";
-import {authMiddleware} from "../middleware/auth.middleware.js";
 
 
 export function routerApi(app) {
@@ -9,5 +8,5 @@ export function routerApi(app) {
   app.use("/api", router);
 
   router.use("/auth", authRoutes);
-  router.use("/bicycles", authMiddleware, bicycleRoutes);
+  router.use("/bicycles", bicycleRoutes);
 }
