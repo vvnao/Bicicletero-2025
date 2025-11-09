@@ -11,3 +11,9 @@ export const PASSWORD = process.env.DB_PASSWORD;
 export const DATABASE = process.env.DATABASE;
 export const JWT_SECRET = process.env.JWT_SECRET;
 export const cookieKey = process.env.COOKIE_KEY;
+
+export const emailConfig = {
+    service: "gmail",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+};

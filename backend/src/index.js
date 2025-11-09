@@ -4,23 +4,30 @@ import morgan from "morgan";
 import { AppDataSource, connectDB } from "./config/configDb.js";
 import { routerApi } from "./routes/index.routes.js";
 import cors from "cors";
+import { createDefaultUsers } from "./config/defaultUsers.js";
 
 const app = express();
 app.use(
-    cors({
-      credentials: true,
-      origin: true,
-    })
+  cors({
+    credentials: true,
+    origin: true,
+  })
 );
-app.use(express.json());
 app.use(morgan("dev"));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Ruta principal de bienvenida
 app.get("/", (req, res) => {
   res.send("¡Bienvenido a mi API REST con TypeORM!");
 });
 // Inicializa la conexión a la base de datos
 connectDB()
-  .then(() => {
+  .then(async () => {
+    console.log("Conexión a la base de datos establecida");
+    //Crear admin y guardia por defecto
+    await createDefaultUsers();
     // Carga todas las rutas de la aplicación
     routerApi(app);
 

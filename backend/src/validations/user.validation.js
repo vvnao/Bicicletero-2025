@@ -1,187 +1,142 @@
-"use strict"
-import Joi from "Joi";
+import Joi from "joi";
 
-export const userValidation = Joi.object({
-    role: Joi.string()
-    .min(4)
-    .max(7)
-    .valid("admin", "guardia", "user")
-    .required()
-    .messages({
-        'string.min':'El campo role no puede tener menos de 4 caracteres',
-        'string.max':'El campo role no puede tener mas de 7 caracteres',
-        "any.only": "El campo 'role' solo puede ser 'admin', 'guardia', 'user'.",
-        "string.base": "El campo 'role' debe ser un texto.",
-        "string.empty": "El campo 'role' no puede estar vacío.",
-        "any.required": "El campo 'role' es obligatorio."
-    }),
-    names : Joi.string()
-    .min(8)
-    .max(30)
-    .required()
-    .pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/)
-    .messages({
-        "string.pattern.base": "El nombre solo puede contener letras y espacios",
-        'string.min':'El nombre no pueden tener menos de 8 caracteres',
-        'string.max': 'El nombre no pueden tener más de 30 caracteres',
-        'string.empty': 'El nombre no puede quedar vacio',
-        'any.required': 'El nombre es obligatorio'
-    }),
-    lastName : Joi.string()
-    .min(8)
-    .max(30)
-    .required()
-    .pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/)
-    .messages({
-        "string.pattern.base": "El apellido solo puede contener letras y espacios",
-        'string.min':'El apellido no puede tener menos de 8 caracteres',
-        'string.max': 'El apellido no pueden tener más de 30 caracteres',
-        'string.empty': 'El apellido no puede quedar vacio',
-        'any.required': 'El apellido es obligatorio'
-    }),
-    rut : Joi.string()
-    .min(11)
-    .max(12)
-    .required()
-    .pattern(/^\d{2}\.\d{3}\.\d{3}-[\dkK]$/)
-    .messages({
-        'string.empty': 'El rut no puede estar vacío.',
-        'string.base': 'El rut debe ser de tipo string.',
-        'string.min': 'El rut debe tener exactamente 10 caracteres.',
-        'string.max': 'El rut debe tener exactamente 12 caracteres.',
-        'string.pattern.base': 'Formato rut inválido. Debe ser xx.xxx.xxx-x.',
-    }),
+export const registerUserValidation = Joi.object({
+    names: Joi.string()
+        .min(3)
+        .max(50)
+        .required()
+        .messages({
+            "string.empty": "El nombre no puede estar vacío",
+            "string.min": "El nombre debe tener al menos 3 caracteres",
+            "any.required": "Debe ingresar su nombre",
+        }),
+
+    lastName: Joi.string()
+        .min(3)
+        .max(50)
+        .required()
+        .messages({
+            "string.empty": "El apellido no puede estar vacío",
+            "string.min": "El apellido debe tener al menos 3 caracteres",
+            "any.required": "Debe ingresar su apellido",
+        }),
+
+    rut: Joi.string()
+        .pattern(/^\d{7,8}-[0-9kK]$/)
+        .required()
+        .messages({
+            "string.pattern.base": "El RUT debe tener el formato 12345678-9",
+            "any.required": "Debe ingresar su RUT",
+        }),
+
     email: Joi.string()
-    .email({ tlds: { allow: false } }) 
-    .pattern(/@(gmail\.com|ubiobio\.cl|alumnos\.ubiobio\.cl)$/)
-    .required()
-    .messages({
-        'string.empty': "El correo electrónico es obligatorio",
-        "string.email": "Debe ingresar un correo electrónico válido",
-        "string.pattern.base":
-        "Solo se permiten correos de los dominios @gmail.com, @ubiobio.cl o @alumnos.ubiobio.cl",
-    }),
+        .email()
+        .required()
+        .messages({
+            "string.email": "Debe ingresar un correo válido",
+            "any.required": "Debe ingresar su correo",
+        }),
+
     password: Joi.string()
-    .min(5)
-    .max(20)
-    .required()
-    .messages({
-        'string.min':'La contraseña no puede tener menos de 5 caracteres',
-        'string.max': 'La contraseña no puede tener mas de 20 caracteres',
-        'string.empty': 'La contraseña no puede quedar vacia',
-        'any.required': 'La contraseña es obligatoria'
-    }),
-    contact : Joi.string()
-    .pattern(/^\+?(\d{9,12})$/)
-    .required()
-    .messages({
-        "string.empty": "El número de contacto es obligatorio",
-        "string.pattern.base": "Debe ingresar un número válido (Ejemplo: +56987654321 o 987654321)",
-    }),
+        .min(6)
+        .required()
+        .messages({
+            "string.min": "La contraseña debe tener al menos 6 caracteres",
+            "any.required": "Debe ingresar una contraseña",
+        }),
+
+    contact: Joi.string()
+        .allow(null, "")
+        .pattern(/^[0-9+()\s-]*$/)
+        .messages({
+            "string.pattern.base":
+                "El número de contacto solo puede contener dígitos y símbolos válidos (+, -, (, ))",
+        }),
+
+    // Tipo de persona
     typePerson: Joi.string()
-    .valid("estudiante", "academico", "funcionario")
-    .when("role", {
-    is: "user",
-        then: Joi.required().messages({
-        "any.only": "El campo 'typePerson' solo puede ser 'estudiante', 'académico' o 'funcionario'.",
-        "string.base": "El campo 'typePerson' debe ser un texto.",
-        "string.empty": "El campo 'typePerson' no puede estar vacío.",
-        "any.required": "El campo 'typePerson' es obligatorio cuando el rol es 'user'."
+        .valid("estudiante", "academico", "funcionario")
+        .required()
+        .messages({
+            "any.required": "Debe seleccionar un tipo de persona",
         }),
-        otherwise: Joi.optional()
-    }),
-    //*Por mientras comentado
-    /*
-    tnePhoto: Joi.string()
-    .uri()
-    .when("typePerson", {
-        is: "estudiante",
-        then: Joi.required().messages({
-            "any.required": "La foto TNE es obligatoria para estudiantes.",
-            "string.uri": "La foto TNE debe ser una URL válida."
+
+    // Solo para estudiantes
+    tnePhoto: Joi.string().allow(null, ""),
+
+    // Solo para funcionarios
+    position: Joi.string().allow(null, ""),
+    positionDescription: Joi.string().allow(null, ""),
+
+    // Bicicleta (opcional)
+    bicycle: Joi.object({
+        brand: Joi.string().required().messages({
+            "any.required": "Debe ingresar la marca de la bicicleta",
         }),
-        otherwise: Joi.optional()
-    }),*/
-    position: Joi.string()
-    .when("typePerson", {
-    is: "funcionario",
-        then: Joi.required().messages({
-            "any.required": "El campo 'position' es obligatorio para funcionarios."
+        model: Joi.string().required().messages({
+            "any.required": "Debe ingresar el modelo de la bicicleta",
         }),
-        otherwise: Joi.optional()
-    }),
-    positionDescription: Joi.string()
-    .when("typePerson", {
-        is: "funcionario",
-        then: Joi.required().messages({
-            "any.required": "El campo 'positionDescription' es obligatorio para funcionarios."
+        color: Joi.string().required().messages({
+            "any.required": "Debe ingresar el color de la bicicleta",
         }),
-        otherwise: Joi.optional()
-    }),
-    //* Esto debe quedar por default como "pendiente", ya que el guardia es el que debe aprobar o rechazar 
-    //* el registro.
-    //* Pero por mientras se podrá ingresar normal
-    requestStatus:Joi.string()
-    .min(8)
-    .max(9)
-    .valid("pendiente", "aprobado", "rechazado")
-    .required()
-    .messages({
-        "string.min":"El campo 'requestStatus' debe tener minimo 8 caracteres.",
-        "string.max":"El campo 'requestStatus' debe tener maximo 9 caracteres.",
-        "any.only": "El campo 'requestStatus' solo puede ser 'pendiente', 'aprobado' o 'rechazado'.",
-        "string.base": "El campo 'requestStatus' debe ser un texto.",
-        "string.empty": "El campo 'requestStatus' no puede estar vacío.",
-        "any.required": "El campo 'requestStatus' es obligatorio."
-    }),
+        serialNumber: Joi.string().allow(null, ""),
+        description: Joi.string().allow(null, ""),
+        photo: Joi.string().allow(null, ""), // bicyclePhoto
+    }).optional(), // 👈 ahora es opcional
 })
     .custom((value, helpers) => {
-    const { typePerson, email, role } = value;
+        const { typePerson, email, tnePhoto, position, positionDescription } = value;
 
-    if (role === "user") {
-        if (typePerson === "estudiante" && !/@alumnos\.ubiobio\.cl$/.test(email)) {
-        return helpers.error("any.custom", {
-            message: "Los estudiantes deben usar correo institucional @alumnos.ubiobio.cl"
-        });
+        // Estudiante
+        if (typePerson === "estudiante") {
+            if (!/@alumnos\.ubiobio\.cl$/.test(email)) {
+                return helpers.error("any.custom", {
+                    message:
+                        "Los estudiantes deben usar un correo @alumnos.ubiobio.cl",
+                });
+            }
+            if (!tnePhoto) {
+                return helpers.error("any.custom", {
+                    message: "Los estudiantes deben subir una foto de su TNE",
+                });
+            }
         }
 
-        if (typePerson === "academico" && !/@ubiobio\.cl$/.test(email)) {
-        return helpers.error("any.custom", {
-            message: "Los académicos deben usar correo institucional @ubiobio.cl"
-        });
+        // Académico
+        if (typePerson === "academico") {
+            if (!/@ubiobio\.cl$/.test(email)) {
+                return helpers.error("any.custom", {
+                    message:
+                        "Los académicos deben usar un correo institucional @ubiobio.cl",
+                });
+            }
         }
 
-        if (typePerson === "funcionario" && /@ubiobio\.cl$/.test(email)) {
-        return helpers.error("any.custom", {
-            message: "Los funcionarios deben usar correo alternativo como @gmail.com"
-        });
+        // Funcionario
+        if (typePerson === "funcionario") {
+            if (!position || !positionDescription) {
+                return helpers.error("any.custom", {
+                    message:
+                        "Los funcionarios deben ingresar su cargo y una descripción de su labor",
+                });
+            }
         }
-    }
-    return value;
-    })
-    .messages({
-    "any.custom": "{{#message}}"
-});
+
+        return value;
+    });
 
 export const loginValidation = Joi.object({
     email: Joi.string()
-    .email({ tlds: { allow: false } }) 
-    .pattern(/@(gmail\.com|ubiobio\.cl|alumnos\.ubiobio\.cl)$/)
-    .required()
-    .messages({
-        'string.empty': "El correo electrónico es obligatorio",
-        "string.email": "Debe ingresar un correo electrónico válido",
-        "string.pattern.base":
-        "Solo se permiten correos de los dominios @gmail.com, @ubiobio.cl o @alumnos.ubiobio.cl",
-    }),
+        .email()
+        .required()
+        .messages({
+            "string.email": "Debe ingresar un correo válido",
+            "any.required": "Debe ingresar su correo",
+        }),
+
     password: Joi.string()
-    .min(5)
-    .max(20)
-    .required()
-    .messages({
-        'string.min':'La contraseña no puede tener menos de 5 caracteres',
-        'string.max': 'La contraseña no puede tener mas de 20 caracteres',
-        'string.empty': 'La contraseña no puede quedar vacia',
-        'any.required': 'La contraseña es obligatoria'
-    }),
+        .required()
+        .messages({
+            "any.required": "Debe ingresar su contraseña",
+        }),
 });
