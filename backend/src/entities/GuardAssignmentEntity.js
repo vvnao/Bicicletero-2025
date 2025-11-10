@@ -29,8 +29,8 @@ export const GuardAssignmentEntity = new EntitySchema({
             joinColumn: true,
             nullable: false,
         },
-        bikerRack: {
-            target: "BikeRack",
+        bikerack: {
+            target: "Bikerack",
             type: "many-to-one",
             joinColumn: true,
             nullable: false,

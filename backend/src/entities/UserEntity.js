@@ -90,6 +90,12 @@ export const UserEntity = new EntitySchema({
             type: 'one-to-many',
             inverseSide: 'user',
         },
+        //  Relación para asignación de guardias a bicicleteros
+        assignedBikeracks: {
+            target: 'Bikerack',
+            type: 'many-to-many',
+            mappedBy: 'guards',
+        },
     },
 });
 

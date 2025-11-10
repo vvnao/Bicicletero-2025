@@ -24,22 +24,20 @@ export const HistoryEntity = new EntitySchema({
         bicycle: {
             target: "Bicycle",
             type: "many-to-one",
-            joinColumn: true,
+            joinColumn: { name: "bicycleId" },
             nullable: false,
         },
-        bikeRack: {
-            target: "BikeRack",
+        bikerack: {
+            target: "Bikerack", 
             type: "many-to-one",
-            joinColumn: true,
+            joinColumn: { name: "bikerackId" },
             nullable: false,
         },
         guard: {
             target: "User",
             type: "many-to-one",
-            joinColumn: true,
+            joinColumn: { name: "guardId" },
             nullable: false,
         }
     }
 });
-
-export default HistoryEntity;

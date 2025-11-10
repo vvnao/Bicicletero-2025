@@ -43,11 +43,16 @@ export const Bikerack = new EntitySchema({
       target: 'Incidence',
       inverseSide: 'bikerack',
     },
+    bicycles: {
+    type: "one-to-many",
+    target: "Bicycle",
+    inverseSide: "bikerack",
+  },
       guard: {
-        target: "User",
-        type: "many-to-one",
-        joinColumn: true,
-        nullable: true,
+    type: "many-to-one",
+    target: "User",
+    joinColumn: { name: "guardId" },
+    eager: true,
   }
 
   },
@@ -55,4 +60,4 @@ export const Bikerack = new EntitySchema({
 
 export default Bikerack;
 
-//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)
+
