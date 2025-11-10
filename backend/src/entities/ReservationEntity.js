@@ -1,4 +1,3 @@
-//* entidad para las reservas
 'use strict';
 
 import { EntitySchema } from 'typeorm';
@@ -37,26 +36,31 @@ export const ReservationEntity = new EntitySchema({
       type: 'timestamp',
       required: true,
     },
-    dateTimeLimit: {
-      //* fecha y hora límite de cuanto puede estar la bicicleta en el bicicletero (tiempo estimado)
-      type: 'timestamp',
-      required: true,
+    estimatedHours: {
+      //* horas estimadas que estará la bicicleta
+      type: 'int',
+      nullable: false,
     },
-    dateTimeActualArrival: {
-      //* fecha y hora real de llegada (cuando llegó el usuario al bicicletero)
+    expirationTime: {
+      //* cuándo expira la reserva si no se usa (por ej 2 horas después de hacer la reserva)
       type: 'timestamp',
-      nullable: true,
-    },
-    dateTimeActualDeparture: {
-      //* fecha y hora real de salida (cuando el usuario se llevó la bicicleta)
-      type: 'timestamp',
-      nullable: true,
+      nullable: false,
     },
     status: {
       type: 'varchar',
       length: 50,
       default: RESERVATION_STATUS.PENDING,
       nullable: false,
+    },
+    created_at: {
+      type: 'timestamp',
+      createDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
+    },
+    updated_at: {
+      type: 'timestamp',
+      updateDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
     },
   },
   relations: {
@@ -69,13 +73,31 @@ export const ReservationEntity = new EntitySchema({
         name: 'spaceId',
       },
     },
-    users: {
+    user: {
       type: 'many-to-one',
       target: 'User',
-      inverseSide: 'users',
+      inverseSide: 'reservations',
       nullable: false,
       joinColumn: {
-        name : 'userId',
+        name: 'userId',
+      },
+    },
+    bicycle: {
+      type: 'many-to-one',
+      target: 'Bicycle',
+      inverseSide: 'reservations',
+      nullable: false,
+      joinColumn: {
+        name: 'bicycleId',
+      },
+    },
+    spaceLog: {
+      type: 'one-to-one',
+      target: 'SpaceLog',
+      inverseSide: 'reservation',
+      nullable: true,
+      joinColumn: {
+        name: 'spaceLogId',
       },
     },
   },
@@ -83,5 +105,3 @@ export const ReservationEntity = new EntitySchema({
 
 export { RESERVATION_STATUS };
 export default ReservationEntity;
-
-//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)

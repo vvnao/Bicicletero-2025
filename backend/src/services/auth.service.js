@@ -19,7 +19,13 @@ export async function loginUser(email, password) {
   if (user.role === "user" && user.requestStatus !== "aprobado") {
     throw new Error("Tu registro aún no ha sido aprobado por un guardia.");
   }
-
+  //Para que no se repita el user al hacer login
+  if (user.bicycles) {
+    user.bicycles = user.bicycles.map((bike) => {
+      const { user, ...bikeData } = bike;
+      return bikeData;
+    });
+  }
   // Crear payload del token
   const payload = { sub: user.id, email: user.email, role: user.role };
 

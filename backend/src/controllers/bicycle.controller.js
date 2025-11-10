@@ -27,12 +27,12 @@ export async function getBicycles(req, res) {
         const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 
         const userId = req.user.sub;
-        const bicycles = await bicycleRepository.find();
+        const bicycles = await bicycleRepository.find({ where:{ user: {id: userId}} });
         if (!bicycles || bicycles.length === 0){
         handleSuccess(res, 200, "El usuario no tiene bicicletas registradas",bicycles);
         }
-
-        handleSuccess(res,200,"Bicicleta(s) obtenida(s) exitosamente",bicycles);
+        const SeeBicycles= bicycles.map(({ user, ...bike }) => bike);
+        return handleSuccess(res, 200, "Bicicleta(s) obtenida(s) exitosamente", SeeBicycles);
     } catch (error) {
         return handleErrorServer(res, 500, "Error del servidor", error);
     }
