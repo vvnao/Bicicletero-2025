@@ -24,6 +24,7 @@ export const BicycleEntity = new EntitySchema({
         nullable: false,
         },
         serialNumber: {
+        // opcional si se usa para reserva o control
         type: String,
         nullable: true,
         unique: true,
@@ -35,12 +36,21 @@ export const BicycleEntity = new EntitySchema({
     },
     relations: {
         user: {
-        type: 'many-to-one',
         target: 'User',
-        joinColumn: { name: 'userId' },
-        eager: true,
+        type: 'many-to-one',
+        joinColumn: true,
         nullable: false,
-        inverseSide: 'bicycles',
+        onDelete: 'CASCADE',
+        },
+        reservations: {
+        target: 'Reservation',
+        type: 'one-to-many',
+        inverseSide: 'bicycle',
+        },
+        spaceLogs: {
+        target: 'SpaceLog',
+        type: 'one-to-many',
+        inverseSide: 'bicycle',
         },
     },
 });

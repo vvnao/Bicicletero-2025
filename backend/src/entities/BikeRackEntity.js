@@ -1,4 +1,3 @@
-//* entidad bicicletero
 'use strict';
 
 import { EntitySchema } from 'typeorm';
@@ -47,3 +46,5 @@ export const Bikerack = new EntitySchema({
 });
 
 export default Bikerack;
+
+

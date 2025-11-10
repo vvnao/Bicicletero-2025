@@ -1,13 +1,12 @@
-import "dotenv/config";
-import express from "express";
-import morgan from "morgan";
-import { AppDataSource, connectDB } from "./config/configDb.js";
-import { routerApi } from "./routes/index.routes.js";
-import cors from "cors";
-import { createDefaultUsers } from "./config/defaultUsers.js";
-import path from "path";
-import { fileURLToPath } from "url";
-
+import 'dotenv/config';
+import express from 'express';
+import morgan from 'morgan';
+import { AppDataSource, connectDB } from './config/configDb.js';
+import { routerApi } from './routes/index.routes.js';
+import cors from 'cors';
+import { createBikeracks } from './config/initBikeracksDb.js';
+import { createSpaces } from './config/initSpacesDb.js';
+import {  createDefaultUsers } from "./config/defaultUsers.js";
 
 const app = express();
 app.use(
@@ -16,25 +15,19 @@ app.use(
     origin: true,
   })
 );
-app.use(morgan("dev"));
-
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use("/uploads", express.static(path.join(__dirname, "src/uploads")));
-
+app.use(morgan('dev'));
 // Ruta principal de bienvenida
-app.get("/", (req, res) => {
-  res.send("¡Bienvenido a mi API REST con TypeORM!");
+app.get('/', (req, res) => {
+  res.send('¡Bienvenido a mi API REST con TypeORM!');
 });
 // Inicializa la conexión a la base de datos
 connectDB()
   .then(async () => {
-    console.log("Conexión a la base de datos establecida");
-    //Crear admin y guardia por defecto
+    await createBikeracks();
+    await createSpaces();
     await createDefaultUsers();
+
     // Carga todas las rutas de la aplicación
     routerApi(app);
 
@@ -45,6 +38,6 @@ connectDB()
     });
   })
   .catch((error) => {
-    console.log("Error al conectar con la base de datos:", error);
+    console.log('Error al conectar con la base de datos:', error);
     process.exit(1);
   });

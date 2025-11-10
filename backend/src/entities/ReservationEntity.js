@@ -3,7 +3,7 @@
 import { EntitySchema } from 'typeorm';
 
 const RESERVATION_STATUS = {
-  //* revisar
+  //! aún no se si dejar esto
   PENDING: 'Pendiente',
   ACTIVE: 'Activa',
   COMPLETED: 'Completada',
@@ -27,22 +27,17 @@ export const ReservationEntity = new EntitySchema({
       unique: true,
     },
     dateTimeReservation: {
-      //* fecha y hora de cuando se hizo la reserva
+      //! Fecha y hora de cuando se hizo la reserva (cuando el user aprieta botón "reservar")
       type: 'timestamp',
       default: () => 'CURRENT_TIMESTAMP',
     },
-    dateTimeEstimatedArrival: {
-      //* fecha y hora estimada de llegada (cuando el usuario planea llegar)
-      type: 'timestamp',
-      required: true,
-    },
     estimatedHours: {
-      //* horas estimadas que estará la bicicleta
+      //! Horas estimadas que estará la bicicleta (el user lo ingresa al hacer la reserva)
       type: 'int',
       nullable: false,
     },
     expirationTime: {
-      //* cuándo expira la reserva si no se usa (por ej 2 horas después de hacer la reserva)
+      //! Cuándo expira la reserva si el user no llega (por ej 2 horas después de hacer la reserva)
       type: 'timestamp',
       nullable: false,
     },

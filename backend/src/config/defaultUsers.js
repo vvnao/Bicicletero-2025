@@ -22,7 +22,7 @@ export async function createDefaultUsers() {
                 email: "admin@ubiobio.cl",
                 password: await bcrypt.hash("admin123", 10),
                 contact: "+56911111111",
-                typePerson: null,
+                typePerson: true,
                 requestStatus: "aprobado",
             },
             {
@@ -33,7 +33,7 @@ export async function createDefaultUsers() {
                 email: "guardia@ubiobio.cl",
                 password: await bcrypt.hash("guardia123", 10),
                 contact: "+56922222222",
-                typePerson: null,
+                typePerson: true,
                 requestStatus: "aprobado",
             },
             {
