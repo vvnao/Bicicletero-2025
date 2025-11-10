@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login } from "@services/auth.service";
 import { useAuth } from "@context/AuthContext";
+import "../styles/Login.css";
+import mascotImage from "../assets/mascot.png";
 
 const Login = () => {
     const navigate = useNavigate();
-    const { setUser } = useAuth(); 
+    const { setUser } = useAuth();
     const [credentials, setCredentials] = useState({
         email: "",
         password: "",
@@ -38,9 +40,9 @@ const Login = () => {
                 };
                 sessionStorage.setItem("user", JSON.stringify(userInfo));
                 setUser(userInfo); // Añadir esto para actualizar el contexto
-                
+
                 navigate("/home", { replace: true });
-                
+
             } else {
                 setError(res?.message || "Credenciales incorrectas.");
             }
@@ -53,56 +55,62 @@ const Login = () => {
     };
 
     return (
-        <main className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
-            <form
-                onSubmit={handleSubmit}
-                className="flex flex-col gap-3 bg-white p-6 rounded-lg shadow-md w-80"
-            >
-                <h1 className="text-2xl font-bold text-center mb-2 text-blue-600">
-                    Bicicletero UBB 🚲
-                </h1>
+        <main className="login-container">
+            <div className="login-wrapper">
+                <div className="login-form-container">
+                    <h1 className="login-title">Bicicletero UBB 🚲</h1>
+                    <p className="login-subtitle">Ingresa a tu cuenta</p>
 
-                {error && (
-                    <p className="text-red-500 text-sm text-center bg-red-100 p-2 rounded">
-                        {error}
+                    {error && (
+                        <div className="login-error">
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="login-field">
+                            <label className="login-label">Correo electrónico</label>
+                            <input
+                                type="email"
+                                name="email"
+                                value={credentials.email}
+                                onChange={handleChange}
+                                className="login-input"
+                                required
+                            />
+                        </div>
+
+                        <div className="login-field">
+                            <label className="login-label">Contraseña</label>
+                            <input
+                                type="password"
+                                name="password"
+                                value={credentials.password}
+                                onChange={handleChange}
+                                className="login-input"
+                                required
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="login-button"
+                        >
+                            {loading ? "Ingresando..." : "Ingresar"}
+                        </button>
+                    </form>
+
+                    <p className="login-link">
+                        ¿No tienes cuenta?{" "}
+                        <Link to="/auth/register">Regístrate aquí</Link>
                     </p>
-                )}
+                </div>
 
-                <input
-                    type="email"
-                    name="email"
-                    placeholder="Correo electrónico"
-                    value={credentials.email}
-                    onChange={handleChange}
-                    className="border p-2 rounded"
-                    required
-                />
-                <input
-                    type="password"
-                    name="password"
-                    placeholder="Contraseña"
-                    value={credentials.password}
-                    onChange={handleChange}
-                    className="border p-2 rounded"
-                    required
-                />
-
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className={`${loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-                        } text-white p-2 rounded transition`}
-                >
-                    {loading ? "Ingresando..." : "Ingresar"}
-                </button>
-
-                <p className="text-sm text-center mt-2">
-                    ¿No tienes cuenta?{" "}
-                    <Link to="/auth/register" className="text-blue-600 hover:underline">
-                        Regístrate aquí
-                    </Link>
-                </p>
-            </form>
+                <div className="login-mascot">
+                    <img src={mascotImage} alt="Mascota Bicicletero UBB" />
+                </div>
+            </div>
         </main>
     );
 };
