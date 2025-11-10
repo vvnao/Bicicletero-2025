@@ -43,6 +43,13 @@ export const Bikerack = new EntitySchema({
       target: 'Incidence',
       inverseSide: 'bikerack',
     },
+      guard: {
+        target: "User",
+        type: "many-to-one",
+        joinColumn: true,
+        nullable: true,
+  }
+
   },
 });
 
