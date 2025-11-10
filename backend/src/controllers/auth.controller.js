@@ -1,18 +1,17 @@
 import { loginUser } from "../services/auth.service.js";
 import { createUser } from "../services/user.service.js";
-import { handleSuccess, handleErrorClient, handleErrorServer } from "../Handlers/responseHandlers.js";
-import { AppDataSource } from "../config/configDb.js";
-import { BicycleEntity } from "../entities/BicycleEntity.js";
+import { handleSuccess, handleErrorClient } from "../Handlers/responseHandlers.js";
 import { sendEmail } from "../services/email.service.js";
 import { registerUserValidation, loginValidation } from "../validations/user.validation.js";
 import { registrationEmailTemplate } from "../templates/emailTemplate.js";
+import { bicycleValidation } from "../validations/bicycle.validation.js";
 
 // LOGIN
 export async function login(req, res) {
     try {
         const { email, password } = req.body;
-
         const { error } = loginValidation.validate({ email, password });
+
         if (error) {
             const mensaje = error.details[0].message;
             return handleErrorClient(res, 400, mensaje);
@@ -24,7 +23,6 @@ export async function login(req, res) {
         return handleErrorClient(res, 401, error.message);
     }
 }
-
 // REGISTRO
 export async function register(req, res) {
     try {
@@ -49,26 +47,39 @@ export async function register(req, res) {
             }
         }
 
-        // Si no hay bicicleta, crea un objeto vacío
-        if (!data.bicycle) {
-            data.bicycle = {};
-        }
+        // Si no hay bicicleta, crear objeto vacío
+        if (!data.bicycle) data.bicycle = {};
 
         // Incorporar rutas de archivos
-        if (req.files?.tnePhoto?.[0]) {
-            data.tnePhoto = req.files.tnePhoto[0].path;
+        if (req.files?.tnePhoto?.[0]) data.tnePhoto = req.files.tnePhoto[0].path;
+        if (req.files?.photo?.[0]) data.bicycle.photo = req.files.photo[0].path;
+
+        // Forzar serialNumber a string si existe
+        if (data.bicycle?.serialNumber != null) {
+            data.bicycle.serialNumber = String(data.bicycle.serialNumber);
         }
 
-        if (req.files?.photo?.[0]) {
-            data.bicycle.photo = req.files.photo[0].path;
+        // Validar datos del usuario
+        const { error: userError } = registerUserValidation.validate(data, { abortEarly: false });
+
+        // Validar datos de la bicicleta solo si tiene propiedades y serialNumber
+        let bicycleError;
+        if (data.bicycle && Object.keys(data.bicycle).length > 0 && data.bicycle.serialNumber) {
+            const { error } = bicycleValidation.validate(data.bicycle, { abortEarly: false });
+            bicycleError = error;
         }
 
-        // Validar datos con Joi
-        const { error } = registerUserValidation.validate(data, { abortEarly: false });
-        if (error) {
-            const mensajes = error.details.map((d) => d.message);
-            return handleErrorClient(res, 400, "Error de validación", mensajes);
-        }
+        // Unir errores
+        const mensajes = [
+            ...(userError?.details.map(d => d.message) || []),
+            ...(bicycleError?.details.map(d => d.message) || [])
+        ];
+
+        if (mensajes.length > 0) {
+    console.log("Errores de validación:", userError, bicycleError);
+    return handleErrorClient(res, 400, "Error de validación", mensajes);
+}
+
 
         // Crear usuario (las validaciones de dominio se hacen en el servicio)
         const newUser = await createUser(data);
