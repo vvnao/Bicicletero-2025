@@ -27,7 +27,7 @@ export async function getBicycles(req, res) {
         const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 
         const userId = req.user.sub;
-        const bicycles = await bicycleRepository.find({ where:{ user: {id: userId}} });
+        const bicycles = await bicycleRepository.find();
         if (!bicycles || bicycles.length === 0){
         handleSuccess(res, 200, "El usuario no tiene bicicletas registradas",bicycles);
         }
@@ -44,7 +44,7 @@ export async function getAllBicycles(req, res){
         if (!bicycles) {
             handleSuccess(res, 200, "No hay bicicletas registradas", bicycles);
         }
-        handleSuccess(res, 200, "Bicicletas obtenidas exitosamente", bicycles );
+        handleSuccess(res, 200, "Bicicletas obtenidas exitosamente", bicycles);
     }catch(error) {
         handleErrorServer(res,500,"Error del servidor",error);
     }

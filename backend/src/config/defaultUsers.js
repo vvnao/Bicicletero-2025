@@ -36,6 +36,17 @@ export async function createDefaultUsers() {
                 typePerson: null,
                 requestStatus: "aprobado",
             },
+            {
+                role: "user",
+                names: "Erika Annais",
+                lastName: "Mellao Jara",
+                rut: "21.799.899-9",
+                email: "erika.mellao2301@alumnos.ubiobio.cl",
+                password: await bcrypt.hash("ErikaMellao", 10),
+                contact: "+56981919001",
+                typePerson: "estudiante",
+                requestStatus: "aprobado",
+            },
         ];
 
         console.log("Creando usuarios por defecto...");
