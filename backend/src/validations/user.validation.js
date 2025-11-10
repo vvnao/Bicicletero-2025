@@ -1,4 +1,5 @@
-import Joi from "joi";
+"use strict";
+import Joi from "Joi";
 
 export const registerUserValidation = Joi.object({
     names: Joi.string()
