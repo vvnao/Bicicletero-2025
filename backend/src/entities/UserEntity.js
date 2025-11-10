@@ -38,11 +38,11 @@ export const UserEntity = new EntitySchema({
         },
         contact: {
             type: String,
-            nullable: true,
+            nullable: false,
         },
         typePerson: {
             type: "varchar",
-            nullable: false,
+            nullable: true,
             enum: ["estudiante", "academico", "funcionario"],
         },
         tnePhoto: {
