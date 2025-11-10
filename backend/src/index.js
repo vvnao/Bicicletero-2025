@@ -5,6 +5,9 @@ import { AppDataSource, connectDB } from "./config/configDb.js";
 import { routerApi } from "./routes/index.routes.js";
 import cors from "cors";
 import { createDefaultUsers } from "./config/defaultUsers.js";
+import { createBikeracks } from "./config/initBikeracksDb.js";
+
+
 
 const app = express();
 app.use(
@@ -28,6 +31,7 @@ connectDB()
     console.log("Conexión a la base de datos establecida");
     //Crear admin y guardia por defecto
     await createDefaultUsers();
+    await createBikeracks();
     // Carga todas las rutas de la aplicación
     routerApi(app);
 

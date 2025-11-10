@@ -11,7 +11,7 @@ const router = Router();
 // Listar bicicleteros con ocupación
 router.get("/", listBikeracks);
 
-// Asignar guardia
+// Asignar guardia...
 router.put("/:bikerackId/assign-guard/:guardId", assignGuardController);
 
 // Guardar bicicleta en bicicletero
