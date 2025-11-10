@@ -1,4 +1,3 @@
-//* entidad para las incidencias
 'use strict';
 
 import { EntitySchema } from 'typeorm';
@@ -26,7 +25,7 @@ export const Incidence = new EntitySchema({
       generated: 'increment',
     },
     incidenceType: {
-      //* Será una lista predefinida: Daño, Robo, etc
+      //! Será una lista predefinida: Daño, Robo, etc
       type: 'varchar',
       length: 255,
       nullable: false,
@@ -42,18 +41,18 @@ export const Incidence = new EntitySchema({
       nullable: false,
     },
     evidenceUrl: {
-      //* url de la imagen/video/etc que se suba de la incidencia (evidencia es opcional)
+      //! url de la imagen/video/etc que se suba de la incidencia (evidencia es opcional)
       type: 'varchar',
       length: 500,
       nullable: true,
     },
     dateTimeReport: {
-      //* fecha y hora de cuando se crea la incidencia (automático)
+      //! fecha y hora de cuando se crea la incidencia (automático)
       type: 'timestamp',
       default: () => 'CURRENT_TIMESTAMP',
     },
     dateTimeIncident: {
-      //* fecha y hora de cuando ocurrió la incidencia (lo ingresa guardia)
+      //! fecha y hora de cuando ocurrió la incidencia (lo ingresa guardia)
       type: 'timestamp',
       nullable: false,
     },
@@ -63,9 +62,19 @@ export const Incidence = new EntitySchema({
       nullable: false,
       default: INCIDENCE_STATUS.OPEN,
     },
+    created_at: {
+      type: 'timestamp',
+      createDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
+    },
+    updated_at: {
+      type: 'timestamp',
+      updateDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
+    },
   },
   relations: {
-    bikerack: {
+    bikeracks: {
       type: 'many-to-one',
       target: 'Bikerack',
       inverseSide: 'incidences',
@@ -74,7 +83,7 @@ export const Incidence = new EntitySchema({
         name: 'bikerackId',
       },
     },
-    space: {
+    spaces: {
       type: 'many-to-one',
       target: 'Space',
       inverseSide: 'incidences',
@@ -87,7 +96,6 @@ export const Incidence = new EntitySchema({
 });
 
 export { INCIDENCE_STATUS, SEVERITY_LEVELS };
-export default Incidence;
+export default Incidence
 
-//*! FALTA RELACIÓN CON ENTIDAD USUARIO
-//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)
+//! FALTA RELACIÓN CON USER

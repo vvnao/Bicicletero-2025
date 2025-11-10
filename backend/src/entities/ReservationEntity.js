@@ -1,10 +1,9 @@
-//* entidad para las reservas
 'use strict';
 
 import { EntitySchema } from 'typeorm';
 
 const RESERVATION_STATUS = {
-  //* revisar
+  //! aún no se si dejar esto
   PENDING: 'Pendiente',
   ACTIVE: 'Activa',
   COMPLETED: 'Completada',
@@ -28,35 +27,35 @@ export const ReservationEntity = new EntitySchema({
       unique: true,
     },
     dateTimeReservation: {
-      //* fecha y hora de cuando se hizo la reserva
+      //! Fecha y hora de cuando se hizo la reserva (cuando el user aprieta botón "reservar")
       type: 'timestamp',
       default: () => 'CURRENT_TIMESTAMP',
     },
-    dateTimeEstimatedArrival: {
-      //* fecha y hora estimada de llegada (cuando el usuario planea llegar)
-      type: 'timestamp',
-      required: true,
+    estimatedHours: {
+      //! Horas estimadas que estará la bicicleta (el user lo ingresa al hacer la reserva)
+      type: 'int',
+      nullable: false,
     },
-    dateTimeLimit: {
-      //* fecha y hora límite de cuanto puede estar la bicicleta en el bicicletero (tiempo estimado)
+    expirationTime: {
+      //! Cuándo expira la reserva si el user no llega (por ej 2 horas después de hacer la reserva)
       type: 'timestamp',
-      required: true,
-    },
-    dateTimeActualArrival: {
-      //* fecha y hora real de llegada (cuando llegó el usuario al bicicletero)
-      type: 'timestamp',
-      nullable: true,
-    },
-    dateTimeActualDeparture: {
-      //* fecha y hora real de salida (cuando el usuario se llevó la bicicleta)
-      type: 'timestamp',
-      nullable: true,
+      nullable: false,
     },
     status: {
       type: 'varchar',
       length: 50,
       default: RESERVATION_STATUS.PENDING,
       nullable: false,
+    },
+    created_at: {
+      type: 'timestamp',
+      createDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
+    },
+    updated_at: {
+      type: 'timestamp',
+      updateDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
     },
   },
   relations: {
@@ -69,13 +68,31 @@ export const ReservationEntity = new EntitySchema({
         name: 'spaceId',
       },
     },
-    users: {
+    user: {
       type: 'many-to-one',
       target: 'User',
-      inverseSide: 'users',
+      inverseSide: 'reservations',
       nullable: false,
       joinColumn: {
-        name : 'userId',
+        name: 'userId',
+      },
+    },
+    bicycle: {
+      type: 'many-to-one',
+      target: 'Bicycle',
+      inverseSide: 'reservations',
+      nullable: false,
+      joinColumn: {
+        name: 'bicycleId',
+      },
+    },
+    spaceLog: {
+      type: 'one-to-one',
+      target: 'SpaceLog',
+      inverseSide: 'reservation',
+      nullable: true,
+      joinColumn: {
+        name: 'spaceLogId',
       },
     },
   },
@@ -83,5 +100,3 @@ export const ReservationEntity = new EntitySchema({
 
 export { RESERVATION_STATUS };
 export default ReservationEntity;
-
-//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)

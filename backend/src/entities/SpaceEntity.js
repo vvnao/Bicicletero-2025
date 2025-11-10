@@ -1,4 +1,3 @@
-//* entidad para los espacios del bicicletero
 'use strict';
 
 import { EntitySchema } from 'typeorm';
@@ -21,7 +20,7 @@ export const Space = new EntitySchema({
     },
     spaceCode: {
       type: 'varchar',
-      length: 100,
+      length: 50,
       nullable: false,
       unique: true,
     },
@@ -30,6 +29,21 @@ export const Space = new EntitySchema({
       length: 50,
       nullable: false,
       default: SPACE_STATUS.FREE,
+    },
+    position: {
+      //! Orden físico de los espacios dentro del bicicletero (c-1 -> 1era posición (1), c-2 -> 2da posición (2), ...)
+      type: 'int',
+      nullable: false,
+    },
+    created_at: {
+      type: 'timestamp',
+      createDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
+    },
+    updated_at: {
+      type: 'timestamp',
+      updateDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
     },
   },
   relations: {
@@ -52,10 +66,22 @@ export const Space = new EntitySchema({
       target: 'Incidence',
       inverseSide: 'space',
     },
+    currentLog: {
+      //! Solo el log activo (si el espacio está en uso)
+      type: 'one-to-one',
+      target: 'SpaceLog',
+      inverseSide: 'space',
+      nullable: true,
+      joinColumn: true,
+    },
+    spaceLogs: {
+      //! Para el historial completo de todos los usos del espacio
+      type: 'one-to-many',
+      target: 'SpaceLog',
+      inverseSide: 'space',
+    },
   },
 });
 
 export { SPACE_STATUS };
 export default Space;
-
-//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)

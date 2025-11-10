@@ -1,4 +1,3 @@
-//* entidad bicicletero
 'use strict';
 
 import { EntitySchema } from 'typeorm';
@@ -17,19 +16,19 @@ export const Bikerack = new EntitySchema({
       length: 255,
       nullable: false,
     },
-    location: {
-      type: 'varchar',
-      length: 255,
-      nullable: false,
-    },
     capacity: {
       type: 'int',
       nullable: false,
     },
-    status: {
-      //* activo, inactivo o en mantenimiento. Aún no se si dejar esto (o ver si dejarlo como lleno, vacio o con espacios)
-      type: 'varchar',
-      length: 50,
+    created_at: {
+      type: 'timestamp',
+      createDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
+    },
+    updated_at: {
+      type: 'timestamp',
+      updateDate: true,
+      default: () => 'CURRENT_TIMESTAMP',
     },
   },
   relations: {
@@ -48,4 +47,4 @@ export const Bikerack = new EntitySchema({
 
 export default Bikerack;
 
-//*! VER SI AGREGAR TIMESTAMPS (CREATED_AT, UPDATED_AT)
+
