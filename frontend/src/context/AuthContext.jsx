@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = cookies.get('jwt-auth');
-    const storedUser = sessionStorage.getItem('usuario');
+    const storedUser = sessionStorage.getItem('user');
     
     if (token && storedUser) {
       try {
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
           setUser(JSON.parse(storedUser));
         } else {
           cookies.remove('jwt-auth');
-          sessionStorage.removeItem('usuario');
+          sessionStorage.removeItem('user');
         }
       } catch (error) {
         console.error('Error al decodificar token:', error);

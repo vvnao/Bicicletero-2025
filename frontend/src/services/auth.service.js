@@ -1,44 +1,37 @@
-import axios from './root.service.js';
+import api from './root.service.js';
 import cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
 
-export async function login(dataUser) {
+// LOGIN
+export const login = async (credentials) => {
     try {
-        const { email, password } = dataUser;
-        const response = await axios.post('/auth/login', {
-            email,
-            password
-        });
-        
-        const { token, user } = response.data.data;
-        
-        cookies.set('jwt-auth', token, { path: '/' });
-        sessionStorage.setItem('usuario', JSON.stringify(user));
-        
+        const response = await api.post('/auth/login', credentials);
         return response.data;
     } catch (error) {
-        return error.response?.data || { message: 'Error al conectar con el servidor' };
+        console.error('Error en login:', error);
+        return error.response?.data || { message: 'Error al iniciar sesión' };
     }
-}
+};
 
-export async function register(data) {
+// REGISTER
+export const register = async (formData) => {
     try {
-        const { email, password } = data;
-        const response = await axios.post('/auth/register', {
-            email,
-            password
+        const response = await api.post('/auth/register', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
         });
         return response.data;
     } catch (error) {
+        console.error('Error en register:', error);
         return error.response?.data || { message: 'Error al conectar con el servidor' };
     }
-}
+};
 
-export async function logout() {
+// LOGOUT
+export const logout = () => {
     try {
-        sessionStorage.removeItem('usuario');
+        sessionStorage.removeItem('user');   
         cookies.remove('jwt-auth');
     } catch (error) {
         console.error('Error al cerrar sesión:', error);
     }
-}
+};
