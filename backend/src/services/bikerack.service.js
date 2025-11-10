@@ -4,6 +4,8 @@ import { BicycleEntity } from "../entities/BicycleEntity.js";
 import Bikerack from "../entities/BikeRackEntity.js";
 
 
+
+
     const bikerackRepository = AppDataSource.getRepository(Bikerack);
     const userRepository = AppDataSource.getRepository(UserEntity);
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
@@ -61,5 +63,28 @@ import Bikerack from "../entities/BikeRackEntity.js";
 
         bicycle.bikerack = null;
         return await bicycleRepository.save(bicycle);
+    }
+
+    // GENERAR REPORTES SEMANALES
+    export async function generateWeeklyReport() {
+        const bikerackRepo = AppDataSource.getRepository(Bikerack);
+        const bicycleRepo = AppDataSource.getRepository(BicycleEntity);
+
+        const racks = await bikerackRepo.find({ relations: ["guard", "bicycles", "incidences"] });
+
+        const report = racks.map(rack => {
+            const used = rack.bicycles.length; // o contar con bicycleRepo.count({ where: { bikerack: rack.id } })
+            return {
+            id: rack.id,
+            name: rack.name,
+            location: rack.location,
+            capacity: rack.capacity,
+            usedCapacity: used,
+            guard: rack.guard ? rack.guard.names + " " + rack.guard.lastName : "Sin asignar",
+            incidences: rack.incidences.length,
+            };
+        });
+
+        return report;
     }
 
