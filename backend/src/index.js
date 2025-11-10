@@ -5,6 +5,9 @@ import { AppDataSource, connectDB } from "./config/configDb.js";
 import { routerApi } from "./routes/index.routes.js";
 import cors from "cors";
 import { createDefaultUsers } from "./config/defaultUsers.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
 
 const app = express();
 app.use(
@@ -17,6 +20,10 @@ app.use(morgan("dev"));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use("/uploads", express.static(path.join(__dirname, "src/uploads")));
 
 // Ruta principal de bienvenida
 app.get("/", (req, res) => {
