@@ -7,6 +7,7 @@ import cors from 'cors';
 import { createBikeracks } from './config/initBikeracksDb.js';
 import { createSpaces } from './config/initSpacesDb.js';
 import {  createDefaultUsers } from "./config/defaultUsers.js";
+import "dotenv/config";
 
 const app = express();
 app.use(
@@ -28,6 +29,7 @@ connectDB()
     await createSpaces();
     await createDefaultUsers();
 
+    await createBikeracks();
     // Carga todas las rutas de la aplicación
     routerApi(app);
 

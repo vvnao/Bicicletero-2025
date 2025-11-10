@@ -1,7 +1,7 @@
 //! PARA INICIALIZAR LOS BICICLETEROS EN LA BASE DE DATOS
 'use strict';
 import { AppDataSource } from './configDb.js';
-import { Bikerack } from '../entities/BikerackEntity.js';
+import { Bikerack } from '../entities/BikeRackEntity.js';
 
 export async function createBikeracks() {
   try {
@@ -33,7 +33,7 @@ export async function createBikeracks() {
 
     for (const bikerack of bikeracks) {
       await bikerackRepository.save(bikerackRepository.create(bikerack));
-      console.log(`Bicicletero ${bikerack.name} creado exitodamente!`);
+      console.log(`Bicicletero ${bikerack.name} creado exitosamente!`);
     }
   } catch (error) {
     console.error('Error al crear bicicleteros:', error);

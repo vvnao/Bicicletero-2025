@@ -88,7 +88,7 @@ export const registerUserValidation = Joi.object({
     .custom((value, helpers) => {
         const { typePerson, email, tnePhoto, position, positionDescription } = value;
 
-        // Estudiante
+        /* Estudiante
         if (typePerson === "estudiante") {
             if (!/@alumnos\.ubiobio\.cl$/.test(email)) {
                 return helpers.error("any.custom", {
@@ -101,7 +101,7 @@ export const registerUserValidation = Joi.object({
                     message: "Los estudiantes deben subir una foto de su TNE",
                 });
             }
-        }
+        }*/
 
         // Académico
         if (typePerson === "academico") {

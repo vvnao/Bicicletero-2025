@@ -94,6 +94,11 @@ export const UserEntity = new EntitySchema({
       type: 'one-to-many',
       inverseSide: 'user',
     },
+    assignedBikeracks: {
+      target: 'Bikerack',
+      type: 'many-to-many',
+      mappedBy: 'guards',
+    },
   },
 });
 

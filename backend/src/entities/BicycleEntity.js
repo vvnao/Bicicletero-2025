@@ -52,6 +52,17 @@ export const BicycleEntity = new EntitySchema({
         type: 'one-to-many',
         inverseSide: 'bicycle',
         },
+
+      bikerack: {
+            type: 'many-to-one',
+            target: 'Bikerack',
+            joinColumn: { name: 'bikerackId' },
+            nullable: true,
+            eager: true,
+            inverseSide: 'bicycles',
+        }
+
+
     },
 });
 
