@@ -9,4 +9,5 @@ router.post("/", authMiddleware, createBicycle);
 router.get("/",authMiddleware, getBicycles);
 router.get("/all", getAllBicycles);
 
+
 export default router;
