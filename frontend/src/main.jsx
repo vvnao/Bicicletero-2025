@@ -10,6 +10,7 @@ import RegisterSelector from "./pages/RegisterSelector";
 import RegisterStudent from "./pages/RegisterStudent";
 import RegisterAcademic from "./pages/RegisterAcademic";
 import RegisterAssistant from "./pages/RegisterAssistant";
+import Bicycle from "./pages/Bicycle";
 //import "@styles/styles.css";
 
 const router = createBrowserRouter([
