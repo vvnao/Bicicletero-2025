@@ -2,8 +2,7 @@ import { AppDataSource } from "../config/configDb.js";
 import { UserEntity } from "../entities/UserEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
 import Bikerack from "../entities/BikeRackEntity.js";
-
-
+import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
 
 
     const bikerackRepository = AppDataSource.getRepository(Bikerack);

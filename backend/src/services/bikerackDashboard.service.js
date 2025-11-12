@@ -1,5 +1,8 @@
 import { AppDataSource } from '../config/configDb.js';
 import { SPACE_STATUS } from '../entities/SpaceEntity.js';
+import { assignGuard, storeBicycle, removeBicycle, getBikeracks } from "../services/bikerack.service.js";
+
+
 import {
   calculateLastUpdate,
   formatLastUpdate,
