@@ -54,7 +54,7 @@ import { createHistory } from "../services/history.service.js";
         const rack = await bikerackRepository.findOneBy({ id: bikerackId });
         if (!rack) throw new Error("El bicicletero no existe");
 
-        // Verificar capacidad
+  
         const used = await bicycleRepository.count({ where: { bikerack: bikerackId } });
         if (used >= rack.capacity) throw new Error("El bicicletero está lleno");
 
@@ -64,11 +64,11 @@ import { createHistory } from "../services/history.service.js";
         const user = await userRepository.findOneBy({ id: userId });
         if (!user) throw new Error("El usuario no existe");
 
-        // Guardar la bicicleta en el bicicletero
+    
         bicycle.bikerack = rack;
         await bicycleRepository.save(bicycle);
 
-        // ✅ Registrar la ENTRADA en el historial
+    
         await createHistory(user, bicycle, rack, "Entrada");
 
         return { message: "Bicicleta almacenada correctamente", bicycle };
@@ -89,7 +89,7 @@ import { createHistory } from "../services/history.service.js";
 
         const rack = bicycle.bikerack;
 
-        // Eliminar relación
+    
         bicycle.bikerack = null;
         await bicycleRepository.save(bicycle);
 
