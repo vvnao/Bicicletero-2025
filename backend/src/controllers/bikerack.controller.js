@@ -7,6 +7,7 @@ import {
   handleErrorClient,
   handleErrorServer,
 } from '../Handlers/responseHandlers.js';
+import { assignGuard } from "../services/bikerack.service.js";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //! PARA EL PANEL DE MONITOREO
