@@ -5,6 +5,7 @@ import bikerackRoutes from "./bikerack.routes.js";
 import bicycleRoutes from "./bicycle.routes.js";
 import profileRoutes from "./profile.routes.js";
 import reportRoutes from "../routes/report.routes.js";
+import historyRoutes from "../routes/history.routes.js"
 
 
 export function routerApi(app) {
@@ -17,5 +18,6 @@ export function routerApi(app) {
   router.use("/profile", profileRoutes );
   router.use("/bikeracks", bikerackRoutes);
   router.use("/spaces", bikerackRoutes);
+  router.use("/history", historyRoutes);
 
 }

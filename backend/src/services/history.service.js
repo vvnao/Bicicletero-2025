@@ -6,7 +6,20 @@ const historyRepo = AppDataSource.getRepository(HistoryEntity);
 export async function getHistory(filters = {}) {
     return await historyRepo.find({
     where: filters,
-    relations: ["bicycle", "bikeRack", "guard"],
+    relations: ["bicycle", "bikerack", "guard"],
     order: { timestamp: "DESC" },
     });
 }
+
+export async function createHistory(user, bicycle, bikerack, type) {
+    const history = historyRepo.create({
+        user,
+        bicycle,
+        bikerack,
+        type, // "Entrada" o "Salida"
+        date: new Date(),
+    });
+
+    await historyRepo.save(history);
+    return history;
+    }
