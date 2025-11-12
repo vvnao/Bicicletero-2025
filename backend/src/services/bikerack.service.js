@@ -28,11 +28,23 @@ import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
 
         const guard = await userRepository.findOneBy({ id: guardId });
         if (!guard || guard.role !== "guardia") {
-        throw new Error("El usuario seleccionado no es guardia");
+            throw new Error("El usuario seleccionado no es guardia");
         }
 
+        // Asignar guardia actual al bicicletero
         rack.guard = guard;
-        return await bikerackRepository.save(rack);
+        await bikerackRepository.save(rack);
+
+        // 🔹 Registrar la asignación en la tabla guard_assignment
+        const assignmentRepo = AppDataSource.getRepository(GuardAssignmentEntity);
+        const newAssignment = assignmentRepo.create({
+            guard,
+            bikerack: rack,
+            assignedAt: new Date(),
+        });
+        await assignmentRepo.save(newAssignment);
+
+        return { message: "Guardia asignado correctamente", rack };
     }
 
     // GUARDAR UNA BICICLETA EN UN BICICLETERO
