@@ -10,7 +10,8 @@ import RegisterSelector from "./pages/RegisterSelector";
 import RegisterStudent from "./pages/RegisterStudent";
 import RegisterAcademic from "./pages/RegisterAcademic";
 import RegisterAssistant from "./pages/RegisterAssistant";
-//import "@styles/styles.css";
+import HomeAdmin from "@pages/HomeAdmin";
+
 
 const router = createBrowserRouter([
     {
@@ -47,6 +48,14 @@ const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute>
                         <Home />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin",
+                element: (
+                    <ProtectedRoute>
+                        <HomeAdmin />
                     </ProtectedRoute>
                 ),
             },
