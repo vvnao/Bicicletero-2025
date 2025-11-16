@@ -3,6 +3,7 @@ import { UserEntity } from "../entities/UserEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
 import Bikerack from "../entities/BikeRackEntity.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
+import { createHistory } from "../services/history.service.js";
 
 
     const bikerackRepository = AppDataSource.getRepository(Bikerack);
@@ -21,7 +22,7 @@ import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
         return racks;
     }
 
-    // ASIGNAR GUARDIA A UN BICICLETERO
+    //* ASIGNAR GUARDIA A UN BICICLETERO
     export async function assignGuard(bikerackId, guardId) {
         const rack = await bikerackRepository.findOneBy({ id: bikerackId });
         if (!rack) throw new Error("El bicicletero no existe");
@@ -35,7 +36,7 @@ import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
         rack.guard = guard;
         await bikerackRepository.save(rack);
 
-        // 🔹 Registrar la asignación en la tabla guard_assignment
+        // Registrar la asignación en la tabla guard_assignment
         const assignmentRepo = AppDataSource.getRepository(GuardAssignmentEntity);
         const newAssignment = assignmentRepo.create({
             guard,
@@ -47,34 +48,56 @@ import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
         return { message: "Guardia asignado correctamente", rack };
     }
 
-    // GUARDAR UNA BICICLETA EN UN BICICLETERO
-    export async function storeBicycle(bikerackId, bicycleId) {
+    //* GUARDAR UNA BICICLETA EN UN BICICLETERO
+
+        export async function storeBicycle(bikerackId, bicycleId, userId) {
         const rack = await bikerackRepository.findOneBy({ id: bikerackId });
         if (!rack) throw new Error("El bicicletero no existe");
 
-        // Verificar capacidad
+  
         const used = await bicycleRepository.count({ where: { bikerack: bikerackId } });
         if (used >= rack.capacity) throw new Error("El bicicletero está lleno");
 
         const bicycle = await bicycleRepository.findOneBy({ id: bicycleId });
         if (!bicycle) throw new Error("La bicicleta no existe");
 
+        const user = await userRepository.findOneBy({ id: userId });
+        if (!user) throw new Error("El usuario no existe");
+
+    
         bicycle.bikerack = rack;
-        return await bicycleRepository.save(bicycle);
-    }
+        await bicycleRepository.save(bicycle);
+
+    
+        await createHistory(user, bicycle, rack, "Entrada");
+
+        return { message: "Bicicleta almacenada correctamente", bicycle };
+        }
+
 
      // REMOVER UNA BICICLETA DEL BICICLETERO
-    export async function removeBicycle(bicycleId) {
+    export async function removeBicycle(bicycleId, userId) {
         const bicycle = await bicycleRepository.findOne({
             where: { id: bicycleId },
-            relations: ["bikerack"]
+            relations: ["bikerack"],
         });
 
         if (!bicycle) throw new Error("La bicicleta no existe en ningún bicicletero");
 
+        const user = await userRepository.findOneBy({ id: userId });
+        if (!user) throw new Error("El usuario no existe");
+
+        const rack = bicycle.bikerack;
+
+    
         bicycle.bikerack = null;
-        return await bicycleRepository.save(bicycle);
-    }
+        await bicycleRepository.save(bicycle);
+
+        //  Registrar la SALIDA en el historial
+        await createHistory(user, bicycle, rack, "Salida");
+
+        return { message: "Bicicleta retirada correctamente", bicycle };
+        }
 
     // GENERAR REPORTES SEMANALES
     export async function generateWeeklyReport() {

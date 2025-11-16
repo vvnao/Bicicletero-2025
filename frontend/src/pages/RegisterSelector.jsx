@@ -1,22 +1,51 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import '../styles/RegisterSelector.css';
 
 export default function RegisterSelector() {
-    const navigate = useNavigate();
-    return (
-        <div className="max-w-md mx-auto p-6">
-            <h2 className="text-2xl font-semibold mb-4">¿Qué tipo de persona eres?</h2>
-            <div className="flex flex-col gap-3">
-                <button onClick={() => navigate("/auth/register/student")} className="p-2 bg-blue-600 text-white rounded">Estudiante</button>
-                <button onClick={() => navigate("/auth/register/academic")} className="p-2 bg-blue-600 text-white rounded">Académico</button>
-                <button onClick={() => navigate("/auth/register/assistant")} className="p-2 bg-blue-600 text-white rounded">Funcionario</button>
-                
-                <button 
-                    onClick={() => navigate("/auth/login")} 
-                    className="p-2 mt-4 text-blue-600 hover:text-blue-800 underline"
-                >
-                    ← Volver al inicio de sesión
-                </button>
-            </div>
+  const navigate = useNavigate();
+
+  return (
+    <div className='register-selector-container'>
+      <h2 className='register-selector-title'>¿Qué tipo de persona eres?</h2>
+
+      <div className='register-selector-grid'>
+        <div
+          onClick={() => navigate('/auth/register/student')}
+          className='register-selector-card'
+        >
+          <div className='register-selector-card-title'>Estudiante</div>
+          <div className='register-selector-card-description'>
+            Usuario con matrícula activa en la institución
+          </div>
         </div>
-    );
+
+        <div
+          onClick={() => navigate('/auth/register/academic')}
+          className='register-selector-card'
+        >
+          <div className='register-selector-card-title'>Académico</div>
+          <div className='register-selector-card-description'>
+            Profesor, investigador o personal académico
+          </div>
+        </div>
+
+        <div
+          onClick={() => navigate('/auth/register/assistant')}
+          className='register-selector-card'
+        >
+          <div className='register-selector-card-title'>Funcionario</div>
+          <div className='register-selector-card-description'>
+            Personal administrativo o de apoyo
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={() => navigate('/auth/login')}
+        className='register-selector-back-button'
+      >
+        ← Volver al inicio de sesión
+      </button>
+    </div>
+  );
 }
