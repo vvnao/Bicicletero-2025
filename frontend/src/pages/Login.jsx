@@ -22,6 +22,20 @@ const Login = () => {
         });
     };
 
+    const getRedirectPathByRole = (role) => {
+        switch (role) {
+            case 'admin':
+                return '/home/admin';
+            case 'guardia':
+                return '/home/guardia';
+            case 'estudiante':
+            case 'academico':
+            case 'asistente':
+            default:
+                return '/home';
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -33,15 +47,17 @@ const Login = () => {
             const token = res?.token ?? res?.data?.token;
             const userData = res?.data?.user ?? res?.user;
 
-            if (token) {
+            if (token && userData) {
                 const userInfo = {
                     token,
                     data: userData,
                 };
                 sessionStorage.setItem("user", JSON.stringify(userInfo));
-                setUser(userInfo); // Añadir esto para actualizar el contexto
+                setUser(userInfo);
 
-                navigate("/home", { replace: true });
+                // Redirigir según el rol
+                const redirectPath = getRedirectPathByRole(userData.role);
+                navigate(redirectPath, { replace: true });
 
             } else {
                 setError(res?.message || "Credenciales incorrectas.");

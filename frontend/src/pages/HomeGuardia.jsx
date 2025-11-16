@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { logout } from "@services/auth.service.js";
 
-function Home() {
+function HomeGuardia() {
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -11,10 +11,16 @@ function Home() {
 
     return (
         <div className="p-8 text-center">
-            <h1 className="text-2xl font-bold">Bienvenido al Bicicletero UBB 🚲</h1>
-            <p className="mt-2">Has iniciado sesión correctamente.</p>
+            <h1 className="text-2xl font-bold">Bienvenido Guardia del Bicicletero UBB 🚲</h1>
+            <p className="mt-2">Panel de control para guardias</p>
 
-            <div className="mt-6">
+            <div className="mt-6 space-x-4">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    Ver bicicletas
+                </button>
+                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    Registrar entrada/salida
+                </button>
                 <button
                     onClick={handleLogout}
                     className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
@@ -26,4 +32,4 @@ function Home() {
     );
 }
 
-export default Home;
+export default HomeGuardia;
