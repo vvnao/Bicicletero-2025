@@ -11,7 +11,11 @@ import RegisterStudent from "./pages/RegisterStudent";
 import RegisterAcademic from "./pages/RegisterAcademic";
 import RegisterAssistant from "./pages/RegisterAssistant";
 import HomeAdmin from "@pages/HomeAdmin";
-import HomeGuardia from "@pages/HomeGuardia"; // Asegúrate de importar el componente
+import HomeGuardia from "@pages/HomeGuardia";
+import BicicletasAdmin from "@pages/BicicletasAdmin";
+import GuardiasAdmin from "@pages/GuardiasAdmin";
+import HistorialAdmin from "@pages/HistorialAdmin";
+import ReportesAdmin from "@pages/ReportesAdmin";
 
 const router = createBrowserRouter([
     {
@@ -64,6 +68,39 @@ const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute>
                         <HomeGuardia />
+                    </ProtectedRoute>
+                ),
+            },
+            // NUEVAS RUTAS DEL ADMIN
+            {
+                path: "home/admin/bicicletas",
+                element: (
+                    <ProtectedRoute>
+                        <BicicletasAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin/guardias",
+                element: (
+                    <ProtectedRoute>
+                        <GuardiasAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin/historial",
+                element: (
+                    <ProtectedRoute>
+                        <HistorialAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin/reportes",
+                element: (
+                    <ProtectedRoute>
+                        <ReportesAdmin />
                     </ProtectedRoute>
                 ),
             },
