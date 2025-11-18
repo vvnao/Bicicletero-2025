@@ -13,6 +13,10 @@ import RegisterAssistant from "./pages/RegisterAssistant";
 import HomeAdmin from "@pages/HomeAdmin";
 import HomeGuardia from "@pages/HomeGuardia";
 import HomeUser from "@pages/HomeUser";
+import BicicletasAdmin from "@pages/BicicletasAdmin";
+import GuardiasAdmin from "@pages/GuardiasAdmin";
+import HistorialAdmin from "@pages/HistorialAdmin";
+import ReportesAdmin from "@pages/ReportesAdmin";
 import "./styles/Styles.css";
 
 const router = createBrowserRouter([
@@ -74,6 +78,39 @@ const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute>
                         <HomeUser />
+                    </ProtectedRoute>
+                ),
+            },
+            // NUEVAS RUTAS DEL ADMIN
+            {
+                path: "home/admin/bicicletas",
+                element: (
+                    <ProtectedRoute>
+                        <BicicletasAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin/guardias",
+                element: (
+                    <ProtectedRoute>
+                        <GuardiasAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin/historial",
+                element: (
+                    <ProtectedRoute>
+                        <HistorialAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin/reportes",
+                element: (
+                    <ProtectedRoute>
+                        <ReportesAdmin />
                     </ProtectedRoute>
                 ),
             },
