@@ -11,7 +11,9 @@ import RegisterStudent from "./pages/RegisterStudent";
 import RegisterAcademic from "./pages/RegisterAcademic";
 import RegisterAssistant from "./pages/RegisterAssistant";
 import HomeAdmin from "@pages/HomeAdmin";
-import HomeGuardia from "@pages/HomeGuardia"; // Asegúrate de importar el componente
+import HomeGuardia from "@pages/HomeGuardia";
+import HomeUser from "@pages/HomeUser";
+import "./styles/Styles.css";
 
 const router = createBrowserRouter([
     {
@@ -64,6 +66,14 @@ const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute>
                         <HomeGuardia />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/user",
+                element: (
+                    <ProtectedRoute>
+                        <HomeUser />
                     </ProtectedRoute>
                 ),
             },
