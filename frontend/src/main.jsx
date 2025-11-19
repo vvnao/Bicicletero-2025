@@ -17,6 +17,7 @@ import BicicletasAdmin from "@pages/BicicletasAdmin";
 import GuardiasAdmin from "@pages/GuardiasAdmin";
 import HistorialAdmin from "@pages/HistorialAdmin";
 import ReportesAdmin from "@pages/ReportesAdmin";
+import PrivateProfile from "@pages/PrivateProfile";
 import "./styles/Styles.css";
 
 const router = createBrowserRouter([
@@ -78,6 +79,14 @@ const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute>
                         <HomeUser />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "/home/user/privateProfile",
+                element: (
+                    <ProtectedRoute>
+                        <PrivateProfile />
                     </ProtectedRoute>
                 ),
             },

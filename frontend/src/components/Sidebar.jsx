@@ -17,28 +17,28 @@ const Sidebar = () => {
 
                 <button 
                     className="text-left px-4 py-2 text-white text-white hover:bg-gray-700 hover:pl-6 transition-all"
-                    onClick={() => navigate("/bicicleteros")}
+                    onClick={() => navigate("/home/user/privateProfile")}
                 >
                     Perfil
                 </button>
 
                 <button 
                     className="text-left px-4 py-2 text-white hover:bg-gray-700 hover:pl-6 transition-all"
-                    onClick={() => navigate("/usuarios")}
+                    onClick={() => navigate("/home/user/bycicles")}
                 >
                     Perfil bicicletas
                 </button>
 
                 <button 
                     className="text-left px-4 py-2 text-white hover:bg-gray-700 hover:pl-6 transition-all"
-                    onClick={() => navigate("/usuarios")}
+                    onClick={() => navigate("/home/user/reserve")}
                 >
                     Reservas
                 </button>
 
                 <button 
                     className="text-left px-4 py-2 text-white hover:bg-gray-700 hover:pl-6 transition-all"
-                    onClick={() => navigate("/usuarios")}
+                    onClick={() => navigate("/home/user/bycicles")}
                 >
                     Añadir bicicletas
                 </button>
