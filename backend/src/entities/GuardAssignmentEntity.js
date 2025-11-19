@@ -1,10 +1,9 @@
-
-import { EntitySchema, JoinColumn } from "typeorm";
+// entities/GuardAssignmentEntity.js
+import { EntitySchema } from "typeorm";
 
 export const GuardAssignmentEntity = new EntitySchema({
-
-    name: "GuardAssignmentEntity",
-    tableName: "guard_assignment",
+    name: "GuardAssignment", 
+    tableName: "guard_assignments", 
     columns: {
         id: {
             primary: true,
@@ -13,17 +12,17 @@ export const GuardAssignmentEntity = new EntitySchema({
         },
         assignedAt: {
             type: "timestamp",
-            crateDate: true,
+            createDate: true, 
             default: () => "CURRENT_TIMESTAMP",
         },
         status: {
             type: "enum",
-            enum: ["activo","inactivo"],
+            enum: ["activo", "inactivo"],
             default: "activo"
         }
     },
     relations: {
-        guard: {
+        guard: { 
             target: "User",
             type: "many-to-one",
             joinColumn: true,
