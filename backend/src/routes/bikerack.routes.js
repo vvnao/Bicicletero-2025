@@ -4,28 +4,26 @@ import {
   getDashboard,
   getBikerackSpaces,
   listBikeracks, 
-    assignGuardController, 
-    storeBicycleController, 
-    removeBicycleController,
+  assignGuardToBikerack, 
+  storeBicycleInBikerack, 
+  removeBicycleFromBikerack,
+  
+  
 } from '../controllers/bikerack.controller.js';
-
 
 const router = Router();
 
 router.get('/dashboard', getDashboard);
 router.get('/:id', getBikerackSpaces);
 
-
 // Listar bicicleteros con ocupación
 router.get("/", listBikeracks);
 
-// Asignar guardia...
-router.put("/:bikerackId/assign-guard/:guardId", assignGuardController);
+// Asignar guardia a bicicletero
+router.put("/assign-guard", assignGuardToBikerack);
 
 // Guardar bicicleta en bicicletero
-router.put("/:bikerackId/store/:bicycleId", storeBicycleController);
+router.post("/store-bicycle", storeBicycleInBikerack);
 
-// Retirar bicicleta
-router.put("/remove/:bicycleId", removeBicycleController);
 
 export default router;

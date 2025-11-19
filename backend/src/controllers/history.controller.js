@@ -1,5 +1,9 @@
 import { getHistory } from "../services/history.service.js";
 import { handleSuccess, handleErrorServer } from "../Handlers/responseHandlers.js";
+import { AppDataSource } from "../config/configDb.js";
+import { HistoryEntity } from "../entities/HistoryEntity.js";
+
+
 
     export async function getHistoryController(req, res) {
         try {
@@ -11,3 +15,4 @@ import { handleSuccess, handleErrorServer } from "../Handlers/responseHandlers.j
             return handleErrorServer(res, 500, "Error al obtener historial", error.message);
         }
     }
+

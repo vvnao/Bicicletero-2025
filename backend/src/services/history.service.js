@@ -16,7 +16,7 @@ export async function createHistory(user, bicycle, bikerack, type) {
         user,
         bicycle,
         bikerack,
-        type, // "Entrada" o "Salida"
+        type,
         date: new Date(),
     });
 
