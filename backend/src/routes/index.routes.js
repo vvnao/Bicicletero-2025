@@ -7,7 +7,6 @@ import profileRoutes from "./profile.routes.js";
 import reportRoutes from "../routes/report.routes.js";
 import historyRoutes from "../routes/history.routes.js"
 
-
 export function routerApi(app) {
   const router = Router();
   app.use("/api", router);
