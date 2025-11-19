@@ -128,6 +128,8 @@ export async function listBikeracks(req, res) {
     return handleErrorServer(res, 500, error.message);
   }
 }
+
+//*VERIFICACION
 async function assignGuardInternal(bikerackId, guardId) {
   const guardRepo = AppDataSource.getRepository(UserEntity);
   const bikerackRepo = AppDataSource.getRepository(Bikerack);

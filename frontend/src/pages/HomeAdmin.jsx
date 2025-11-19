@@ -70,25 +70,29 @@ function HomeAdmin() {
                         {/* Sección Bicicletas */}
                         <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'white', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', padding: '8px 0', whiteSpace: 'nowrap', transition: 'color 0.2s', overflow: 'hidden', textOverflow: 'ellipsis'}} onClick={navigateToBicicletas}>
                             <div style={{minWidth: '50px', height: '50px', backgroundColor: '#484f6b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>🚲</div>
-                            <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}>Bicicletas</span>
+                            <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}
+                            >Bicicletas</span>
                         </div>
 
                         {/*--------- Sección Guardias ---------------*/}
                         <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'white', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', padding: '8px 0', whiteSpace: 'nowrap', transition: 'color 0.2s', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '10px'}} onClick={navigateToGuardias}>
                             <div style={{minWidth: '50px', height: '50px', backgroundColor: '#484f6b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>🛡️</div>
-                            <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}>Guardias</span>
+                            <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}
+                            >Asignación de <br/> Guardias</span>
                         </div>
 
                         {/*---------- Sección Historial -----------*/}
                         <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'white', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', padding: '8px 0', whiteSpace: 'nowrap', transition: 'color 0.2s', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '10px'}} onClick={navigateToHistorial}>
                             <div style={{minWidth: '50px', height: '50px', backgroundColor: '#484f6b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>📊</div>
-                            <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}>Historial</span>
+                            <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}
+                            >Historial</span>
                         </div>
 
                         {/* -------------- Sección Reportes------------------ */}
                         <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'white', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', padding: '8px 0', whiteSpace: 'nowrap', transition: 'color 0.2s', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '10px'}} onClick={navigateToReportes}>
                             <div style={{minWidth: '50px', height: '50px', backgroundColor: '#484f6b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>📋</div>
-                            <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}>Reportes</span>
+                            <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}
+                            >Reportes</span>
                         </div>
                     </aside>
                 )}
