@@ -62,7 +62,7 @@ function HomeAdmin() {
             <div style={{display: 'flex', minHeight: 'calc(100vh - 60px)', backgroundColor: '#272e4b', marginTop: '60px'}}>
               {/* Sidebar con navegación */}
                     {sidebarOpen && (
-                        <aside style={{ position: 'fixed', top: '60px', left: 0, width: sidebarHover ? '220px' : '60px', height: 'calc(100vh - 60px)', backgroundColor: '#323955', 
+                        <aside style={{ position: 'fixed', top: '60px', left: 0, width: sidebarHover ? '240px' : '80px', height: 'calc(100vh - 60px)', backgroundColor: '#323955', 
                             padding: '30px 10px', display: 'flex', flexDirection: 'column', overflowX: 'hidden', zIndex: 1000, transition: 'width 0.3s ease'
                         }} 
                         onMouseEnter={() => setSidebarHover(true)} 

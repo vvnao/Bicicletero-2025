@@ -83,6 +83,9 @@ export async function register(req, res) {
 
         // Crear usuario (las validaciones de dominio se hacen en el servicio)
         const newUser = await createUser(data);
+    //* mio
+        await logInitialRegistration(newUser.id);
+
 
         // Enviar correo de confirmación
         await sendEmail(
