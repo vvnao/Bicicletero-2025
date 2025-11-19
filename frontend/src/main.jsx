@@ -12,10 +12,12 @@ import RegisterAcademic from "./pages/RegisterAcademic";
 import RegisterAssistant from "./pages/RegisterAssistant";
 import HomeAdmin from "@pages/HomeAdmin";
 import HomeGuardia from "@pages/HomeGuardia";
+import HomeUser from "@pages/HomeUser";
 import BicicletasAdmin from "@pages/BicicletasAdmin";
 import GuardiasAdmin from "@pages/GuardiasAdmin";
 import HistorialAdmin from "@pages/HistorialAdmin";
 import ReportesAdmin from "@pages/ReportesAdmin";
+import "./styles/Styles.css";
 
 const router = createBrowserRouter([
     {
@@ -68,6 +70,14 @@ const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute>
                         <HomeGuardia />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/user",
+                element: (
+                    <ProtectedRoute>
+                        <HomeUser />
                     </ProtectedRoute>
                 ),
             },

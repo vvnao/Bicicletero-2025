@@ -23,8 +23,8 @@ function ProtectedRoute({ children }) {
 
     // Para otros roles (estudiante, academico, asistente) permitimos acceso a /home
     if ((userRole === 'estudiante' || userRole === 'academico' || userRole === 'asistente') && 
-        !currentPath.includes('/home')) {
-        return <Navigate to="/home" replace />;
+        !currentPath.includes('/home/user')) {
+        return <Navigate to="/home/user" replace />;
     }
 
     return children;

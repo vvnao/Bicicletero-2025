@@ -32,7 +32,7 @@ const Login = () => {
             case 'academico':
             case 'asistente':
             default:
-                return '/home';
+                return '/home/user';
         }
     };
 
