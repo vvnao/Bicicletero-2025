@@ -2,7 +2,7 @@
 
 import { EntitySchema } from 'typeorm';
 
-export const Bikerack = new EntitySchema({
+export const BikerackEntity = new EntitySchema({
   name: 'Bikerack',
   tableName: 'bikeracks',
   columns: {
@@ -45,6 +45,4 @@ export const Bikerack = new EntitySchema({
   },
 });
 
-export default Bikerack;
-
-
+export default BikerackEntity;
