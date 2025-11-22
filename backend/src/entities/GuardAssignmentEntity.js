@@ -21,6 +21,31 @@ export const GuardAssignmentEntity = new EntitySchema({
             default: "activo"
         }
     },
+            // campos para horarios
+        startTime: {
+            type: "time",
+            nullable: false,
+        },
+        endTime: {
+            type: "time",
+            nullable: false,
+        },
+        daysOfWeek: {
+            type: "simple-array",
+            nullable: false,
+            comment: "Días de la semana: lunes,martes,miércoles,jueves,viernes,sábado,domingo"
+        },
+        startDate: {
+            type: "date",
+            nullable: false,
+            comment: "Fecha de inicio de la asignación"
+        },
+        endDate: {
+            type: "date",
+            nullable: true,
+            comment: "Fecha de fin de la asignación (opcional)"
+        },
+
     relations: {
         guard: { 
             target: "User",

@@ -1,36 +1,86 @@
 import { AppDataSource } from "../config/configDb.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
-import { User } from "../entities/User.js";
-import { Bikerack } from "../entities/Bikerack.js";
+import { UserEntity } from "../entities/UserEntity.js";
+import { Bikerack } from "../entities/BikerackEntity.js";
+import { GuardAssignmentService } from "../services/GuardAssignmentService.js";
 
-export async function assignGuard(guardId, bikerackId) {
-    const guardRepo = AppDataSource.getRepository(User);
-    const bikerackRepo = AppDataSource.getRepository(Bikerack);
-    const assignmentRepo = AppDataSource.getRepository(GuardAssignmentEntity);
+export class GuardAssignmentController {
+    constructor() {
+        this.guardAssignmentService = new GuardAssignmentService();
+    }
 
-    //Verificar que el guardia existe
-    const guard = await guardRepo.findOneBy({ id: guardId });
-    if (!guard) throw new Error("El guardia no existe");
+    async create(req, res) {
+        try {
+            const assignmentData = req.body;
+            
+            const assignment = await this.guardAssignmentService.createAssignment(assignmentData);
+            
+            res.status(201).json({
+                success: true,
+                message: 'Guardia asignado exitosamente',
+                data: assignment
+            });
+            
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 
-    //Verificar que el bicicletero existee
-    const bikerack = await bikerackRepo.findOneBy({ id: bikerackId });
-    if (!bikerack) throw new Error("El bicicletero no existe");
+    async getByBikerack(req, res) {
+        try {
+            const { bikerackId } = req.params;
+            const assignments = await this.guardAssignmentService.getAssignmentsByBikerack(bikerackId);
+            
+            res.json({
+                success: true,
+                data: assignments
+            });
+            
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error al obtener asignaciones'
+            });
+        }
+    }
 
-    // Verificar que no haya asignación activa para ese guardia en ese bicicletero
-    const existing = await assignmentRepo.findOneBy({
-        guard: { id: guardId },
-        bikerack: { id: bikerackId },
-        status: "activo"
-    });
-    if (existing) throw new Error("El guardia ya tiene asignación activa en este bicicletero");
+    async getByGuard(req, res) {
+        try {
+            const { guardId } = req.params;
+            const assignments = await this.guardAssignmentService.getAssignmentsByGuard(guardId);
+            
+            res.json({
+                success: true,
+                data: assignments
+            });
+            
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error al obtener asignaciones del guardia'
+            });
+        }
+    }
 
-    // Crear la asignación
-    const newAssignment = assignmentRepo.create({
-        guard,
-        bikerack,
-        status: "activo"
-    });
-
-    await assignmentRepo.save(newAssignment);
-    return newAssignment;
+    async deactivate(req, res) {
+        try {
+            const { assignmentId } = req.params;
+            await this.guardAssignmentService.deactivateAssignment(assignmentId);
+            
+            res.json({
+                success: true,
+                message: 'Asignación desactivada exitosamente'
+            });
+            
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error al desactivar asignación'
+            });
+        }
+    }
 }
+

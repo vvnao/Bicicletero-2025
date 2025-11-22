@@ -1,7 +1,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import { UserEntity } from "../entities/UserEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
-import Bikerack from "../entities/BikeRackEntity.js";
+import Bikerack from "../entities/BikerackEntity.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
 import { createHistory } from "../services/history.service.js";
 
