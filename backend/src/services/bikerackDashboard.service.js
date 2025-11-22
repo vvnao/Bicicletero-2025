@@ -8,7 +8,7 @@ import {
 
 const bikerackRepository = AppDataSource.getRepository('Bikerack');
 
-//! DASHBOARD 4 BICICLETEROS
+  //! DASHBOARD 4 BICICLETEROS
 export async function getBikeracksSummary() {
   try {
     const bikeracks = await bikerackRepository.find({
