@@ -7,6 +7,7 @@ import profileRoutes from "./profile.routes.js";
 import reportRoutes from "../routes/report.routes.js";
 import spaceManagementRoutes from './spaceManagement.routes.js';
 import reservationRoutes from './reservation.routes.js';
+import spaceDetailsRoutes from './spaceDetails.routes.js';
 
 
 export function routerApi(app) {
@@ -21,5 +22,6 @@ export function routerApi(app) {
   router.use("/spaces", bikerackRoutes);
   router.use('/spaces', spaceManagementRoutes); 
   router.use('/reservations', reservationRoutes);
+  router.use('/space-details', spaceDetailsRoutes);
 
 }
