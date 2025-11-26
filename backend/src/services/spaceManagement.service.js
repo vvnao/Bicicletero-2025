@@ -141,5 +141,29 @@ export async function liberateSpace(spaceId) {
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
+//! MARCAR COMO TIEMPO EXCEDIDO
+export async function markSpaceAsOverdue(spaceId) {
+  try {
+    const space = await spaceRepository.findOne({
+      where: { id: spaceId, status: SPACE_STATUS.OCCUPIED },
+    });
+
+    if (!space) {
+      throw new Error('Espacio no encontrado o no está ocupado');
+    }
+
+    space.status = SPACE_STATUS.TIME_EXCEEDED;
+    await spaceRepository.save(space);
+
+    return {
+      success: true,
+      space,
+    };
+  } catch (error) {
+    throw new Error(
+      `Error marcando espacio como tiempo excedido: ${error.message}`
+    );
+  }
+}
 
 

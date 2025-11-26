@@ -103,3 +103,32 @@ export async function liberateSpaceController(req, res) {
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
+//! MARCAR COMO TIEMPO EXCEDIDO
+export async function markAsOverdue(req, res) {
+  try {
+    const { spaceId } = req.params;
+
+    if (!spaceId) {
+      return handleErrorClient(res, 400, 'SpaceId requerido');
+    }
+
+    const result = await markSpaceAsOverdue(parseInt(spaceId));
+
+    await sendEmail(
+      result.user.email,
+      '⚠️ Tiempo Excedido - Bicicletero UBB',
+      `Tu bicicleta ha excedido el tiempo de estacionamiento`,
+      emailTemplates.timeExceeded(
+        result.user,
+        result.space,
+        result.infractionDuration
+      )
+    );
+    console.log('Correo enviado');
+
+    handleSuccess(res, 200, 'Espacio marcado como tiempo excedido', result);
+  } catch (error) {
+    console.error('Error en markAsOverdue:', error);
+    handleErrorClient(res, 400, error.message);
+  }
+}
