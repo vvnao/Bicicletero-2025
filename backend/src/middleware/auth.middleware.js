@@ -22,3 +22,19 @@ export function authMiddleware(req, res, next) {
     return handleErrorClient(res, 401, "Token inválido o expirado.", error.message);
   }
 }
+
+// Middleware para verificar si el usuario es guardia
+export function isGuard(req, res, next) {
+  if (req.user.role !== "guardia") {
+    return handleErrorClient(res, 403, "Solo los guardias pueden realizar esta acción.");
+  }
+  next();
+}
+
+// Middleware para verificar si el usuario es administrador
+export function isAdmin(req, res, next) {
+  if (req.user.role !== "admin") {
+    return handleErrorClient(res, 403, "Solo los administradores pueden realizar esta acción.");
+  }
+  next();
+}

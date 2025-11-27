@@ -99,6 +99,19 @@ export const UserEntity = new EntitySchema({
       type: 'many-to-many',
       mappedBy: 'guards',
     },
+    // Relacion con UserReview
+    reviews: {
+      target: "UserReview",
+      type: "one-to-many",
+      inverseSide: "user",
+      cascade: true,
+    },
+    // Relacion con UserReview como guardia
+    guardReviews: {
+      target: "UserReview",
+      type: "one-to-many",
+      inverseSide: "guard",
+    },
   },
 });
 
