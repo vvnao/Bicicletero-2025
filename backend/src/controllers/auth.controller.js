@@ -16,6 +16,9 @@ export async function login(req, res) {
             const mensaje = error.details[0].message;
             return handleErrorClient(res, 400, mensaje);
         }
+        if (!email || !password) {
+            return handleErrorClient(res, 400, "Email y contraseña requeridos");
+        }
 
         const data = await loginUser(email, password);
         return handleSuccess(res, 200, "Inicio de sesión exitoso", data);

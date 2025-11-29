@@ -18,6 +18,7 @@ import GuardiasAdmin from "@pages/GuardiasAdmin";
 import HistorialAdmin from "@pages/HistorialAdmin";
 import ReportesAdmin from "@pages/ReportesAdmin";
 import PrivateProfile from "@pages/PrivateProfile";
+import BicycleProfile from "@pages/BicycleProfile";
 import "./styles/Styles.css";
 
 const router = createBrowserRouter([
@@ -89,6 +90,14 @@ const router = createBrowserRouter([
                         <PrivateProfile />
                     </ProtectedRoute>
                 ),
+            },
+            {
+                path: "/home/user/bicycles",
+                element: (
+                    <ProtectedRoute>
+                        <BicycleProfile/>
+                    </ProtectedRoute>
+                )
             },
             // NUEVAS RUTAS DEL ADMIN
             {

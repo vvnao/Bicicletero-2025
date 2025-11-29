@@ -24,7 +24,7 @@ const Sidebar = () => {
 
                 <button 
                     className="text-left px-4 py-2 text-white hover:bg-gray-700 hover:pl-6 transition-all"
-                    onClick={() => navigate("/home/user/bycicles")}
+                    onClick={() => navigate("/home/user/bicycles")}
                 >
                     Perfil bicicletas
                 </button>
