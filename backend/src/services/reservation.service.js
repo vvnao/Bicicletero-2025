@@ -8,6 +8,31 @@ const userRepository = AppDataSource.getRepository('User');
 const bicycleRepository = AppDataSource.getRepository('Bicycle');
 
 ////////////////////////////////////////////////////////////////////////////////////////////
+//! OBTENER BICICLETAS DEL USUARIO
+export async function getUserBicycles(userId) {
+  try {
+    const user = await userRepository.findOne({
+      where: { id: userId },
+      relations: ['bicycles'],
+    });
+
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
+
+    return user.bicycles.map((bicycle) => ({
+      id: bicycle.id,
+      brand: bicycle.brand,
+      model: bicycle.model,
+      color: bicycle.color,
+      photo: bicycle.photo,
+      serialNumber: bicycle.serialNumber,
+    }));
+  } catch (error) {
+    throw new Error(`Error obteniendo bicicletas: ${error.message}`);
+  }
+}
+////////////////////////////////////////////////////////////////////////////////////////////
 //! CREAR RESERVA AUTOMÁTICA
 export async function createAutomaticReservation(
   userId,
@@ -16,17 +41,26 @@ export async function createAutomaticReservation(
   bicycleId
 ) {
   try {
-    const user = await userRepository.findOne({ where: { id: userId } });
+    //* obtiene al user con sus bicicletas
+    const user = await userRepository.findOne({
+      where: { id: userId },
+      relations: ['bicycles'],
+    });
+    
     if (!user) {
       throw new Error('Usuario no encontrado');
     }
 
-    const bicycle = await bicycleRepository.findOne({
-      where: { id: bicycleId, user: { id: userId } },
-    });
-    if (!bicycle) {
-      throw new Error('Bicicleta no encontrada o no pertenece al usuario');
+    //* valida que la bicicleta pertenece al usuario
+    const userBicycleIds = user.bicycles.map(bicycle => bicycle.id);
+    if (!userBicycleIds.includes(parseInt(bicycleId))) {
+      throw new Error('Bicicleta no pertenece al usuario');
     }
+
+    //* se obtiene la bicicleta específica (por que son máximo 3 bicis por user)
+    const bicycle = await bicycleRepository.findOne({
+      where: { id: bicycleId },
+    });
 
     const space = await getNextAvailableSpace(bikerackId);
     if (!space) {

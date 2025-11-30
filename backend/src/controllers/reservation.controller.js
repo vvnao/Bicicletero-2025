@@ -3,6 +3,30 @@ import { createAutomaticReservation, cancelReservation, getUserReservations } fr
 import { handleSuccess, handleErrorClient, handleErrorServer } from '../Handlers/responseHandlers.js';
 import { sendEmail } from '../services/email.service.js';
 import { emailTemplates } from '../templates/reservationEmail.template.js';
+import { getUserBicycles } from '../services/reservation.service.js';
+////////////////////////////////////////////////////////////////////////////////////////////
+//! OBTENER LAS BICIS DEL USUARIO PARA QUE PUEDA SELECCIONAR 1 EN LA RESERVA
+export async function getUserBicyclesForReservation(req, res) {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return handleErrorClient(res, 400, 'ID de usuario requerido');
+    }
+
+    const bicycles = await getUserBicycles(parseInt(userId));
+
+    handleSuccess(res, 200, 'Bicicletas obtenidas exitosamente', bicycles);
+  } catch (error) {
+    console.error('Error en getUserBicyclesForReservation:', error);
+    handleErrorServer(
+      res,
+      500,
+      'Error al obtener las bicicletas',
+      error.message
+    );
+  }
+}
 ////////////////////////////////////////////////////////////////////////////////////////////
 //! CREAR RESERVA AUTOMÁTICA
 export async function createReservation(req, res) {
