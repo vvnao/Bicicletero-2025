@@ -1,7 +1,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
 import { UserEntity } from "../entities/UserEntity.js";
-import { Bikerack } from "../entities/BikerackEntity.js";
+import { BikerackEntity } from "../entities/BikerackEntity.js";
 import { GuardAssignmentService } from "../services/GuardAssignmentService.js";
 
 export class GuardAssignmentController {

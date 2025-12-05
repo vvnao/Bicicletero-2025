@@ -2,7 +2,7 @@
 'use strict';
 import { AppDataSource } from './configDb.js';
 
-import { Bikerack } from '../entities/BikerackEntity.js';
+import { BikerackEntity } from '../entities/BikerackEntity.js';
 
 
 
