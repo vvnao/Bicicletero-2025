@@ -8,7 +8,7 @@ function BicicletasAdmin() {
                 <h1 style={{ 
                     fontSize: '2rem', 
                     fontWeight: 'bold', 
-                    color: '#1e40af', 
+                    color: '#ffffffff', 
                     marginBottom: '20px' 
                 }}>
                     🚲 Gestión de Bicicletas
