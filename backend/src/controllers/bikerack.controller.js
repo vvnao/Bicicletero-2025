@@ -3,8 +3,7 @@ import { UserEntity } from "../entities/UserEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
 import Bikerack from "../entities/BikerackEntity.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
-import { createHistory } from "../services/history.service.js";
-
+import { createHistoryRecord } from "../services/history.service.js";
 import {
   getBikeracksSummary,
   getBikerackDetail,

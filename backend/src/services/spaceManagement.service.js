@@ -1,10 +1,12 @@
 import { AppDataSource } from '../config/configDb.js';
 import { SPACE_STATUS } from '../entities/SpaceEntity.js';
 import { RESERVATION_STATUS } from '../entities/ReservationEntity.js';
+import { HistoryEntity } from '../entities/HistoryEntity.js';
 
 const spaceRepository = AppDataSource.getRepository('Space');
 const reservationRepository = AppDataSource.getRepository('Reservation');
 const userRepository = AppDataSource.getRepository('User');
+const historyRepository = AppDataSource.getRepository(HistoryEntity);
 
 //! OCUPAR ESPACIO CON RESERVA (para que guardia pueda marcar como ocupado un espacio reservado)
 export async function occupySpaceWithReservation(reservationCode) {
@@ -130,6 +132,20 @@ export async function liberateSpace(spaceId) {
 
     await spaceRepository.save(space);
 
+
+ //* AGREGAR REGISTRO EN HISTORIAL
+    if (reservation) {
+      const historyRecord = historyRepository.create({
+        movementType: 'salida',
+        bicycle: reservation.bicycle ? { id: reservation.bicycle.id } : null,
+        user: { id: reservation.user.id },
+        bikerack: { id: space.bikerack.id },
+        guard: null,
+        guardNotes: 'Salida normal'
+      });
+      await historyRepository.save(historyRecord);
+    }
+
     return {
       success: true,
       space,
@@ -140,4 +156,3 @@ export async function liberateSpace(spaceId) {
     throw new Error(`Error liberando espacio: ${error.message}`);
   }
 }
-

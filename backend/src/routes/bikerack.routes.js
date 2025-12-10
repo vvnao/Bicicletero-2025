@@ -1,5 +1,6 @@
 'use strict';
 import { Router } from 'express';
+import { createHistoryRecord } from "../services/history.service.js";
 import { GuardAssignmentController } from '../controllers/guardAssignment.controller.js';
 import {
   getDashboard,
