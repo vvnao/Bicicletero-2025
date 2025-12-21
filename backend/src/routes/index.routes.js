@@ -7,6 +7,7 @@ import profileRoutes from "./profile.routes.js";
 import reportRoutes from "./report.routes.js";     
 import historyRoutes from "./history.routes.js";
 import userRequestHistoryRoutes from "./userRequestHistory.routes.js";
+import spaceManagementRoutes from './spaceManagement.routes.js';
 
 export function routerApi(app) {
   const router = Router();
@@ -20,5 +21,5 @@ export function routerApi(app) {
   router.use("/spaces", bikerackRoutes);
   router.use("/history", historyRoutes);
   router.use("/user-request-history", userRequestHistoryRoutes);
-
+  router.use('/spaces', spaceManagementRoutes); 
 }
