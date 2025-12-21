@@ -1,9 +1,9 @@
 import axios from './root.service.js';
 
-export async function createBicycle(){
+export async function createBicycle(formValues){
     try{
         const token = localStorage.getItem('token');
-        const response = await axios.post('/bicycles', {
+        const response = await axios.post('/bicycles', formValues,{
             headers: { Authorization: `Bearer ${token}`}
         });
         return response.data;

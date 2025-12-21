@@ -27,11 +27,9 @@ export async function getProfilesService(role) {
     } else {
         return null; 
     }
-
     const profiles = await userRepository.find({
         where: whereCondition,
     });
-
     return profiles;
 }
 export async function updatePrivateProfileService(userId, data) {
@@ -51,4 +49,34 @@ export async function updatePrivateProfileService(userId, data) {
 
     await userRepository.save(user);
     return user;
+}
+export async function softDeleteProfileService(rut){
+    const userRepository = AppDataSource.getRepository(UserEntity);
+
+    const user = await userRepository.findOne({where:{ rut }});
+    if(!user) {
+        return null;
+    }
+    if (!user.isActive) {
+        return "false";
+    }
+    user.isActive=false;
+    await userRepository.save(user);
+
+    return user;
+}
+export async function softActiveProfileService(rut){
+    const userRepository = AppDataSource.getRepository(UserEntity);
+
+    const user = await userRepository.findOne({where:{ rut }});
+    if(!user) {
+        return null;
+    }
+    if (user.isActive) {
+        return "true";
+    }
+    user.isActive= true;
+    await userRepository.save(user);
+
+    return(user);
 }

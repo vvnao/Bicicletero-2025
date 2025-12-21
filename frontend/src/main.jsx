@@ -19,6 +19,7 @@ import HistorialAdmin from "@pages/HistorialAdmin";
 import ReportesAdmin from "@pages/ReportesAdmin";
 import PrivateProfile from "@pages/PrivateProfile";
 import BicycleProfile from "@pages/BicycleProfile";
+import Bicycles from "./pages/Bicycles";
 import "./styles/Styles.css";
 
 const router = createBrowserRouter([
@@ -75,6 +76,7 @@ const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
             },
+            //RUTAS DE USUARIO
             {
                 path: "home/user",
                 element: (
@@ -96,6 +98,14 @@ const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute>
                         <BicycleProfile/>
+                    </ProtectedRoute>
+                )
+            },
+            {
+                path: "/home/user/AddBicycles",
+                element: (
+                    <ProtectedRoute>
+                        <Bicycles/>
                     </ProtectedRoute>
                 )
             },
