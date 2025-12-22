@@ -2,7 +2,7 @@ import { AppDataSource } from "../config/configDb.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
 import { UserEntity } from "../entities/UserEntity.js";
 import { BikerackEntity } from "../entities/BikerackEntity.js";
-import { GuardAssignmentService } from "../services/GuardAssignmentService.js";
+import { GuardAssignmentService } from "../services/guardAssignment.service.js";
 
 export class GuardAssignmentController {
     constructor() {
@@ -29,23 +29,30 @@ export class GuardAssignmentController {
         }
     }
 
-    async getByBikerack(req, res) {
-        try {
-            const { bikerackId } = req.params;
-            const assignments = await this.guardAssignmentService.getAssignmentsByBikerack(bikerackId);
-            
-            res.json({
-                success: true,
-                data: assignments
-            });
-            
-        } catch (error) {
-            res.status(500).json({
-                success: false,
-                message: 'Error al obtener asignaciones'
-            });
-        }
-    }
+   async getByBikerack(req, res) {
+  try {
+    console.log('🔍 Buscando asignaciones para bicicletero ID:', req.params.bikerackId);
+    
+    const { bikerackId } = req.params;
+    const assignments = await this.guardAssignmentService.getAssignmentsByBikerack(bikerackId);
+    
+    console.log('✅ Asignaciones encontradas:', assignments);
+    
+    res.json({
+      success: true,
+      data: assignments
+    });
+    
+  } catch (error) {
+    console.error('❌ ERROR en getByBikerack:', error.message);
+    console.error('Stack:', error.stack);
+    
+    res.status(500).json({
+      success: false,
+      message: `Error al obtener asignaciones: ${error.message}`  // ← Muestra el error real
+    });
+  }
+}
 
     async getByGuard(req, res) {
         try {
@@ -82,5 +89,24 @@ export class GuardAssignmentController {
             });
         }
     }
+        async update(req, res) {
+    try {
+        const { assignmentId } = req.params;
+        const updateData = req.body;
+        
+        const updated = await this.guardAssignmentService.updateAssignment(assignmentId, updateData);
+        
+        res.json({
+        success: true,
+        message: 'Asignación actualizada exitosamente',
+        data: updated
+        });
+    } catch (error) {
+        res.status(400).json({
+        success: false,
+        message: error.message
+        });
+    }
+}
 }
 

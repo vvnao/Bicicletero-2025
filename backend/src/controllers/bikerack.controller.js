@@ -170,20 +170,7 @@ async function assignGuardInternal(bikerackId, guardId) {
     assignment: assignmentWithRelations 
   };
 }
-//* ASIGNAR GUARDIA A UN BICICLETERO
-export async function assignGuardToBikerack(req, res) {
-  try {
-    const { bikerackId, guardId } = req.query; 
-    if (!bikerackId || !guardId) {
-      return handleErrorClient(res, 400, 'Se requieren bikerackId y guardId');
-    }
 
-    const result = await assignGuardInternal(parseInt(bikerackId), parseInt(guardId));
-    return handleSuccess(res, 200, "Guardia asignado correctamente", result);
-  } catch (error) {
-    return handleErrorServer(res, 500, error.message);
-  }
-}
 
 //* GUARDAR BICICLETA EN BICICLETERO
 export async function storeBicycleInBikerack(req, res) {
