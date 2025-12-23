@@ -50,6 +50,12 @@ export const UserEntity = new EntitySchema({
       type: String,
       nullable: true,
     },
+    //Para desactivar un perfil pero no borrarlo de la base de datos
+    isActive: {
+      type: "boolean",
+      default: true,
+      nullable: false,
+    },
     position: {
       // solo para funcionario
       type: String,

@@ -16,6 +16,9 @@ export async function login(req, res) {
             const mensaje = error.details[0].message;
             return handleErrorClient(res, 400, mensaje);
         }
+        if (!email || !password) {
+            return handleErrorClient(res, 400, "Email y contraseña requeridos");
+        }
 
         const data = await loginUser(email, password);
         return handleSuccess(res, 200, "Inicio de sesión exitoso", data);
@@ -83,6 +86,9 @@ export async function register(req, res) {
 
         // Crear usuario (las validaciones de dominio se hacen en el servicio)
         const newUser = await createUser(data);
+    //* mio
+        await logInitialRegistration(newUser.id);
+
 
         // Enviar correo de confirmación
         await sendEmail(

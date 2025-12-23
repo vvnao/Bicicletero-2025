@@ -31,6 +31,11 @@ export const BikerackEntity = new EntitySchema({
     },
   },
   relations: {
+    guardAssignments: {
+      target: 'GuardAssignment',
+      type: 'one-to-many',
+      inverseSide: 'bikerack',
+    },
     spaces: {
       type: 'one-to-many',
       target: 'Space',

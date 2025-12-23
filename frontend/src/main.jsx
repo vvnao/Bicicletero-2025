@@ -10,7 +10,17 @@ import RegisterSelector from "./pages/RegisterSelector";
 import RegisterStudent from "./pages/RegisterStudent";
 import RegisterAcademic from "./pages/RegisterAcademic";
 import RegisterAssistant from "./pages/RegisterAssistant";
-//import "@styles/styles.css";
+import HomeAdmin from "./pages/admin/HomeAdmin";
+import HomeGuardia from "@pages/HomeGuardia";
+import HomeUser from "@pages/HomeUser";
+import BicicletasAdmin from "./pages/admin/BicicletasAdmin";
+import GuardiasAdmin from "./pages/admin/GuardiasAdmin";
+import HistorialAdmin from "./pages/admin/HistorialAdmin";
+import ReportesAdmin from "./pages/admin/ReportesAdmin";
+import PrivateProfile from "@pages/PrivateProfile";
+import BicycleProfile from "@pages/BicycleProfile";
+import Bicycles from "./pages/Bicycles";
+import "./styles/Styles.css";
 
 const router = createBrowserRouter([
     {
@@ -47,6 +57,88 @@ const router = createBrowserRouter([
                 element: (
                     <ProtectedRoute>
                         <Home />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin",
+                element: (
+                    <ProtectedRoute>
+                        <HomeAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/guardia",
+                element: (
+                    <ProtectedRoute>
+                        <HomeGuardia />
+                    </ProtectedRoute>
+                ),
+            },
+            //RUTAS DE USUARIO
+            {
+                path: "home/user",
+                element: (
+                    <ProtectedRoute>
+                        <HomeUser />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "/home/user/privateProfile",
+                element: (
+                    <ProtectedRoute>
+                        <PrivateProfile />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "/home/user/bicycles",
+                element: (
+                    <ProtectedRoute>
+                        <BicycleProfile/>
+                    </ProtectedRoute>
+                )
+            },
+            {
+                path: "/home/user/AddBicycles",
+                element: (
+                    <ProtectedRoute>
+                        <Bicycles/>
+                    </ProtectedRoute>
+                )
+            },
+            // NUEVAS RUTAS DEL ADMIN
+            {
+                path: "home/admin/bicicletas",
+                element: (
+                    <ProtectedRoute>
+                        <BicicletasAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin/guardias",
+                element: (
+                    <ProtectedRoute>
+                        <GuardiasAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin/historial",
+                element: (
+                    <ProtectedRoute>
+                        <HistorialAdmin />
+                    </ProtectedRoute>
+                ),
+            },
+            {
+                path: "home/admin/reportes",
+                element: (
+                    <ProtectedRoute>
+                        <ReportesAdmin />
                     </ProtectedRoute>
                 ),
             },
