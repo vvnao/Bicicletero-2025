@@ -6,8 +6,10 @@ import { routerApi } from './routes/index.routes.js';
 import cors from 'cors';
 import { createBikeracks } from './config/initBikeracksDb.js';
 import { createSpaces } from './config/initSpacesDb.js';
-import {  createDefaultUsers } from "./config/defaultUsers.js";
-import "dotenv/config";
+import { createDefaultUsers } from './config/defaultUsers.js';
+import { createBicycles } from './config/initBicyclesDb.js';
+import { createReservations } from './config/initReservationsDb.js';
+import 'dotenv/config';
 
 const app = express();
 app.use(
@@ -28,6 +30,8 @@ connectDB()
     await createBikeracks();
     await createSpaces();
     await createDefaultUsers();
+    await createBicycles();
+    await createReservations();
 
     await createBikeracks();
     // Carga todas las rutas de la aplicación

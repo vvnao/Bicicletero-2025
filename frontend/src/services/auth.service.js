@@ -1,11 +1,19 @@
-import api from './root.service.js';
+import axios from './root.service.js';
 import cookies from 'js-cookie';
-import { jwtDecode } from 'jwt-decode';
 
 // LOGIN
 export const login = async (credentials) => {
     try {
-        const response = await api.post('/auth/login', credentials);
+        const { email, password } = credentials;
+        const response = await axios.post('/auth/login', {
+            email,
+            password
+        });
+
+        const { token, user } = response.data.data;
+        cookies.set('jwt-auth', token, { path: '/' });
+        sessionStorage.setItem('usuario', JSON.stringify(user));
+
         return response.data;
     } catch (error) {
         console.error('Error en login:', error);
@@ -16,7 +24,7 @@ export const login = async (credentials) => {
 // REGISTER
 export const register = async (formData) => {
     try {
-        const response = await api.post('/auth/register', formData, {
+        const response = await axios.post('/auth/register', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
         });
         return response.data;

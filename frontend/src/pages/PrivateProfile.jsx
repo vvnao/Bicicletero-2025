@@ -5,7 +5,6 @@ import { usePrivateProfile } from "@hooks/profile/usePrivateProfile";
 
 const PrivateProfile = () => {
     const { isLoading, data } = usePrivateProfile();
-    const user = data?.data?.userData;
 
     return (
         <div className="flex flex-col h-screen">
@@ -17,11 +16,11 @@ const PrivateProfile = () => {
                     {isLoading && <p>Cargando perfil...</p>}
                     {!isLoading && data && (
                         <div className="bg-white p-6 rounded shadow">
-                            <p><strong>Nombre:</strong> {user.names}</p>
-                            <p><strong>Apellido:</strong> {user.lastName}</p>
-                            <p><strong>Correo:</strong> {user.email}</p>
-                            <p><strong>Rol:</strong> {user.role}</p>
-                            <p><strong>RUT:</strong> {user.rut}</p>
+                            <p><strong>Nombre:</strong> {data.names}</p>
+                            <p><strong>Apellido:</strong> {data.lastName}</p>
+                            <p><strong>Correo:</strong> {data.email}</p>
+                            <p><strong>Rol:</strong> {data.role}</p>
+                            <p><strong>Rut:</strong>{data.rut}</p>
                         </div>
                     )}
                 </main>

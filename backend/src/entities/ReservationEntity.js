@@ -26,6 +26,14 @@ export const ReservationEntity = new EntitySchema({
       nullable: false,
       unique: true,
     },
+    dateTimeActualArrival: {
+      type: 'timestamp',
+      nullable: true,
+    },
+    dateTimeActualDeparture: {
+      type: 'timestamp',
+      nullable: true,
+    },
     dateTimeReservation: {
       //! Fecha y hora de cuando se hizo la reserva (cuando el user aprieta botón "reservar")
       type: 'timestamp',
@@ -39,7 +47,7 @@ export const ReservationEntity = new EntitySchema({
     expirationTime: {
       //! Cuándo expira la reserva si el user no llega (por ej 2 horas después de hacer la reserva)
       type: 'timestamp',
-      nullable: false,
+      nullable: true,
     },
     status: {
       type: 'varchar',
@@ -81,7 +89,7 @@ export const ReservationEntity = new EntitySchema({
       type: 'many-to-one',
       target: 'Bicycle',
       inverseSide: 'reservations',
-      nullable: false,
+      nullable: true,
       joinColumn: {
         name: 'bicycleId',
       },

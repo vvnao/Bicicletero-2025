@@ -1,8 +1,7 @@
 'use strict';
-
 import { EntitySchema } from 'typeorm';
 
-export const Bikerack = new EntitySchema({
+export const BikerackEntity = new EntitySchema({
   name: 'Bikerack',
   tableName: 'bikeracks',
   columns: {
@@ -32,6 +31,11 @@ export const Bikerack = new EntitySchema({
     },
   },
   relations: {
+    guardAssignments: {
+      target: 'GuardAssignment',
+      type: 'one-to-many',
+      inverseSide: 'bikerack',
+    },
     spaces: {
       type: 'one-to-many',
       target: 'Space',
@@ -45,6 +49,4 @@ export const Bikerack = new EntitySchema({
   },
 });
 
-export default Bikerack;
-
-
+export default BikerackEntity;

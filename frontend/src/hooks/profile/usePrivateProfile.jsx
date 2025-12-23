@@ -11,11 +11,14 @@ export const usePrivateProfile = () => {
         setLoading(true);
         try {
             const response = await getPrivateProfile();
-            if (!response?.data?.user) {
+            const user = response?.data?.userData;
+
+            if (!user) {
                 setError("No se encontraron datos del usuario");
                 return;
             }
-            setData(response.data.user);
+            setData(user);
+
         } catch (error) {
             setError("Error al obtener perfil");
         } finally {
@@ -26,6 +29,6 @@ export const usePrivateProfile = () => {
     useEffect(() => {
         fetchProfile();
     }, []);
-
+    
     return { data, isLoading, error };
 };
