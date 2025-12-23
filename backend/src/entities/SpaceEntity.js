@@ -1,5 +1,4 @@
 'use strict';
-
 import { EntitySchema } from 'typeorm';
 
 const SPACE_STATUS = {
@@ -9,7 +8,7 @@ const SPACE_STATUS = {
   TIME_EXCEEDED: 'Tiempo Excedido',
 };
 
-export const Space = new EntitySchema({
+export const SpaceEntity = new EntitySchema({
   name: 'Space',
   tableName: 'spaces',
   columns: {
@@ -84,4 +83,4 @@ export const Space = new EntitySchema({
 });
 
 export { SPACE_STATUS };
-export default Space;
+export default SpaceEntity;

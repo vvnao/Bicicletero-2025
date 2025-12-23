@@ -6,8 +6,7 @@ import { routerApi } from './routes/index.routes.js';
 import cors from 'cors';
 import { createBikeracks } from './config/initBikeracksDb.js';
 import { createSpaces } from './config/initSpacesDb.js';
-import {  createDefaultUsers } from "./config/defaultUsers.js";
-import "dotenv/config";
+import { createDefaultUsers } from './config/defaultUsers.js';
 
 const app = express();
 app.use(
@@ -16,6 +15,8 @@ app.use(
     origin: true,
   })
 );
+console.log('EMAIL_USER:', process.env.EMAIL_USER);
+console.log('EMAIL_PASS:', process.env.EMAIL_PASS);
 app.use(express.json());
 app.use(morgan('dev'));
 // Ruta principal de bienvenida
@@ -25,7 +26,6 @@ app.get('/', (req, res) => {
 // Inicializa la conexión a la base de datos
 connectDB()
   .then(async () => {
-    await createBikeracks();
     await createSpaces();
     await createDefaultUsers();
 

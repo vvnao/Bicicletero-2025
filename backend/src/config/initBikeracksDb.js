@@ -1,11 +1,11 @@
 //! PARA INICIALIZAR LOS BICICLETEROS EN LA BASE DE DATOS
 'use strict';
 import { AppDataSource } from './configDb.js';
-import { Bikerack } from '../entities/BikeRackEntity.js';
+import { BikerackEntity } from '../entities/BikeRackEntity.js';
 
 export async function createBikeracks() {
   try {
-    const bikerackRepository = AppDataSource.getRepository(Bikerack);
+    const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
 
     const count = await bikerackRepository.count();
     if (count > 0) return;
