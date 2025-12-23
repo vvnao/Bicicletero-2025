@@ -6,6 +6,10 @@ import bicycleRoutes from "./bicycle.routes.js";
 import profileRoutes from "./profile.routes.js";
 import reportRoutes from "../routes/report.routes.js";
 import reviewRoutes from "../routes/review.routes.js";
+import spaceManagementRoutes from './spaceManagement.routes.js';
+import reservationRoutes from './reservation.routes.js';
+import spaceDetailsRoutes from './spaceDetails.routes.js';
+
 
 export function routerApi(app) {
   const router = Router();
@@ -18,5 +22,7 @@ export function routerApi(app) {
   router.use("/bikeracks", bikerackRoutes);
   router.use("/spaces", bikerackRoutes);
   router.use("/reviews", reviewRoutes);
-
+  router.use('/spaces', spaceManagementRoutes); 
+  router.use('/reservations', reservationRoutes);
+  router.use('/space-details', spaceDetailsRoutes);
 }

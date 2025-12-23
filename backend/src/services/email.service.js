@@ -60,3 +60,4 @@ export const sendEmail = async (to, subject, html) => {
         throw new Error('Error enviando el correo: ' + error.message);
     }
 };
+

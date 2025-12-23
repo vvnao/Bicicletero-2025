@@ -60,9 +60,7 @@ export const BicycleEntity = new EntitySchema({
             nullable: true,
             eager: true,
             inverseSide: 'bicycles',
-        }
-
-
+        },
     },
 });
 
