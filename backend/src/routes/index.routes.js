@@ -18,7 +18,6 @@ export function routerApi(app) {
   router.use("/bicycles", bicycleRoutes);
   router.use("/profile", profileRoutes );
   router.use("/bikeracks", bikerackRoutes);
-  router.use("/spaces", bikerackRoutes);
   router.use("/history", historyRoutes);
   router.use("/user-request-history", userRequestHistoryRoutes);
   router.use('/spaces', spaceManagementRoutes); 
