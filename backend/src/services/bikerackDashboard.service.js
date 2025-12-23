@@ -33,14 +33,9 @@ export async function getBikeracksSummary() {
           (space) => space.status === SPACE_STATUS.TIME_EXCEEDED
         ).length;
 
-        //! esto es para calcular el porcentaje de ocupación, lo usaré para el panel de monitoreo
         const totalInUse = occupiedSpaces + overdueSpaces;
-        const occupancyPercentage =
-          bikerack.capacity > 0
-            ? Math.round((totalInUse / bikerack.capacity) * 100)
-            : 0;
 
-        //! para calcular la última actualización, tmb lo usaré en el panel de monitoreo
+        //! para calcular la última actualización, lo usaré en el panel de monitoreo
         const lastUpdate = calculateLastUpdate(spaces);
 
         return {
@@ -52,7 +47,6 @@ export async function getBikeracksSummary() {
           reservedSpaces,
           overdueSpaces,
           totalInUse,
-          occupancyPercentage,
           lastUpdate: formatLastUpdate(lastUpdate),
         };
       })

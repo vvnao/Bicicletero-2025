@@ -1,5 +1,4 @@
 'use strict';
-
 import { EntitySchema } from 'typeorm';
 
 export const BikerackEntity = new EntitySchema({

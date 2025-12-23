@@ -14,7 +14,7 @@ export async function occupySpaceWithReservation(reservationCode) {
     //* para buscar reserva por código
     const reservation = await reservationRepository.findOne({
       where: { reservationCode, status: RESERVATION_STATUS.PENDING },
-      relations: ['space', 'user'],
+      relations: ['space', 'space.bikerack', 'user'],
     });
 
     if (!reservation) {
@@ -39,7 +39,7 @@ export async function occupySpaceWithReservation(reservationCode) {
     throw new Error(`Error ocupando espacio con reserva: ${error.message}`);
   }
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////
 //! OCUPAR ESPACIO SIN RESERVA (para que guardia pueda marcar como ocupado manualmente)
 export async function occupySpaceWithoutReservation(
   spaceId,
@@ -100,7 +100,7 @@ export async function occupySpaceWithoutReservation(
     throw new Error(`Error ocupando espacio sin reserva: ${error.message}`);
   }
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////
 //! LIBERAR ESPACIO (para cuando usuario retire su bici)
 export async function liberateSpace(spaceId) {
   try {

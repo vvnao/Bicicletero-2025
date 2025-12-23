@@ -1,5 +1,4 @@
 'use strict';
-
 import { EntitySchema } from 'typeorm';
 
 const SPACE_STATUS = {

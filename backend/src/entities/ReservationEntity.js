@@ -26,6 +26,14 @@ export const ReservationEntity = new EntitySchema({
       nullable: false,
       unique: true,
     },
+    dateTimeActualArrival: {
+      type: 'timestamp',
+      nullable: true,
+    },
+    dateTimeActualDeparture: {
+      type: 'timestamp',
+      nullable: true,
+    },
     dateTimeReservation: {
       //! Fecha y hora de cuando se hizo la reserva (cuando el user aprieta botón "reservar")
       type: 'timestamp',

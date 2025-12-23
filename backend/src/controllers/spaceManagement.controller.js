@@ -10,7 +10,7 @@ import {
 } from '../Handlers/responseHandlers.js';
 import { sendEmail } from '../services/email.service.js';
 import { emailTemplates } from '../templates/spaceManagementEmail.template.js';
-
+////////////////////////////////////////////////////////////////////////////////////////////
 //! MARCAR OCUPADO CON RESERVA
 export async function occupyWithReservation(req, res) {
   try {
@@ -26,11 +26,10 @@ export async function occupyWithReservation(req, res) {
       result.user.email,
       'Ingreso Confirmado - Bicicletero UBB',
       `Tu bicicleta está en espacio ${result.space.spaceCode}`,
-      emailTemplates.checkinWithReservation(
-        result.user,
-        result.space,
-        result.reservation
-      )
+      emailTemplates.checkinStandard(result.user, result.space, {
+        reservationCode: result.reservation.reservationCode,
+        estimatedHours: result.reservation.estimatedHours,
+      })
     );
     console.log('Correo enviado');
 
@@ -40,7 +39,7 @@ export async function occupyWithReservation(req, res) {
     handleErrorClient(res, 400, error.message);
   }
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////
 //! MARCAR OCUPADO SIN RESERVA
 export async function occupyWithoutReservation(req, res) {
   try {
@@ -65,11 +64,9 @@ export async function occupyWithoutReservation(req, res) {
       result.user.email,
       'Ingreso Confirmado - Bicicletero UBB',
       `Tu bicicleta está en espacio ${result.space.spaceCode}`,
-      emailTemplates.checkinWithoutReservation(
-        result.user,
-        result.space,
-        estimatedHours
-      )
+      emailTemplates.checkinStandard(result.user, result.space, {
+        estimatedHours: estimatedHours,
+      })
     );
     console.log('Correo enviado');
 
@@ -79,7 +76,7 @@ export async function occupyWithoutReservation(req, res) {
     handleErrorClient(res, 400, error.message);
   }
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////
 //! LIBERAR ESPACIO
 export async function liberateSpaceController(req, res) {
   try {
@@ -105,5 +102,33 @@ export async function liberateSpaceController(req, res) {
     handleErrorClient(res, 400, error.message);
   }
 }
+////////////////////////////////////////////////////////////////////////////////////////////
+//! MARCAR COMO TIEMPO EXCEDIDO
+export async function markAsOverdue(req, res) {
+  try {
+    const { spaceId } = req.params;
 
-//! FALTA: MARCAR COMO TIEMPO EXCEDIDO
+    if (!spaceId) {
+      return handleErrorClient(res, 400, 'SpaceId requerido');
+    }
+
+    const result = await markSpaceAsOverdue(parseInt(spaceId));
+
+    await sendEmail(
+      result.user.email,
+      '⚠️ Tiempo Excedido - Bicicletero UBB',
+      `Tu bicicleta ha excedido el tiempo de estacionamiento`,
+      emailTemplates.timeExceeded(
+        result.user,
+        result.space,
+        result.infractionDuration
+      )
+    );
+    console.log('Correo enviado');
+
+    handleSuccess(res, 200, 'Espacio marcado como tiempo excedido', result);
+  } catch (error) {
+    console.error('Error en markAsOverdue:', error);
+    handleErrorClient(res, 400, error.message);
+  }
+}

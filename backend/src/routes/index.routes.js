@@ -8,6 +8,8 @@ import reportRoutes from "./report.routes.js";
 import historyRoutes from "./history.routes.js";
 import userRequestHistoryRoutes from "./userRequestHistory.routes.js";
 import spaceManagementRoutes from './spaceManagement.routes.js';
+import reservationRoutes from './reservation.routes.js';
+import spaceDetailsRoutes from './spaceDetails.routes.js';
 
 export function routerApi(app) {
   const router = Router();
@@ -21,4 +23,7 @@ export function routerApi(app) {
   router.use("/history", historyRoutes);
   router.use("/user-request-history", userRequestHistoryRoutes);
   router.use('/spaces', spaceManagementRoutes); 
+  router.use('/reservations', reservationRoutes);
+  router.use('/space-details', spaceDetailsRoutes);
+
 }
