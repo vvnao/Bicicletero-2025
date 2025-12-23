@@ -5,8 +5,7 @@ import bikerackRoutes from "./bikerack.routes.js";
 import bicycleRoutes from "./bicycle.routes.js";
 import profileRoutes from "./profile.routes.js";
 
-import reportRoutes from "../routes/report.routes.js";
-import reviewRoutes from "../routes/review.routes.js";
+import reviewRoutes from "./review.routes.js";
 import reportRoutes from "./report.routes.js";     
 import historyRoutes from "./history.routes.js";
 import userRequestHistoryRoutes from "./userRequestHistory.routes.js";
