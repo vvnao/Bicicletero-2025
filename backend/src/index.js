@@ -9,6 +9,7 @@ import { createSpaces } from './config/initSpacesDb.js';
 import { createDefaultUsers } from './config/defaultUsers.js';
 import { createBicycles } from './config/initBicyclesDb.js';
 import { createReservations } from './config/initReservationsDb.js';
+
 import 'dotenv/config';
 
 const app = express();

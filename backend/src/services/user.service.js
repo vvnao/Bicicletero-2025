@@ -54,3 +54,61 @@ export async function findUserByEmail(email) {
         relations: ["bicycles"], // incluir bicicletas si las tiene
     });
 }
+async function getAssignableUsers(filters = {}) {
+    try {
+        const query = this.userRepository.createQueryBuilder('user')
+            .select([
+                'user.id',
+                'user.names',
+                'user.lastName',
+                'user.email',
+                'user.rut',
+                'user.role',
+                'user.isActive',
+                'user.typePerson'
+            ])
+            .where('user.isActive = :isActive', { isActive: true })
+            .andWhere('user.role != :adminRole', { adminRole: 'admin' }) // Excluir admins
+            .leftJoinAndSelect('user.guard', 'guard') // Para saber si ya es guardia
+            .orderBy('user.names', 'ASC');
+
+        if (filters.search) {
+            query.andWhere(
+                '(user.names LIKE :search OR user.lastName LIKE :search OR user.rut LIKE :search OR user.email LIKE :search)',
+                { search: `%${filters.search}%` }
+            );
+        }
+
+        if (filters.role) {
+            query.andWhere('user.role = :role', { role: filters.role });
+        }
+
+        if (filters.typePerson) {
+            query.andWhere('user.typePerson = :typePerson', { typePerson: filters.typePerson });
+        }
+
+        const users = await query.getMany();
+
+        // Formatear respuesta
+        return users.map(user => ({
+            id: user.id,
+            names: user.names,
+            lastName: user.lastName,
+            fullName: `${user.names} ${user.lastName}`,
+            email: user.email,
+            rut: user.rut,
+            role: user.role,
+            typePerson: user.typePerson,
+            isAlreadyGuard: !!user.guard, // Importante: saber si ya es guardia
+            guardInfo: user.guard ? {
+                id: user.guard.id,
+                isAvailable: user.guard.isAvailable,
+                rating: user.guard.rating
+            } : null,
+            canBeAssigned: user.role !== 'admin' && !user.guard
+        }));
+    } catch (error) {
+        console.error('Error en getAssignableUsers:', error);
+        throw error;
+    }
+}

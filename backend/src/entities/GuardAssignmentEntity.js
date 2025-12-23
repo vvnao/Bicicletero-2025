@@ -1,4 +1,4 @@
-// entities/GuardAssignmentEntity.js
+// entities/GuardAssignmentEntity.js - VERSIÓN CORREGIDA
 import { EntitySchema } from "typeorm";
 
 export const GuardAssignmentEntity = new EntitySchema({
@@ -12,16 +12,13 @@ export const GuardAssignmentEntity = new EntitySchema({
         },
         assignedAt: {
             type: "timestamp",
-            createDate: true, 
             default: () => "CURRENT_TIMESTAMP",
         },
         status: {
             type: "enum",
-            enum: ["activo", "inactivo"],
+            enum: ["activo", "inactivo", "completado", "cancelado"],
             default: "activo"
-        }
-    },
-            // campos para horarios
+        },
         startTime: {
             type: "time",
             nullable: false,
@@ -45,19 +42,35 @@ export const GuardAssignmentEntity = new EntitySchema({
             nullable: true,
             comment: "Fecha de fin de la asignación (opcional)"
         },
-
+        notes: {
+            type: "text",
+            nullable: true,
+        },
+        created_at: {
+            type: "timestamp",
+            createDate: true,
+            default: () => "CURRENT_TIMESTAMP",
+        },
+        updated_at: {
+            type: "timestamp",
+            updateDate: true,
+            default: () => "CURRENT_TIMESTAMP",
+        },
+    },
     relations: {
         guard: { 
             target: "User",
             type: "many-to-one",
-            joinColumn: true,
+            joinColumn: { name: "guardId" },
             nullable: false,
+            eager: true
         },
         bikerack: {
             target: "Bikerack",
             type: "many-to-one",
-            joinColumn: true,
+            joinColumn: { name: "bikerackId" },
             nullable: false,
+            eager: true
         }
     }
 });

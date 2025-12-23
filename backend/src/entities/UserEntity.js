@@ -90,6 +90,11 @@ export const UserEntity = new EntitySchema({
       type: 'one-to-many',
       inverseSide: 'user',
     },
+    guard: {
+      target: 'Guard',
+      type: 'one-to-one',
+      inverseSide: 'user',
+    },
     reservations: {
       target: 'Reservation',
       type: 'one-to-many',
