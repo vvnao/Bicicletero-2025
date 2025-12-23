@@ -2,9 +2,7 @@
 'use strict';
 import { AppDataSource } from './configDb.js';
 
-import { BikerackEntity } from '../entities/BikerackEntity.js';
-
-
+import { BikerackEntity } from '../entities/BikeRackEntity.js';
 
 export async function createBikeracks() {
   try {
