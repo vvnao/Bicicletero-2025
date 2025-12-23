@@ -11,23 +11,21 @@ export const BicycleEntity = new EntitySchema({
       primary: true,
       generated: true,
     },
-
     brand: {
-      type: 'varchar',
+        type: String,
       nullable: false,
-
     },
     model: {
-      type: 'varchar',
+        type: String,
       nullable: false,
     },
     color: {
-      type: 'varchar',
+        type: String,
       nullable: false,
     },
     serialNumber: {
       // opcional si se usa para reserva o control
-      type: 'varchar',
+        type: String,
       nullable: true,
       unique: true,
     },
