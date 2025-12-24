@@ -72,3 +72,59 @@ export async function getReviewHistory() {
         order: { created_at: "DESC" },
     });
 }
+
+// GUARD/ADMIN — eliminar revisión del historial
+export async function deleteReview(reviewId) {
+    const review = await reviewRepository.findOne({ where: { id: reviewId } });
+    if (!review) throw new Error("Revisión no encontrada");
+    await reviewRepository.delete(reviewId);
+    return { message: "Revisión eliminada correctamente" };
+}
+
+// GUARD/ADMIN — cambiar estado del usuario + corregir acción en el historial
+export async function updateUserStatusFromReview(reviewId, newStatus, comment, guardId) {
+    const review = await reviewRepository.findOne({
+        where: { id: reviewId },
+        relations: ["user", "guard"]
+    });
+
+    if (!review) throw new Error("Revisión no encontrada");
+
+    const user = review.user;
+    if (!user) throw new Error("Usuario asociado no encontrado");
+
+    user.requestStatus = newStatus;
+    await userRepository.save(user);
+
+    review.action = newStatus;
+    if (newStatus === "rechazado") {
+        review.comment = comment || "Sin comentario";
+
+        await sendEmail(
+            user.email,
+            "Solicitud rechazada",
+            emailTemplates.requestRejected(user, review.comment)
+        );
+    }
+
+    if (newStatus === "aprobado") {
+        await sendEmail(
+            user.email,
+            "Solicitud aprobada",
+            emailTemplates.requestApproved(user)
+        );
+    }
+
+    await reviewRepository.save(review);
+    return { user, review };
+}
+
+// ADMIN/GUARD — filtrar historial por estado
+export async function getFilteredReviewHistory(action) {
+    return await reviewRepository.find({
+        where: { action },
+        relations: ["user", "guard"],
+        order: { created_at: "DESC" }
+    });
+}
+

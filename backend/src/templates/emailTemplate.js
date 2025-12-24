@@ -1,62 +1,109 @@
 export function registrationEmailTemplate(name) {
     return `
-    <div style="
-        font-family: 'Nunito', sans-serif;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Registro - Bicicletero UBB</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    body {
+        margin: 0;
+        padding: 0;
         background-color: #f4f7fb;
-        padding: 30px;
-        color: #333;
-    ">
-        <div style="
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            overflow: hidden;
-        ">
-            <!-- Encabezado -->
-            <div style="
-                background: linear-gradient(90deg, #0056b3, #007bff);
-                color: white;
-                padding: 20px 30px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-            ">
-                <div>
-                    <h2 style="
-                        margin: 0;
-                        font-family: 'Contrail One', cursive;
-                    ">Bicicletero UBB</h2>
-                </div>
-                <div>
-                    <img src="cid:logoBici" alt="Logo Bicicleta UBB" style="height: 60px;" />
-                </div>
-            </div>
+        font-family: 'Public Sans', Arial, sans-serif;
+    }
 
-            <!-- Cuerpo -->
-            <div style="padding: 30px;">
-                <p style="font-size: 16px;">Hola <b>${name}</b>,</p>
-                <p style="font-size: 15px;">
-                    Tu solicitud de registro en <b>Bicicletero UBB</b> fue recibida exitosamente y se encuentra 
-                    <b>pendiente de aprobación</b>.
-                </p>
-                <p style="font-size: 15px;">
-                    Recibirás una notificación por correo una vez que un guardia revise tu solicitud.
-                </p>
-            </div>
+    .container {
+        max-width: 500px;
+        margin: 0 auto;
+        background: #0056b3;
+        border-radius: 8px;
+        overflow: hidden;
+    }
 
-            <!-- Pie -->
-            <div style="
-                background-color: #f1f5f9;
-                text-align: center;
-                font-size: 13px;
-                color: #555;
-                padding: 15px;
-                border-top: 1px solid #e0e6ed;
-            ">
-                <p>© ${new Date().getFullYear()} Bicicletero UBB — Universidad del Bío-Bío</p>
-            </div>
-        </div>
-    </div>`;
+    .header {
+        background: #ffffff;
+        padding: 15px 20px 15px 50px;
+        text-align: left;
+    }
+
+    .content {
+        padding: 20px;
+        background: #ffffff;
+    }
+
+    .title {
+        font-weight: 700;
+        font-size: 22px;
+        color: #0056b3;
+        margin: 0 0 10px 0;
+    }
+
+    .greeting {
+        font-size: 16px;
+        line-height: 1.4;
+        margin: 10px 0 20px 0;
+    }
+
+    .info-box {
+        background: rgba(0, 86, 179, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #0056b3;
+        margin-top: 15px;
+    }
+
+    .footer {
+        font-family: 'Noto Sans KR', sans-serif;
+        font-size: 14px;
+        color: #b4b4b4;
+        text-align: center;
+        margin: 25px 0 15px 0;
+    }
+
+    @media only screen and (max-width: 500px) {
+        .container { max-width: 100% !important; margin: 10px !important; }
+        .content { padding: 15px !important; }
+        .title { font-size: 20px !important; }
+        .greeting { font-size: 15px !important; }
+    }
+    </style>
+</head>
+
+<body>
+    <table width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+        <td align="center">
+            <table class="container">
+                <tr>
+                    <td class="header">
+                        <img src="cid:logoBici" alt="Bicicletero Universidad del Bío-Bío" style="max-width: 80%; height: auto;">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="content">
+                        <h2 class="title">¡Solicitud recibida!</h2>
+                        <div class="greeting">
+                            <p>Hola ${name},</p>
+                            <p>Tu solicitud para usar el sistema de Bicicleteros UBB fue <strong>recibida exitosamente</strong>.</p>
+                            <p>Está pendiente de aprobación y recibirás una notificación por correo una vez que un guardia revise tu solicitud.</p>
+                        </div>
+                        <div class="info-box">
+                            <p>¡Gracias por tu interés en el sistema Bicicleteros UBB!</p>
+                        </div>
+                        <div class="footer">
+                            <p>Sistema de Bicicleteros UBB</p>
+                            <p>© ${new Date().getFullYear()} Bicicletero UBB — Universidad del Bío-Bío</p>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    </table>
+</body>
+</html>
+    `;
 }
