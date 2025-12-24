@@ -1,22 +1,36 @@
-// entities/HistoryEntity.js - VERSIÓN SIMPLIFICADA
+// entities/HistoryEntity.js - VERSIÓN ACTUALIZADA
 'use strict';
 
 import { EntitySchema } from 'typeorm';
 
-// Definir los tipos de historial aquí también o importarlos
+// AGREGAR LOS NUEVOS TIPOS PARA GUARDIAS
 const HISTORY_TYPES = {
+    // Tipos de usuario
     USER_CHECKIN: 'user_checkin',
     USER_CHECKOUT: 'user_checkout',
     USER_REGISTRATION_REQUEST: 'user_registration_request',
     USER_STATUS_CHANGE: 'user_status_change',
+    
+    // Tipos de guardia - AGREGAR ESTOS
+    GUARD_CREATED: 'guard_created',
+    GUARD_UPDATED: 'guard_updated',
+    GUARD_DEACTIVATED: 'guard_deactivated',
+    GUARD_ACTIVATED: 'guard_activated',
     GUARD_ASSIGNMENT: 'guard_assignment',
     GUARD_SHIFT_START: 'guard_shift_start',
     GUARD_SHIFT_END: 'guard_shift_end',
+    GUARD_AVAILABILITY_CHANGE: 'guard_availability_change',
+    
+    // Tipos de reserva
     RESERVATION_CREATE: 'reservation_create',
     RESERVATION_CANCEL: 'reservation_cancel',
     RESERVATION_ACTIVATE: 'reservation_activate',
     RESERVATION_COMPLETE: 'reservation_complete',
+    
+    // Tipos de bicicleta
     BICYCLE_REGISTRATION: 'bicycle_registration',
+    
+    // Otros tipos
     INFRACTION: 'infraction',
     SYSTEM_NOTIFICATION: 'system_notification',
     ADMIN_ACTION: 'admin_action'
@@ -77,7 +91,7 @@ export const HistoryEntity = new EntitySchema({
         guard: {
             target: "User",
             type: "many-to-one",
-            joinColumn: { name: "guardId" },
+            joinColumn: { name: "guard_id" },
             nullable: true,
             eager: true
         },
@@ -116,6 +130,5 @@ export const HistoryEntity = new EntitySchema({
     }
 });
 
-// Si necesitas exportar HISTORY_TYPES, hazlo solo una vez
 export { HISTORY_TYPES };
 export default HistoryEntity;

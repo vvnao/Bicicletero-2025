@@ -1,78 +1,105 @@
-// entities/GuardAssignmentEntity.js - VERSIÓN CORREGIDA
-import { EntitySchema } from "typeorm";
+// entities/GuardAssignmentEntity.js - VERSIÓN CON HORARIOS FIJOS
+import { EntitySchema } from 'typeorm';
 
 export const GuardAssignmentEntity = new EntitySchema({
-    name: "GuardAssignment", 
-    tableName: "guard_assignments", 
+    name: 'GuardAssignment',
+    tableName: 'guard_assignments',
     columns: {
         id: {
             primary: true,
-            type: "int",
-            generated: "increment",
+            type: 'int',
+            generated: 'increment',
         },
-        assignedAt: {
-            type: "timestamp",
-            default: () => "CURRENT_TIMESTAMP",
+        guardId: {
+            type: 'int',
+            nullable: false,
+            name: 'guard_id'
         },
-        status: {
-            type: "enum",
-            enum: ["activo", "inactivo", "completado", "cancelado"],
-            default: "activo"
+        bikerackId: {
+            type: 'int',
+            nullable: false,
+            name: 'bikerack_id'
         },
+        // Día de la semana (0=domingo, 1=lunes, ..., 6=sábado)
+        dayOfWeek: {
+            type: 'int',
+            nullable: false,
+            name: 'day_of_week'
+        },
+        // Hora de inicio en formato 'HH:MM'
         startTime: {
-            type: "time",
+            type: 'varchar',
+            length: 5,
             nullable: false,
+            name: 'start_time'
         },
+        // Hora de fin en formato 'HH:MM'
         endTime: {
-            type: "time",
+            type: 'varchar',
+            length: 5,
             nullable: false,
+            name: 'end_time'
         },
-        daysOfWeek: {
-            type: "simple-array",
+        // Fecha desde cuando es válido este horario
+        effectiveFrom: {
+            type: 'date',
             nullable: false,
-            comment: "Días de la semana: lunes,martes,miércoles,jueves,viernes,sábado,domingo"
+            default: () => 'CURRENT_DATE',
+            name: 'effective_from'
         },
-        startDate: {
-            type: "date",
-            nullable: false,
-            comment: "Fecha de inicio de la asignación"
-        },
-        endDate: {
-            type: "date",
+        // Fecha hasta cuando es válido (null = indefinido)
+        effectiveUntil: {
+            type: 'date',
             nullable: true,
-            comment: "Fecha de fin de la asignación (opcional)"
+            name: 'effective_until'
         },
-        notes: {
-            type: "text",
-            nullable: true,
+        // Estado: 'activo', 'inactivo', 'suspendido'
+        status: {
+            type: 'varchar',
+            length: 20,
+            default: 'activo'
         },
-        created_at: {
-            type: "timestamp",
+        assignedBy: {
+            type: 'int',
+            nullable: false,
+            name: 'assigned_by'
+        },
+        createdAt: {
+            type: 'timestamp',
             createDate: true,
-            default: () => "CURRENT_TIMESTAMP",
+            name: 'created_at'
         },
-        updated_at: {
-            type: "timestamp",
+        updatedAt: {
+            type: 'timestamp',
             updateDate: true,
-            default: () => "CURRENT_TIMESTAMP",
+            name: 'updated_at'
         },
     },
-    relations: {
-        guard: { 
-            target: "User",
-            type: "many-to-one",
-            joinColumn: { name: "guardId" },
-            nullable: false,
-            eager: true
+     relations: {
+        guard: {
+            target: 'Guard',
+            type: 'many-to-one',
+            joinColumn: { 
+                name: 'guard_id',
+                referencedColumnName: 'id'
+            },
+            inverseSide: 'assignments',
         },
         bikerack: {
-            target: "Bikerack",
-            type: "many-to-one",
-            joinColumn: { name: "bikerackId" },
-            nullable: false,
-            eager: true
-        }
-    }
+            target: 'Bikerack',
+            type: 'many-to-one',
+            joinColumn: { 
+                name: 'bikerack_id',
+                referencedColumnName: 'id'
+            },
+        },
+        assignedByUser: {
+            target: 'User',
+            type: 'many-to-one',
+            joinColumn: { 
+                name: 'assigned_by',
+                referencedColumnName: 'id'
+            },
+        },
+    },
 });
-
-export default GuardAssignmentEntity;

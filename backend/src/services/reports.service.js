@@ -1,962 +1,940 @@
-// services/reports.service.js
+// services/reports.service.js - VERSIÓN COMPLETA CORREGIDA
 'use strict';
 
 import { AppDataSource } from "../config/configDb.js";
 import { BikerackEntity } from "../entities/BikerackEntity.js";
-import { HistoryEntity } from "../entities/HistoryEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
+import { HistoryEntity } from "../entities/HistoryEntity.js";
 import { UserEntity } from "../entities/UserEntity.js";
+import { ReportEntity } from "../entities/ReportEntity.js";
 
-// Servicio para generar reporte semanal CON TIPO
-export async function generateWeeklyReportService(params) {
-    try {
-        console.log('🔧 Servicio - Parámetros recibidos:', params);
-        
-        // DESESTRUCTURACIÓN CON VALOR POR DEFECTO
-        const { 
-            weekStart, 
-            weekEnd, 
-            reportType = 'uso_bicicletas', // ← VALOR POR DEFECTO
-            bikerackId, 
-            includeDetails = false 
-        } = params || {}; // ← IMPORTANTE: params puede ser undefined
-        
-        console.log('🔧 Servicio - Parámetros desestructurados:', {
-            weekStart,
-            weekEnd,
-            reportType,
-            bikerackId,
-            includeDetails
-        });
-        
-        // Validar que reportType exista (por si acaso)
-        if (!reportType) {
-            console.error('❌ reportType es undefined en el servicio');
-            reportType = 'uso_bicicletas'; // Asignar valor por defecto
-        }
-        
-        // Validar fechas
-        if (!weekStart || !weekEnd) {
-            throw new Error('Fechas de inicio y fin son requeridas');
-        }
-        
-        const start = new Date(weekStart);
-        const end = new Date(weekEnd);
-        
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-            throw new Error('Fechas inválidas');
-        }
+class ReportService {
+    constructor() {
+        this.bikerackRepository = AppDataSource.getRepository(BikerackEntity);
+        this.bicycleRepository = AppDataSource.getRepository(BicycleEntity);
+        this.historyRepository = AppDataSource.getRepository(HistoryEntity);
+        this.userRepository = AppDataSource.getRepository(UserEntity);
+        this.reportRepository = AppDataSource.getRepository(ReportEntity);
+    }
 
-        console.log(`📊 Generando reporte tipo: ${reportType}`);
+    // ================================================
+    // 1. GENERAR Y GUARDAR REPORTES
+    // ================================================
 
-        // Generar reporte según el tipo seleccionado
-        let reportData;
-        switch(reportType) {
-            case 'uso_bicicletas':
-                reportData = await generateBicycleUsageReport(start, end, bikerackId);
-                break;
-            case 'ingresos_retiros':
-                reportData = await generateIncomeWithdrawalsReport(start, end, bikerackId);
-                break;
-            case 'estado_inventario':
-                reportData = await generateInventoryStatusReport(start, end, bikerackId);
-                break;
-            case 'actividad_usuarios':
-                reportData = await generateUserActivityReport(start, end, bikerackId);
-                break;
-            case 'turnos_guardias':
-                reportData = await generateGuardShiftsReport(start, end, bikerackId);
-                break;
-            default:
-                console.warn(`⚠️ Tipo de reporte no reconocido: ${reportType}, usando por defecto`);
-                reportData = await generateBicycleUsageReport(start, end, bikerackId);
-        }
+    async generateAndSaveWeeklyReport(params) {
+        try {
+            const { 
+                weekStart, 
+                weekEnd, 
+                reportType = 'uso_semanal',
+                bikerackId, 
+                generatedByUserId,
+                saveToDatabase = true
+            } = params;
 
-        return {
-            report: {
-                type: reportType,
-                typeDisplay: getReportTypeDisplayName(reportType),
-                period: {
-                    start: formatDate(start),
-                    end: formatDate(end),
-                    weekNumber: getWeekNumber(start),
-                    year: start.getFullYear()
-                },
-                ...reportData,
-                generatedAt: new Date().toISOString()
+            // 1. Generar el reporte
+            const reportData = await this.generateWeeklyUsageReport(
+                new Date(weekStart), 
+                new Date(weekEnd), 
+                bikerackId
+            );
+
+            let savedReport = null;
+            
+            // 2. Guardar en base de datos solo si se solicita
+            if (saveToDatabase && generatedByUserId) {
+                const report = this.reportRepository.create({
+                    reportType: 'semanal',
+                    reportSubType: reportType,
+                    title: `Reporte Semanal - ${reportData.period}`,
+                    description: `Reporte de uso del sistema de bicicleteros`,
+                    periodStart: weekStart,
+                    periodEnd: weekEnd,
+                    data: reportData,
+                    status: 'generated',
+                    generatedBy: generatedByUserId,
+                    bikerack: bikerackId ? { id: bikerackId } : null
+                });
+
+                savedReport = await this.reportRepository.save(report);
+                console.log(`📄 Reporte guardado con ID: ${savedReport.id}`);
             }
-        };
-    } catch (error) {
-        console.error('❌ Error en generateWeeklyReportService:', error);
-        console.error('📌 Stack trace:', error.stack);
-        console.error('📌 Params que causaron el error:', params);
-        
-        // Asegurarnos de tener reportType
-        const reportType = params?.reportType || 'uso_bicicletas';
-        const weekStart = params?.weekStart || new Date().toISOString().split('T')[0];
-        const weekEnd = params?.weekEnd || new Date().toISOString().split('T')[0];
-        
-        return getEmptyReport(reportType, weekStart, weekEnd);
-    }
-}
 
-// Servicio para obtener reporte semanal de un bicicletero
-export async function getBikerackWeeklyReportService(bikerackId, weekStart, weekEnd, reportType = 'uso_bicicletas') {
-    try {
-        console.log('🔧 Servicio Bicicletero - Parámetros:', {
-            bikerackId,
-            weekStart,
-            weekEnd,
-            reportType
-        });
-        
-        // Tu código aquí...
-        
-    } catch (error) {
-        console.error('❌ Error en getBikerackWeeklyReportService:', error);
-        throw error;
-    }
-}
-
-// ========== FUNCIONES AUXILIARES ==========
-
-function getReportTypeDisplayName(reportType) {
-    const displayNames = {
-        'uso_bicicletas': 'Uso de Bicicletas',
-        'ingresos_retiros': 'Ingresos/Retiros',
-        'estado_inventario': 'Estado del Inventario',
-        'actividad_usuarios': 'Actividad de Usuarios',
-        'turnos_guardias': 'Turnos de Guardias'
-    };
-    return displayNames[reportType] || reportType;
-}
-
-function formatDate(date) {
-    return date.toISOString().split('T')[0];
-}
-
-function getWeekNumber(date) {
-    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
-    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-}
-
-function getEmptyReport(reportType, start, end) {
-    return {
-        report: {
-            type: reportType,
-            typeDisplay: getReportTypeDisplayName(reportType),
-            period: {
-                start: start,
-                end: end
-            },
-            summary: {
-                mensaje: 'Reporte generado sin datos',
-                error: 'No se pudieron obtener datos del sistema'
-            },
-            detalle: [],
-            recomendaciones: ['Verificar conexión a la base de datos']
-        }
-    };
-}
-
-// ========== FUNCIONES DE REPORTES (simplificadas por ahora) ==========
-
-async function generateBicycleUsageReport(start, end, bikerackId = null) {
-    console.log('🚲 Generando reporte de uso de bicicletas...');
-    return {
-        title: 'Reporte de Uso de Bicicletas',
-        summary: {
-            totalMovimientos: 0,
-            diasAnalizados: 0
-        },
-        detalle: [],
-        recomendaciones: ['No hay datos disponibles']
-    };
-}
-
-
-// 2b. Versión para bicicletero específico
-async function generateBikerackIncomeWithdrawalsReport(bikerack, start, end) {
-    const report = await generateIncomeWithdrawalsReport(start, end, bikerack.id);
-    
-    return {
-        ...report,
-        bikerackInfo: {
-            nombre: bikerack.name,
-            capacidad: bikerack.capacity
-        }
-    };
-}
-
-// 3. Reporte de Estado del Inventario
-async function generateInventoryStatusReport(start, end, bikerackId = null) {
-    const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
-    const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
-    
-    // Consulta para bicicleteros y su ocupación
-    let query = bikerackRepository.createQueryBuilder('b')
-        .leftJoin('b.bicycles', 'bic')
-        .select([
-            'b.id as id',
-            'b.name as nombre',
-            'b.capacity as capacidad',
-            'COUNT(bic.id) as ocupacion_actual',
-            'b.location as ubicacion'
-        ])
-        .groupBy('b.id, b.name, b.capacity, b.location');
-
-    if (bikerackId) {
-        query = query.where('b.id = :bikerackId', { bikerackId });
-    }
-
-    const bikeracks = await query.getRawMany();
-    
-    // Consulta para estado de bicicletas
-    let estadosQuery = bicycleRepository.createQueryBuilder('b')
-        .select('b.status as estado, COUNT(*) as cantidad')
-        .groupBy('b.status');
-
-    if (bikerackId) {
-        estadosQuery = estadosQuery.where('b.bikerack_id = :bikerackId', { bikerackId });
-    }
-
-    const estados = await estadosQuery.getRawMany();
-
-    // Calcular estadísticas
-    const totalCapacidad = bikeracks.reduce((sum, b) => sum + parseInt(b.capacidad || 0), 0);
-    const totalOcupacion = bikeracks.reduce((sum, b) => sum + parseInt(b.ocupacion_actual || 0), 0);
-    const porcentajeOcupacionTotal = totalCapacidad > 0 ? (totalOcupacion / totalCapacidad * 100) : 0;
-
-    // Identificar problemas
-    const sobrecapacidad = bikeracks.filter(b => b.ocupacion_actual > b.capacidad);
-    const bajaOcupacion = bikeracks.filter(b => b.capacidad > 0 && b.ocupacion_actual < b.capacidad * 0.3);
-
-    return {
-        title: 'Reporte de Estado del Inventario',
-        summary: {
-            totalBicicleteros: bikeracks.length,
-            capacidadTotal: totalCapacidad,
-            ocupacionTotal: totalOcupacion,
-            porcentajeOcupacionTotal: Math.round(porcentajeOcupacionTotal * 100) / 100 + '%',
-            bicicleterosSobrecapacidad: sobrecapacidad.length,
-            bicicleterosBajaOcupacion: bajaOcupacion.length
-        },
-        bikeracks: bikeracks.map(b => ({
-            id: b.id,
-            nombre: b.nombre,
-            ubicacion: b.ubicacion || 'No especificada',
-            capacidad: b.capacidad,
-            ocupacion: b.ocupacion_actual,
-            porcentajeOcupacion: b.capacidad > 0 ? 
-                Math.round((b.ocupacion_actual / b.capacidad * 100) * 100) / 100 + '%' : '0%',
-            estado: b.ocupacion_actual > b.capacidad ? 'Sobrecapacidad' : 
-                   b.ocupacion_actual < b.capacidad * 0.3 ? 'Baja ocupación' : 'Óptimo'
-        })),
-        estadosBicicletas: estados,
-        problemas: {
-            sobrecapacidad: sobrecapacidad.map(b => ({
-                bicicletero: b.nombre,
-                exceso: b.ocupacion_actual - b.capacidad
-            })),
-            bajaOcupacion: bajaOcupacion.map(b => ({
-                bicicletero: b.nombre,
-                ocupacion: b.ocupacion_actual,
-                capacidad: b.capacidad,
-                porcentaje: Math.round((b.ocupacion_actual / b.capacidad * 100) * 100) / 100 + '%'
-            }))
-        },
-        recomendaciones: generarRecomendacionesInventario(bikeracks)
-    };
-}
-
-
-// 4. Reporte de Actividad de Usuarios
-async function generateUserActivityReport(start, end, bikerackId = null) {
-    const userRepository = AppDataSource.getRepository(UserEntity);
-    const historyRepository = AppDataSource.getRepository(HistoryEntity);
-    
-    // Obtener usuarios activos en el período
-    const usuariosActivos = await userRepository.createQueryBuilder('u')
-        .select(['u.id', 'u.name', 'u.email', 'u.role', 'u.created_at'])
-        .where('u.created_at <= :end', { end: end.toISOString() })
-        .getMany();
-
-    // Obtener actividad por usuario
-    let actividadQuery = historyRepository.createQueryBuilder('h')
-        .innerJoin('h.user', 'u')
-        .select([
-            'u.id as userId',
-            'u.name as userName',
-            'COUNT(h.id) as totalMovimientos',
-            'SUM(CASE WHEN h.movement_type = :ingreso THEN 1 ELSE 0 END) as ingresos',
-            'SUM(CASE WHEN h.movement_type = :salida THEN 1 ELSE 0 END) as retiros'
-        ])
-        .where('h.timestamp BETWEEN :start AND :end', { 
-            start: start.toISOString(), 
-            end: end.toISOString() 
-        })
-        .setParameters({
-            ingreso: 'ingreso',
-            salida: 'salida'
-        })
-        .groupBy('u.id, u.name')
-        .orderBy('totalMovimientos', 'DESC');
-
-    if (bikerackId) {
-        actividadQuery = actividadQuery.andWhere('h.bikerack_id = :bikerackId', { bikerackId });
-    }
-
-    const actividad = await actividadQuery.getRawMany();
-
-    // Estadísticas de actividad
-    const totalMovimientos = actividad.reduce((sum, a) => sum + parseInt(a.totalmovimientos || 0), 0);
-    const usuariosConActividad = actividad.length;
-    const promedioMovimientosPorUsuario = usuariosConActividad > 0 ? 
-        totalMovimientos / usuariosConActividad : 0;
-
-    // Top 10 usuarios más activos
-    const topUsuarios = actividad.slice(0, 10);
-
-    return {
-        title: 'Reporte de Actividad de Usuarios',
-        summary: {
-            usuariosRegistrados: usuariosActivos.length,
-            usuariosConActividad,
-            totalMovimientos,
-            promedioMovimientosPorUsuario: Math.round(promedioMovimientosPorUsuario * 100) / 100,
-            periodo: `${formatDate(start)} a ${formatDate(end)}`
-        },
-        actividadPorUsuario: actividad.map(a => ({
-            userId: a.userid,
-            nombre: a.username,
-            totalMovimientos: a.totalmovimientos,
-            ingresos: a.ingresos,
-            retiros: a.retiros,
-            balance: (a.ingresos || 0) - (a.retiros || 0)
-        })),
-        topUsuarios: topUsuarios.map(u => ({
-            nombre: u.username,
-            movimientos: u.totalmovimientos,
-            porcentajeTotal: Math.round((u.totalmovimientos / totalMovimientos * 100) * 100) / 100 + '%'
-        })),
-        recomendaciones: generarRecomendacionesActividad(actividad)
-    };
-}
-
-// 4b. Versión para bicicletero específico
-async function generateBikerackUserActivityReport(bikerack, start, end) {
-    const report = await generateUserActivityReport(start, end, bikerack.id);
-    
-    return {
-        ...report,
-        title: `Reporte de Actividad de Usuarios - ${bikerack.name}`,
-        bikerackInfo: {
-            nombre: bikerack.name,
-            ubicacion: bikerack.location || 'No especificada'
-        }
-    };
-}
-
-// 5. Reporte de Turnos de Guardias
-async function generateGuardShiftsReport(start, end, bikerackId = null) {
-    const userRepository = AppDataSource.getRepository(UserEntity);
-    
-    // Buscar usuarios con rol 'guardia'
-    const guardias = await userRepository.find({
-        where: { role: 'guardia' },
-        select: ['id', 'name', 'email', 'created_at', 'last_login']
-    });
-
-    // Si no hay tabla específica de turnos, podemos inferir actividad
-    const historyRepository = AppDataSource.getRepository(HistoryEntity);
-    
-    let actividadGuardiasQuery = historyRepository.createQueryBuilder('h')
-        .innerJoin('h.user', 'u')
-        .select([
-            'u.id as guardiaId',
-            'u.name as guardiaNombre',
-            'DATE(h.timestamp) as fecha',
-            'COUNT(h.id) as actividades'
-        ])
-        .where('u.role = :role', { role: 'guardia' })
-        .andWhere('h.timestamp BETWEEN :start AND :end', {
-            start: start.toISOString(),
-            end: end.toISOString()
-        })
-        .groupBy('u.id, u.name, DATE(h.timestamp)')
-        .orderBy('fecha', 'DESC');
-
-    if (bikerackId) {
-        actividadGuardiasQuery = actividadGuardiasQuery.andWhere('h.bikerack_id = :bikerackId', { bikerackId });
-    }
-
-    const actividadGuardias = await actividadGuardiasQuery.getRawMany();
-
-    // Procesar por día
-    const dias = [];
-    let currentDay = new Date(start);
-    
-    while (currentDay <= end) {
-        const dayStr = formatDate(currentDay);
-        const actividadesDia = actividadGuardias.filter(a => a.fecha === dayStr);
-        
-        dias.push({
-            fecha: dayStr,
-            dia: getDayName(currentDay),
-            guardiasActivos: [...new Set(actividadesDia.map(a => a.guardianombre))].length,
-            totalActividades: actividadesDia.reduce((sum, a) => sum + parseInt(a.actividades || 0), 0),
-            detalleGuardias: actividadesDia.map(a => ({
-                nombre: a.guardianombre,
-                actividades: a.actividades
-            }))
-        });
-        
-        currentDay.setDate(currentDay.getDate() + 1);
-    }
-
-    // Estadísticas de guardias
-    const guardiasActivos = [...new Set(actividadGuardias.map(a => a.guardianombre))].length;
-    const totalActividades = dias.reduce((sum, d) => sum + d.totalActividades, 0);
-    const promedioActividadesPorDia = dias.length > 0 ? totalActividades / dias.length : 0;
-
-    return {
-        title: 'Reporte de Turnos de Guardias',
-        summary: {
-            totalGuardias: guardias.length,
-            guardiasActivos,
-            diasAnalizados: dias.length,
-            totalActividades,
-            promedioActividadesPorDia: Math.round(promedioActividadesPorDia * 100) / 100,
-            periodo: `${formatDate(start)} a ${formatDate(end)}`
-        },
-        guardias: guardias.map(g => ({
-            id: g.id,
-            nombre: g.name,
-            email: g.email,
-            fechaRegistro: g.created_at,
-            ultimoAcceso: g.last_login
-        })),
-        actividadPorDia: dias,
-        diasSinActividad: dias.filter(d => d.totalActividades === 0).map(d => d.fecha),
-        recomendaciones: generarRecomendacionesGuardias(dias, guardias.length)
-    };
-}
-
-// 5b. Versión para bicicletero específico
-async function generateBikerackGuardShiftsReport(bikerack, start, end) {
-    const report = await generateGuardShiftsReport(start, end, bikerack.id);
-    
-    return {
-        ...report,
-        title: `Reporte de Guardias - ${bikerack.name}`,
-        bikerackInfo: {
-            nombre: bikerack.name,
-            ubicacion: bikerack.location || 'No especificada'
-        }
-    };
-}
-
-// ========== FUNCIONES DE RECOMENDACIONES ==========
-
-function generarRecomendacionesUso(dias) {
-    const recomendaciones = [];
-    
-    if (dias.length === 0) {
-        return ['No hay datos de uso en el período seleccionado'];
-    }
-    
-    const totales = dias.map(d => d.total);
-    const promedio = totales.reduce((a, b) => a + b, 0) / totales.length;
-    
-    const diasAltos = dias.filter(d => d.total > promedio * 1.5);
-    const diasBajos = dias.filter(d => d.total < promedio * 0.5);
-    
-    if (diasAltos.length > 0) {
-        recomendaciones.push(`Reforzar personal los días: ${diasAltos.map(d => d.dayName).join(', ')}`);
-    }
-    
-    if (diasBajos.length > 2) {
-        recomendaciones.push(`Evaluar horarios de operación en días de baja demanda`);
-    }
-    
-    // Buscar patrones por día de la semana
-    const porDiaSemana = {};
-    dias.forEach(dia => {
-        if (!porDiaSemana[dia.dayName]) porDiaSemana[dia.dayName] = [];
-        porDiaSemana[dia.dayName].push(dia.total);
-    });
-    
-    for (const [dia, valores] of Object.entries(porDiaSemana)) {
-        const promedioDia = valores.reduce((a, b) => a + b, 0) / valores.length;
-        if (promedioDia > promedio * 1.3) {
-            recomendaciones.push(`Los ${dia}s tienen alta demanda (${Math.round(promedioDia)} movimientos promedio)`);
-        }
-    }
-    
-    return recomendaciones.length > 0 ? recomendaciones : ['Patrón de uso estable y predecible'];
-}
-
-function generarRecomendacionesBalance(dias) {
-    const recomendaciones = [];
-    let diasNegativos = 0;
-    
-    dias.forEach(dia => {
-        const balance = dia.ingresos - dia.retiros;
-        if (balance < 0) {
-            diasNegativos++;
-        }
-    });
-    
-    if (diasNegativos > dias.length * 0.5) {
-        recomendaciones.push(`Más del 50% de los días tuvieron más retiros que ingresos. Evaluar política de préstamos.`);
-    }
-    
-    // Calcular tendencia semanal
-    if (dias.length >= 7) {
-        const primeraSemana = dias.slice(0, 7).reduce((sum, d) => sum + (d.ingresos - d.retiros), 0);
-        const segundaSemana = dias.slice(-7).reduce((sum, d) => sum + (d.ingresos - d.retiros), 0);
-        
-        if (segundaSemana < primeraSemana * 0.7) {
-            recomendaciones.push(`Tendencia negativa en el balance semanal. Revisar inventario.`);
-        }
-    }
-    
-    return recomendaciones.length > 0 ? recomendaciones : ['Balance saludable entre ingresos y retiros'];
-}
-
-function generarRecomendacionesInventario(bikeracks) {
-    const recomendaciones = [];
-    
-    const sobrecapacidad = bikeracks.filter(b => b.ocupacion_actual > b.capacidad);
-    const bajaOcupacion = bikeracks.filter(b => b.capacidad > 0 && b.ocupacion_actual < b.capacidad * 0.3);
-    
-    if (sobrecapacidad.length > 0) {
-        const totalExceso = sobrecapacidad.reduce((sum, b) => 
-            sum + (b.ocupacion_actual - b.capacidad), 0);
-        recomendaciones.push(`Redistribuir ${totalExceso} bicicletas desde ${sobrecapacidad.length} bicicletero(s) con sobrecapacidad`);
-    }
-    
-    if (bajaOcupacion.length > 0) {
-        recomendaciones.push(`Reubicar o reducir capacidad en ${bajaOcupacion.length} bicicletero(s) con ocupación menor al 30%`);
-    }
-    
-    // Recomendaciones de capacidad
-    const ocupacionPromedio = bikeracks.reduce((sum, b) => sum + b.ocupacion_actual, 0) / 
-                             Math.max(bikeracks.length, 1);
-    const capacidadPromedio = bikeracks.reduce((sum, b) => sum + b.capacidad, 0) / 
-                             Math.max(bikeracks.length, 1);
-    
-    if (ocupacionPromedio < capacidadPromedio * 0.4) {
-        recomendaciones.push(`Capacidad general subutilizada (${Math.round(ocupacionPromedio/capacidadPromedio*100)}%). Considerar consolidar bicicleteros.`);
-    }
-    
-    return recomendaciones.length > 0 ? recomendaciones : ['Inventario equilibrado y eficiente'];
-}
-
-function generarRecomendacionesActividad(actividad) {
-    const recomendaciones = [];
-    
-    if (actividad.length === 0) {
-        return ['No hay actividad de usuarios registrada'];
-    }
-    
-    const totalMovimientos = actividad.reduce((sum, a) => sum + parseInt(a.totalmovimientos || 0), 0);
-    
-    // Identificar usuarios inactivos
-    const usuariosInactivos = actividad.filter(a => a.totalmovimientos < 3);
-    if (usuariosInactivos.length > actividad.length * 0.3) {
-        recomendaciones.push(`${usuariosInactivos.length} usuarios con poca actividad (<3 movimientos). Considerar campaña de engagement.`);
-    }
-    
-    // Usuarios muy activos
-    const usuariosMuyActivos = actividad.filter(a => a.totalmovimientos > 20);
-    if (usuariosMuyActivos.length > 0) {
-        recomendaciones.push(`${usuariosMuyActivos.length} usuario(s) muy activo(s). Considerar programa de fidelización.`);
-    }
-    
-    // Distribución de actividad
-    if (actividad.length > 10) {
-        const top5 = actividad.slice(0, 5).reduce((sum, a) => sum + parseInt(a.totalmovimientos || 0), 0);
-        const porcentajeTop5 = (top5 / totalMovimientos * 100).toFixed(1);
-        if (porcentajeTop5 > 60) {
-            recomendaciones.push(`El ${porcentajeTop5}% de la actividad concentrada en 5 usuarios. Diversificar base de usuarios.`);
-        }
-    }
-    
-    return recomendaciones.length > 0 ? recomendaciones : ['Actividad de usuarios saludable y distribuida'];
-}
-
-function generarRecomendacionesGuardias(dias, totalGuardias) {
-    const recomendaciones = [];
-    
-    if (dias.length === 0) {
-        return ['No hay datos de actividad de guardias'];
-    }
-    
-    const diasSinActividad = dias.filter(d => d.totalActividades === 0);
-    if (diasSinActividad.length > 0) {
-        recomendaciones.push(`${diasSinActividad.length} día(s) sin actividad registrada de guardias`);
-    }
-    
-    // Verificar cobertura
-    const promedioGuardiasPorDia = dias.reduce((sum, d) => sum + d.guardiasActivos, 0) / dias.length;
-    if (promedioGuardiasPorDia < 1) {
-        recomendaciones.push(`Cobertura insuficiente. Promedio de ${promedioGuardiasPorDia.toFixed(1)} guardias por día`);
-    }
-    
-    // Si hay muchos guardias pero poca actividad
-    if (totalGuardias > 5 && promedioGuardiasPorDia < totalGuardias * 0.5) {
-        recomendaciones.push(`Optimizar asignación de guardias. Solo ${Math.round(promedioGuardiasPorDia/totalGuardias*100)}% del personal activo diariamente`);
-    }
-    
-    // Días con sobrecarga
-    const diasSobrecarga = dias.filter(d => d.totalActividades > 50);
-    if (diasSobrecarga.length > 0) {
-        recomendaciones.push(`${diasSobrecarga.length} día(s) con alta carga de trabajo (>50 actividades). Considerar refuerzo.`);
-    }
-    
-    return recomendaciones.length > 0 ? recomendaciones : ['Cobertura de guardias adecuada y actividad estable'];
-}
-
-
-// Generar plan de redistribución REAL
-export async function generateRedistributionPlanService(bikerackId, date, manualOverride = false) {
-    try {
-        const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
-        const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
-        
-        // Obtener bicicletero origen REAL
-        const sourceBikerack = await bikerackRepository.findOne({ 
-            where: { id: bikerackId }
-        });
-
-        if (!sourceBikerack) {
-            throw new Error('Bicicletero origen no encontrado');
-        }
-
-        // Contar bicicletas REALES en el bicicletero
-        const currentBicycles = await bicycleRepository.count({
-            where: { bikerack: { id: bikerackId } }
-        });
-
-        // Verificar si hay sobrecapacidad REAL
-        if (currentBicycles <= sourceBikerack.capacity) {
             return {
-                needsRedistribution: false,
-                message: 'No se requiere redistribución',
-                currentOccupation: currentBicycles,
-                capacity: sourceBikerack.capacity
+                reportId: savedReport ? savedReport.id : null,
+                ...reportData,
+                metadata: {
+                    savedAt: savedReport ? savedReport.createdAt : null,
+                    status: savedReport ? savedReport.status : 'not_saved',
+                    reportId: savedReport ? savedReport.id : null,
+                    saved: !!savedReport
+                }
+            };
+
+        } catch (error) {
+            console.error('Error generando reporte:', error);
+            // Si falla el guardado, igual devolver el reporte generado
+            const reportData = await this.generateWeeklyUsageReport(
+                new Date(params.weekStart), 
+                new Date(params.weekEnd), 
+                params.bikerackId
+            );
+            
+            return {
+                ...reportData,
+                metadata: {
+                    saved: false,
+                    error: error.message
+                }
             };
         }
+    }
 
-        // Calcular exceso REAL
-        const excessBicycles = currentBicycles - sourceBikerack.capacity;
-        
-        // Buscar bicicleteros destino REALES con capacidad disponible
-        const allBikeracks = await bikerackRepository.find({
-            where: { id: bikerackId }
+    // ================================================
+    // 2. REPORTE DE USO SEMANAL
+    // ================================================
+
+    async generateWeeklyUsageReport(start, end, bikerackId = null) {
+        const query = this.historyRepository.createQueryBuilder('history')
+            .leftJoinAndSelect('history.bikerack', 'bikerack')
+            .leftJoinAndSelect('history.user', 'user')
+            .leftJoinAndSelect('history.bicycle', 'bicycle')
+            .where('history.timestamp BETWEEN :start AND :end', {
+                start: start.toISOString(),
+                end: end.toISOString()
+            })
+            .andWhere('(history.historyType = :checkin OR history.historyType = :checkout)', {
+                checkin: 'user_checkin',
+                checkout: 'user_checkout'
+            });
+
+        if (bikerackId) {
+            query.andWhere('history.bikerackId = :bikerackId', { bikerackId });
+        }
+
+        const events = await query.orderBy('history.timestamp', 'ASC').getMany();
+
+        // Agrupar por día y por bicicletero
+        const stats = {
+            daily: {},
+            byBikerack: {},
+            summary: {
+                totalEvents: events.length,
+                totalCheckins: 0,
+                totalCheckouts: 0,
+                uniqueUsers: new Set(),
+                uniqueBicycles: new Set(),
+                uniqueBikeracks: new Set()
+            }
+        };
+
+        events.forEach(event => {
+            const date = event.timestamp.toISOString().split('T')[0];
+            const bikerackName = event.bikerack ? event.bikerack.name : 'Desconocido';
+            const type = event.historyType;
+
+            // Estadísticas por día
+            if (!stats.daily[date]) {
+                stats.daily[date] = {
+                    date,
+                    checkins: 0,
+                    checkouts: 0,
+                    users: new Set(),
+                    bicycles: new Set(),
+                    bikeracks: new Set()
+                };
+            }
+
+            // Estadísticas por bicicletero
+            if (!stats.byBikerack[bikerackName]) {
+                stats.byBikerack[bikerackName] = {
+                    name: bikerackName,
+                    checkins: 0,
+                    checkouts: 0,
+                    users: new Set(),
+                    bicycles: new Set()
+                };
+            }
+
+            // Actualizar contadores
+            if (type === 'user_checkin') {
+                stats.daily[date].checkins++;
+                stats.byBikerack[bikerackName].checkins++;
+                stats.summary.totalCheckins++;
+            }
+            
+            if (type === 'user_checkout') {
+                stats.daily[date].checkouts++;
+                stats.byBikerack[bikerackName].checkouts++;
+                stats.summary.totalCheckouts++;
+            }
+
+            // Agregar usuarios únicos
+            if (event.user) {
+                stats.daily[date].users.add(event.user.id);
+                stats.byBikerack[bikerackName].users.add(event.user.id);
+                stats.summary.uniqueUsers.add(event.user.id);
+            }
+
+            // Agregar bicicletas únicas
+            if (event.bicycle) {
+                stats.daily[date].bicycles.add(event.bicycle.id);
+                stats.byBikerack[bikerackName].bicycles.add(event.bicycle.id);
+                stats.summary.uniqueBicycles.add(event.bicycle.id);
+            }
+
+            // Agregar bicicleteros únicos
+            if (event.bikerack) {
+                stats.daily[date].bikeracks.add(event.bikerack.id);
+                stats.summary.uniqueBikeracks.add(event.bikerack.id);
+            }
         });
 
-        const targetBikeracks = [];
-        
-        for (const bikerack of allBikeracks) {
-            if (bikerack.id === bikerackId) continue;
+        // Convertir Sets a números
+        const dailyStats = Object.values(stats.daily).map(day => ({
+            ...day,
+            total: day.checkins + day.checkouts,
+            uniqueUsers: day.users.size,
+            uniqueBicycles: day.bicycles.size,
+            uniqueBikeracks: day.bikeracks.size
+        }));
+
+        const bikerackStats = Object.values(stats.byBikerack).map(b => ({
+            ...b,
+            total: b.checkins + b.checkouts,
+            uniqueUsers: b.users.size,
+            uniqueBicycles: b.bicycles.size
+        }));
+
+        return {
+            title: 'Reporte de Uso Semanal',
+            period: `${this.formatDate(start)} a ${this.formatDate(end)}`,
+            summary: {
+                ...stats.summary,
+                totalEvents: stats.summary.totalEvents,
+                totalCheckins: stats.summary.totalCheckins,
+                totalCheckouts: stats.summary.totalCheckouts,
+                uniqueUsers: stats.summary.uniqueUsers.size,
+                uniqueBicycles: stats.summary.uniqueBicycles.size,
+                uniqueBikeracks: stats.summary.uniqueBikeracks.size,
+                daysAnalyzed: dailyStats.length
+            },
+            dailyStats: dailyStats.sort((a, b) => a.date.localeCompare(b.date)),
+            bikerackStats: bikerackStats.sort((a, b) => b.total - a.total),
+            capacityIssues: await this.checkCapacityIssues(),
+            recommendations: this.generateUsageRecommendations(dailyStats, bikerackStats)
+        };
+    }
+
+    // ================================================
+    // 3. REPORTE DE AUDITORÍA (NUEVO)
+    // ================================================
+
+    async generateAuditReport(startDate, endDate, bikerackId = null) {
+        try {
+            console.log(`🔍 Generando reporte de auditoría: ${startDate} a ${endDate}`);
             
-            const bicyclesInBikerack = await bicycleRepository.count({
-                where: { bikerack: { id: bikerack.id } }
-            });
+            const auditResults = {
+                period: {
+                    start: startDate,
+                    end: endDate
+                },
+                summary: {
+                    status: 'OK',
+                    issuesFound: 0,
+                    warnings: 0
+                },
+                checks: [],
+                issues: [],
+                recommendations: []
+            };
+
+            // Check 1: Consistencia de inventario
+            const inventoryCheck = await this.checkInventoryConsistency(bikerackId);
+            auditResults.checks.push(inventoryCheck);
             
-            const availableSpaces = bikerack.capacity - bicyclesInBikerack;
+            if (inventoryCheck.issues.length > 0) {
+                auditResults.summary.issuesFound += inventoryCheck.issues.length;
+                auditResults.issues.push(...inventoryCheck.issues);
+            }
+
+            // Check 2: Check-ins sin check-outs
+            const checkinCheck = await this.checkUnmatchedCheckins(startDate, endDate, bikerackId);
+            auditResults.checks.push(checkinCheck);
             
-            if (availableSpaces > 0) {
-                targetBikeracks.push({
-                    id: bikerack.id,
+            if (checkinCheck.issues.length > 0) {
+                auditResults.summary.issuesFound += checkinCheck.issues.length;
+                auditResults.issues.push(...checkinCheck.issues);
+            }
+
+            // Check 3: Sobrecapacidad
+            const capacityCheck = await this.checkCapacityIssues(bikerackId);
+            auditResults.checks.push(capacityCheck);
+            
+            const overCapacityIssues = capacityCheck.issues.filter(i => i.severity === 'ALTA');
+            if (overCapacityIssues.length > 0) {
+                auditResults.summary.issuesFound += overCapacityIssues.length;
+                auditResults.issues.push(...overCapacityIssues.map(issue => ({
+                    type: 'SOBRECAPACIDAD',
+                    severity: 'ALTA',
+                    description: `${issue.bikerackName}: ${issue.details}`,
+                    bikerackId: issue.bikerackId,
+                    suggestedAction: issue.suggestedAction || 'Redistribuir bicicletas'
+                })));
+            }
+
+            // Check 4: Bicicletas inactivas
+            const inactiveCheck = await this.checkInactiveBicycles(startDate, endDate, bikerackId);
+            auditResults.checks.push(inactiveCheck);
+            
+            if (inactiveCheck.warnings.length > 0) {
+                auditResults.summary.warnings += inactiveCheck.warnings.length;
+                auditResults.recommendations.push(...inactiveCheck.warnings);
+            }
+
+            // Check 5: Tiempos excedidos
+            const overtimeCheck = await this.checkOvertimeUsers(startDate, endDate, bikerackId);
+            auditResults.checks.push(overtimeCheck);
+            
+            if (overtimeCheck.issues.length > 0) {
+                auditResults.summary.issuesFound += overtimeCheck.issues.length;
+                auditResults.issues.push(...overtimeCheck.issues);
+            }
+
+            // Actualizar estado general
+            if (auditResults.summary.issuesFound > 0) {
+                auditResults.summary.status = 'PROBLEMAS';
+            } else if (auditResults.summary.warnings > 0) {
+                auditResults.summary.status = 'ADVERTENCIAS';
+            }
+
+            // Generar recomendaciones
+            this.generateAuditRecommendations(auditResults);
+
+            return auditResults;
+        } catch (error) {
+            console.error('Error generando reporte de auditoría:', error);
+            throw error;
+        }
+    }
+
+    async checkInventoryConsistency(bikerackId = null) {
+        const check = {
+            name: 'Consistencia de Inventario',
+            description: 'Verifica que los registros coincidan con la realidad',
+            status: 'OK',
+            issues: [],
+            details: {}
+        };
+
+        try {
+            // Obtener bicicleteros
+            let bikeracks;
+            if (bikerackId) {
+                bikeracks = [await this.bikerackRepository.findOne({ 
+                    where: { id: bikerackId }
+                })];
+            } else {
+                bikeracks = await this.bikerackRepository.find();
+            }
+
+            for (const bikerack of bikeracks) {
+                if (!bikerack) continue;
+
+                // Contar bicicletas registradas
+                const registeredBicycles = await this.bicycleRepository.count({
+                    where: { bikerack: { id: bikerack.id } }
+                });
+
+                // Contar check-ins activos
+                const physicallyOccupied = await this.historyRepository
+                    .createQueryBuilder('history')
+                    .where('history.bikerackId = :bikerackId', { bikerackId: bikerack.id })
+                    .andWhere('history.historyType = :checkin', { checkin: 'user_checkin' })
+                    .andWhere('NOT EXISTS (' +
+                        'SELECT 1 FROM history h2 ' +
+                        'WHERE h2.bicycleId = history.bicycleId ' +
+                        'AND h2.historyType = :checkout ' +
+                        'AND h2.timestamp > history.timestamp' +
+                        ')', { checkout: 'user_checkout' })
+                    .getCount();
+
+                check.details[`bikerack_${bikerack.id}`] = {
                     name: bikerack.name,
-                    capacity: bikerack.capacity,
-                    currentOccupation: bicyclesInBikerack,
-                    availableSpaces,
-                    suggestedTake: Math.min(availableSpaces, Math.ceil(excessBicycles / (targetBikeracks.length + 1)))
+                    registered: registeredBicycles,
+                    physicallyOccupied: physicallyOccupied,
+                    difference: registeredBicycles - physicallyOccupied
+                };
+
+                if (Math.abs(registeredBicycles - physicallyOccupied) > 2) {
+                    check.status = 'PROBLEMA';
+                    check.issues.push({
+                        type: 'INCONSISTENCIA_INVENTARIO',
+                        severity: 'MEDIA',
+                        description: `${bikerack.name}: Registros vs físicas difieren`,
+                        bikerackId: bikerack.id,
+                        suggestedAction: 'Realizar conteo físico'
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error en checkInventoryConsistency:', error);
+            check.status = 'ERROR';
+        }
+
+        return check;
+    }
+
+    async checkUnmatchedCheckins(startDate, endDate, bikerackId = null) {
+        const check = {
+            name: 'Check-ins Pendientes',
+            description: 'Verifica check-ins sin check-out',
+            status: 'OK',
+            issues: [],
+            details: {}
+        };
+
+        try {
+            const query = this.historyRepository
+                .createQueryBuilder('checkin')
+                .leftJoinAndSelect('checkin.user', 'user')
+                .leftJoinAndSelect('checkin.bicycle', 'bicycle')
+                .leftJoinAndSelect('checkin.bikerack', 'bikerack')
+                .where('checkin.historyType = :checkinType', { checkinType: 'user_checkin' })
+                .andWhere('checkin.timestamp BETWEEN :start AND :end', {
+                    start: startDate,
+                    end: endDate
+                })
+                .andWhere('NOT EXISTS (' +
+                    'SELECT 1 FROM history checkout ' +
+                    'WHERE checkout.bicycleId = checkin.bicycleId ' +
+                    'AND checkout.historyType = :checkoutType ' +
+                    'AND checkout.timestamp > checkin.timestamp' +
+                    ')', { checkoutType: 'user_checkout' });
+
+            if (bikerackId) {
+                query.andWhere('checkin.bikerackId = :bikerackId', { bikerackId });
+            }
+
+            const unmatchedCheckins = await query.getMany();
+            check.details.total = unmatchedCheckins.length;
+
+            if (unmatchedCheckins.length > 0) {
+                check.status = 'PROBLEMA';
+                unmatchedCheckins.forEach(item => {
+                    check.issues.push({
+                        type: 'CHECKIN_SIN_CHECKOUT',
+                        severity: 'ALTA',
+                        description: `${item.user?.names || 'Usuario'} sin check-out`,
+                        userId: item.user?.id,
+                        bicycleId: item.bicycle?.id,
+                        suggestedAction: 'Registrar check-out manual'
+                    });
                 });
             }
+        } catch (error) {
+            console.error('Error en checkUnmatchedCheckins:', error);
+            check.status = 'ERROR';
         }
 
-        // Generar plan de redistribución REAL
-        const redistributionPlan = [];
-        let remainingExcess = excessBicycles;
-        
-        for (const target of targetBikeracks) {
-            if (remainingExcess <= 0) break;
-            
-            const toMove = Math.min(target.suggestedTake, remainingExcess);
-            redistributionPlan.push({
-                targetBikerackId: target.id,
-                targetBikerackName: target.name,
-                bicyclesToMove: toMove,
-                newOccupation: target.currentOccupation + toMove
+        return check;
+    }
+
+    async checkInactiveBicycles(startDate, endDate, bikerackId = null) {
+        const check = {
+            name: 'Bicicletas Inactivas',
+            description: 'Bicicletas sin movimiento reciente',
+            status: 'OK',
+            warnings: [],
+            details: {}
+        };
+
+        try {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+            const query = this.bicycleRepository
+                .createQueryBuilder('bicycle')
+                .leftJoinAndSelect('bicycle.bikerack', 'bikerack')
+                .where('NOT EXISTS (' +
+                    'SELECT 1 FROM history h ' +
+                    'WHERE h.bicycleId = bicycle.id ' +
+                    'AND h.timestamp > :sevenDaysAgo' +
+                    ')', { sevenDaysAgo: sevenDaysAgo.toISOString() })
+                .andWhere('bicycle.status = :active', { active: 'active' });
+
+            if (bikerackId) {
+                query.andWhere('bicycle.bikerackId = :bikerackId', { bikerackId });
+            }
+
+            const inactiveBicycles = await query.getMany();
+            check.details.total = inactiveBicycles.length;
+
+            if (inactiveBicycles.length > 0) {
+                check.status = 'ADVERTENCIA';
+                inactiveBicycles.forEach(bicycle => {
+                    check.warnings.push({
+                        type: 'BICICLETA_INACTIVA',
+                        severity: 'BAJA',
+                        description: `Bicicleta ${bicycle.brand} inactiva por 7+ días`,
+                        bicycleId: bicycle.id,
+                        suggestedAction: 'Verificar estado'
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('Error en checkInactiveBicycles:', error);
+            check.status = 'ERROR';
+        }
+
+        return check;
+    }
+
+    async checkOvertimeUsers(startDate, endDate, bikerackId = null) {
+        const check = {
+            name: 'Tiempos Excedidos',
+            description: 'Usuarios que excedieron tiempo',
+            status: 'OK',
+            issues: [],
+            details: {}
+        };
+
+        try {
+            const query = this.historyRepository
+                .createQueryBuilder('infraction')
+                .leftJoinAndSelect('infraction.user', 'user')
+                .leftJoinAndSelect('infraction.bicycle', 'bicycle')
+                .leftJoinAndSelect('infraction.bikerack', 'bikerack')
+                .where('infraction.historyType = :infractionType', { infractionType: 'infraction' })
+                .andWhere('infraction.timestamp BETWEEN :start AND :end', {
+                    start: startDate,
+                    end: endDate
+                });
+
+            if (bikerackId) {
+                query.andWhere('infraction.bikerackId = :bikerackId', { bikerackId });
+            }
+
+            const infractions = await query.getMany();
+            check.details.total = infractions.length;
+
+            if (infractions.length > 0) {
+                check.status = 'PROBLEMA';
+                infractions.forEach(infraction => {
+                    check.issues.push({
+                        type: 'TIEMPO_EXCEDIDO',
+                        severity: 'MEDIA',
+                        description: `${infraction.user?.names || 'Usuario'} excedió tiempo`,
+                        userId: infraction.user?.id,
+                        suggestedAction: 'Notificar al usuario'
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('Error en checkOvertimeUsers:', error);
+            check.status = 'ERROR';
+        }
+
+        return check;
+    }
+
+    generateAuditRecommendations(auditResults) {
+        const { issues } = auditResults;
+
+        // Recomendaciones basadas en problemas encontrados
+        if (issues.some(i => i.type === 'SOBRECAPACIDAD')) {
+            auditResults.recommendations.push({
+                priority: 'ALTA',
+                action: 'Redistribuir bicicletas',
+                details: 'Hay bicicleteros sobrecargados'
             });
-            
-            remainingExcess -= toMove;
         }
 
-        return {
-            needsRedistribution: true,
-            sourceBikerack: {
-                id: sourceBikerack.id,
-                name: sourceBikerack.name,
-                currentOccupation: currentBicycles,
-                capacity: sourceBikerack.capacity,
-                excess: excessBicycles
-            },
-            targetBikeracks,
-            redistributionPlan,
-            canExecuteAutomatically: remainingExcess === 0 && !manualOverride,
-            requiresManualReview: manualOverride || remainingExcess > 0,
-            remainingExcess,
-            planId: `REDIST-${Date.now()}-${bikerackId}`,
-            generatedAt: new Date().toISOString()
-        };
-    } catch (error) {
-        console.error('Error en generateRedistributionPlanService:', error);
-        throw error;
-    }
-}
-
-// Ejecutar redistribución - Versión real (simulada por ahora)
-export async function executeRedistributionService(planId, confirm = false, adjustments = []) {
-    try {
-        if (!confirm) {
-            return {
-                valid: true,
-                planId,
-                status: 'validated',
-                message: 'Plan validado, listo para ejecución',
-                canExecute: true
-            };
+        if (issues.some(i => i.type === 'CHECKIN_SIN_CHECKOUT')) {
+            auditResults.recommendations.push({
+                priority: 'ALTA',
+                action: 'Resolver check-ins pendientes',
+                details: 'Hay bicicletas sin check-out registrado'
+            });
         }
 
-        // EN UNA IMPLEMENTACIÓN REAL, AQUÍ SE ACTUALIZARÍA LA BASE DE DATOS
-        // Por ahora simulamos la ejecución
-        console.log(`[SISTEMA] Ejecutando redistribución del plan: ${planId}`);
-        
-        return {
-            executed: true,
-            planId,
-            status: 'executed',
-            executedAt: new Date().toISOString(),
-            changes: adjustments.length > 0 ? adjustments : ['Redistribución ejecutada exitosamente'],
-            message: 'Las bicicletas han sido redistribuidas según el plan'
-        };
-    } catch (error) {
-        console.error('Error en executeRedistributionService:', error);
-        throw error;
+        if (issues.some(i => i.type === 'INCONSISTENCIA_INVENTARIO')) {
+            auditResults.recommendations.push({
+                priority: 'MEDIA',
+                action: 'Auditoría física de inventario',
+                details: 'Diferencias en registros vs realidad'
+            });
+        }
+
+        // Si todo está bien
+        if (auditResults.summary.issuesFound === 0) {
+            auditResults.recommendations.push({
+                priority: 'BAJA',
+                action: 'Continuar operación normal',
+                details: 'Sistema funcionando correctamente'
+            });
+        }
     }
-}
 
-// ========== FUNCIONES AUXILIARES REALES ==========
+    // ================================================
+    // 4. DETECCIÓN DE SOBRECAPACIDAD
+    // ================================================
 
-// Generar reporte REAL de un bicicletero
-async function generateRealBikerackReport(bikerack, start, end) {
-    try {
-        const historyRepository = AppDataSource.getRepository(HistoryEntity);
-        const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
+    async checkCapacityIssues(bikerackId = null) {
+        let bikeracks;
         
-        // Formatear fechas para consulta SQL
-        const startStr = formatDate(start);
-        const endStr = formatDate(end);
-        
-        // Obtener movimientos REALES usando query raw (más seguro)
-        const movementsQuery = `
-            SELECT 
-                DATE(timestamp) as date,
-                movement_type as movementType,
-                COUNT(*) as count
-            FROM history 
-            WHERE bikerack_id = $1 
-            AND DATE(timestamp) BETWEEN $2 AND $3
-            GROUP BY DATE(timestamp), movement_type
-            ORDER BY date
-        `;
-        
-        const movementsRaw = await historyRepository.query(movementsQuery, [
-            bikerack.id, 
-            startStr, 
-            endStr
-        ]);
-        
-        // Calcular ocupación actual REAL
-        const currentOccupation = await bicycleRepository.count({
-            where: { bikerack: { id: bikerack.id } }
-        });
-        
-        // Procesar resultados
-        const totalMovements = movementsRaw.reduce((sum, row) => sum + parseInt(row.count || 0), 0);
-        const ingresos = movementsRaw
-            .filter(row => row.movementtype === 'ingreso')
-            .reduce((sum, row) => sum + parseInt(row.count || 0), 0);
-        const salidas = movementsRaw
-            .filter(row => row.movementtype === 'salida')
-            .reduce((sum, row) => sum + parseInt(row.count || 0), 0);
-        
-        // Calcular días
-        const days = [];
-        let currentDay = new Date(start);
-        
-        while (currentDay <= end) {
-            const dayStr = formatDate(currentDay);
-            const dayData = movementsRaw.filter(row => row.date === dayStr);
+        if (bikerackId) {
+            bikeracks = [await this.bikerackRepository.findOne({ 
+                where: { id: bikerackId } 
+            })];
+        } else {
+            bikeracks = await this.bikerackRepository.find();
+        }
+
+        const capacityReport = [];
+        const issues = [];
+
+        for (const bikerack of bikeracks) {
+            if (!bikerack) continue;
+
+            // Contar bicicletas asignadas a este bicicletero
+            const bicycleCount = await this.bicycleRepository.count({
+                where: { bikerack: { id: bikerack.id } }
+            });
+
+            const utilization = bikerack.capacity > 0 ? 
+                Math.round((bicycleCount / bikerack.capacity) * 100) : 0;
+
+            let status, severity;
             
-            const dayIngresos = dayData
-                .filter(row => row.movementtype === 'ingreso')
-                .reduce((sum, row) => sum + parseInt(row.count || 0), 0);
+            if (bicycleCount > bikerack.capacity) {
+                status = 'SOBRECAPACIDAD';
+                severity = 'ALTA';
                 
-            const daySalidas = dayData
-                .filter(row => row.movementtype === 'salida')
-                .reduce((sum, row) => sum + parseInt(row.count || 0), 0);
-            
-            days.push({
-                date: dayStr,
-                dayName: getDayName(currentDay),
-                ingresos: dayIngresos,
-                salidas: daySalidas,
-                total: dayIngresos + daySalidas
+                issues.push({
+                    bikerackId: bikerack.id,
+                    bikerackName: bikerack.name,
+                    problem: 'Sobrepaso de capacidad',
+                    details: `${bicycleCount} / ${bikerack.capacity} bicicletas`,
+                    excess: bicycleCount - bikerack.capacity,
+                    severity
+                });
+            } 
+            else if (bicycleCount === bikerack.capacity) {
+                status = 'LLENO';
+                severity = 'MEDIA';
+            }
+            else if (utilization < 30) {
+                status = 'BAJA OCUPACIÓN';
+                severity = 'BAJA';
+            }
+            else {
+                status = 'OK';
+                severity = 'NORMAL';
+            }
+
+            capacityReport.push({
+                id: bikerack.id,
+                name: bikerack.name,
+                capacity: bikerack.capacity,
+                currentBicycles: bicycleCount,
+                availableSpaces: bikerack.capacity - bicycleCount,
+                utilization: `${utilization}%`,
+                status,
+                severity
             });
-            
-            currentDay.setDate(currentDay.getDate() + 1);
         }
-        
+
         return {
-            id: bikerack.id,
-            name: bikerack.name,
-            capacity: bikerack.capacity,
-            currentOccupation,
-            utilizationRate: bikerack.capacity > 0 ? 
-                (currentOccupation / bikerack.capacity) * 100 : 0,
-            movements: {
-                total: totalMovements,
-                ingresos,
-                salidas,
-                byDay: days
-            },
-            issues: {
-                incidences: bikerack.incidences ? bikerack.incidences.length : 0,
-                overCapacity: currentOccupation > bikerack.capacity
-            }
-        };
-        
-    } catch (error) {
-        console.error(`Error en generateRealBikerackReport para bicicletero ${bikerack.id}:`, error);
-        // Devolver estructura básica en caso de error
-        return {
-            id: bikerack.id,
-            name: bikerack.name,
-            capacity: bikerack.capacity,
-            currentOccupation: 0,
-            utilizationRate: 0,
-            movements: { total: 0, ingresos: 0, salidas: 0, byDay: [] },
-            issues: { 
-                incidences: bikerack.incidences ? bikerack.incidences.length : 0,
-                overCapacity: false 
-            }
+            timestamp: new Date().toISOString(),
+            totalBikeracks: capacityReport.length,
+            issuesCount: issues.length,
+            bikeracks: capacityReport.sort((a, b) => {
+                // Ordenar por severidad: ALTA > MEDIA > BAJA > NORMAL
+                const severityOrder = { ALTA: 0, MEDIA: 1, BAJA: 2, NORMAL: 3 };
+                return severityOrder[a.severity] - severityOrder[b.severity];
+            }),
+            issues: issues
         };
     }
-}
 
-// Detectar anomalías REALES
-async function detectRealAnomalies(bikerackReports) {
-    const anomalies = [];
-    
-    for (const report of bikerackReports) {
-        // Detectar sobrecapacidad REAL
-        if (report.currentOccupation > report.capacity) {
-            anomalies.push({
-                type: 'over_capacity',
-                severity: 'high',
-                bikerackId: report.id,
-                bikerackName: report.name,
-                description: `Sobrepaso de capacidad: ${report.currentOccupation}/${report.capacity}`,
-                suggestedAction: `Redistribuir ${report.currentOccupation - report.capacity} bicicletas`
-            });
-        }
-        
-        // Detectar baja utilización (<20%)
-        if (report.utilizationRate < 20 && report.capacity > 10) {
-            anomalies.push({
-                type: 'low_utilization',
-                severity: 'low',
-                bikerackId: report.id,
-                bikerackName: report.name,
-                description: `Baja utilización: ${report.utilizationRate.toFixed(1)}%`,
-                suggestedAction: 'Evaluar necesidad del bicicletero'
-            });
-        }
-    }
-    
-    return anomalies;
-}
+    // ================================================
+    // 5. PLAN DE REDISTRIBUCIÓN
+    // ================================================
 
-// Detectar anomalías de un bicicletero específico
-async function detectBikerackAnomalies(bikerack) {
-    const anomalies = [];
-    const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
-    
-    try {
-        const currentOccupation = await bicycleRepository.count({
-            where: { bikerack: { id: bikerack.id } }
-        });
-
-        if (currentOccupation > bikerack.capacity) {
-            anomalies.push({
-                type: 'over_capacity',
-                severity: 'high',
-                description: `Sobrepaso de capacidad: ${currentOccupation}/${bikerack.capacity}`,
-                suggestedAction: 'Redistribuir bicicletas inmediatamente'
-            });
-        }
-    } catch (error) {
-        console.error(`Error detectando anomalías para bicicletero ${bikerack.id}:`, error);
-    }
-    
-    return anomalies;
-}
-
-// Generar recomendaciones REALES
-function generateRealRecommendations(bikerackReports, anomalies) {
-    const recommendations = [];
-    
-    // Recomendación por sobrecapacidad
-    const overCapacityAnomalies = anomalies.filter(a => a.type === 'over_capacity');
-    if (overCapacityAnomalies.length > 0) {
-        const totalExcess = overCapacityAnomalies.reduce((sum, anomaly) => {
-            const match = anomaly.description.match(/(\d+)\/(\d+)/);
-            if (match) {
-                const current = parseInt(match[1]);
-                const capacity = parseInt(match[2]);
-                return sum + (current - capacity);
+    async generateRedistributionPlan(overCapacityBikerackId, generatedByUserId) {
+        try {
+            // 1. Verificar sobrecapacidad
+            const capacityCheck = await this.checkCapacityIssues(overCapacityBikerackId);
+            
+            if (capacityCheck.issuesCount === 0) {
+                throw new Error('El bicicletero no tiene problemas de capacidad');
             }
-            return sum;
-        }, 0);
+
+            const sourceBikerack = capacityCheck.bikeracks[0];
+            const excess = sourceBikerack.currentBicycles - sourceBikerack.capacity;
+
+            // 2. Buscar bicicleteros destino con espacio
+            const allBikeracks = await this.bikerackRepository.find();
+            const targets = [];
+
+            for (const bikerack of allBikeracks) {
+                if (bikerack.id === overCapacityBikerackId) continue;
+
+                const bicycleCount = await this.bicycleRepository.count({
+                    where: { bikerack: { id: bikerack.id } }
+                });
+
+                const available = bikerack.capacity - bicycleCount;
+
+                if (available > 0) {
+                    targets.push({
+                        bikerack,
+                        currentBicycles: bicycleCount,
+                        availableSpaces: available,
+                        utilization: bikerack.capacity > 0 ? 
+                            Math.round((bicycleCount / bikerack.capacity) * 100) : 0
+                    });
+                }
+            }
+
+            // 3. Ordenar por espacio disponible (más espacio primero)
+            targets.sort((a, b) => b.availableSpaces - a.availableSpaces);
+
+            // 4. Generar plan
+            const plan = [];
+            let remainingExcess = excess;
+
+            for (const target of targets) {
+                if (remainingExcess <= 0) break;
+
+                const toMove = Math.min(target.availableSpaces, Math.ceil(remainingExcess / targets.length));
+
+                if (toMove > 0) {
+                    plan.push({
+                        fromBikerack: {
+                            id: sourceBikerack.id,
+                            name: sourceBikerack.name
+                        },
+                        toBikerack: {
+                            id: target.bikerack.id,
+                            name: target.bikerack.name
+                        },
+                        bicyclesToMove: toMove,
+                        reason: `Espacio disponible: ${target.availableSpaces} lugares`,
+                        before: {
+                            source: sourceBikerack.currentBicycles,
+                            target: target.currentBicycles
+                        },
+                        after: {
+                            source: sourceBikerack.currentBicycles - toMove,
+                            target: target.currentBicycles + toMove
+                        }
+                    });
+
+                    remainingExcess -= toMove;
+                }
+            }
+
+            // 5. Crear reporte de redistribución
+            const reportData = {
+                planId: `REDIST-${Date.now()}-${overCapacityBikerackId}`,
+                generatedAt: new Date().toISOString(),
+                problem: {
+                    bikerackId: sourceBikerack.id,
+                    bikerackName: sourceBikerack.name,
+                    excess: excess,
+                    details: `Capacidad: ${sourceBikerack.capacity}, Actual: ${sourceBikerack.currentBicycles}`
+                },
+                availableTargets: targets.length,
+                redistributionPlan: plan,
+                summary: {
+                    totalToMove: excess - remainingExcess,
+                    remainingExcess: remainingExcess,
+                    canExecuteFully: remainingExcess === 0,
+                    executionStatus: remainingExcess === 0 ? 'COMPLETABLE' : 'PARCIAL'
+                },
+                targets: targets.map(t => ({
+                    id: t.bikerack.id,
+                    name: t.bikerack.name,
+                    availableSpaces: t.availableSpaces,
+                    utilization: `${t.utilization}%`
+                }))
+            };
+
+            // 6. Guardar el plan como reporte
+            const report = this.reportRepository.create({
+                reportType: 'redistribucion',
+                reportSubType: 'automatica',
+                title: `Plan de Redistribución - ${sourceBikerack.name}`,
+                description: `Redistribución automática por sobrecapacidad`,
+                periodStart: new Date().toISOString().split('T')[0],
+                periodEnd: new Date().toISOString().split('T')[0],
+                data: reportData,
+                status: 'generated',
+                generatedBy: generatedByUserId,
+                bikerack: { id: overCapacityBikerackId }
+            });
+
+            const savedReport = await this.reportRepository.save(report);
+
+            return {
+                ...reportData,
+                reportId: savedReport.id,
+                saved: true
+            };
+
+        } catch (error) {
+            console.error('Error generando plan de redistribución:', error);
+            throw error;
+        }
+    }
+
+    // ================================================
+    // 6. HISTORIAL DE REPORTES
+    // ================================================
+
+    async getReportHistory(filters = {}) {
+        const { 
+            page = 1, 
+            limit = 20, 
+            reportType, 
+            startDate, 
+            endDate, 
+            bikerackId,
+            status 
+        } = filters;
+
+        const skip = (page - 1) * limit;
+
+        const query = this.reportRepository.createQueryBuilder('report')
+            .leftJoinAndSelect('report.generatedByUser', 'generatedByUser')
+            .leftJoinAndSelect('report.reviewedByUser', 'reviewedByUser')
+            .leftJoinAndSelect('report.executedByUser', 'executedByUser')
+            .leftJoinAndSelect('report.bikerack', 'bikerack')
+            .orderBy('report.createdAt', 'DESC');
+
+        // Aplicar filtros
+        if (reportType) {
+            query.andWhere('report.reportType = :reportType', { reportType });
+        }
+
+        if (status) {
+            query.andWhere('report.status = :status', { status });
+        }
+
+        if (startDate && endDate) {
+            query.andWhere('report.periodStart BETWEEN :startDate AND :endDate', {
+                startDate,
+                endDate
+            });
+        }
+
+        if (bikerackId) {
+            query.andWhere('report.bikerack_id = :bikerackId', { bikerackId });
+        }
+
+        const [reports, total] = await query
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
+
+        return {
+            reports: reports.map(report => ({
+                id: report.id,
+                reportType: report.reportType,
+                reportSubType: report.reportSubType,
+                title: report.title,
+                period: {
+                    start: report.periodStart,
+                    end: report.periodEnd
+                },
+                status: report.status,
+                generatedBy: report.generatedByUser ? {
+                    id: report.generatedByUser.id,
+                    name: report.generatedByUser.name
+                } : null,
+                reviewedBy: report.reviewedByUser ? {
+                    id: report.reviewedByUser.id,
+                    name: report.reviewedByUser.name
+                } : null,
+                executedBy: report.executedByUser ? {
+                    id: report.executedByUser.id,
+                    name: report.executedByUser.name
+                } : null,
+                bikerack: report.bikerack ? {
+                    id: report.bikerack.id,
+                    name: report.bikerack.name
+                } : null,
+                createdAt: report.createdAt,
+                updatedAt: report.updatedAt
+            })),
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+
+    // ================================================
+    // 7. FUNCIONES AUXILIARES
+    // ================================================
+
+    formatDate(date) {
+        return date.toISOString().split('T')[0];
+    }
+
+    generateUsageRecommendations(dailyStats, bikerackStats) {
+        const recommendations = [];
+
+        if (dailyStats.length === 0) {
+            return ['No hay datos de uso en el período analizado'];
+        }
+
+        // Analizar días con más actividad
+        const maxDay = dailyStats.reduce((max, day) => 
+            day.total > max.total ? day : max, dailyStats[0]);
         
-        recommendations.push(`Redistribuir ${totalExcess} bicicletas de ${overCapacityAnomalies.length} bicicletero(s) con sobrecapacidad`);
+        const minDay = dailyStats.reduce((min, day) => 
+            day.total < min.total ? day : min, dailyStats[0]);
+
+        if (maxDay.total > minDay.total * 3) {
+            recommendations.push(`Días de alta demanda: ${maxDay.date} (${maxDay.total} movimientos)`);
+        }
+
+        // Analizar distribución por bicicletero
+        const totalMovements = bikerackStats.reduce((sum, b) => sum + b.total, 0);
+        
+        if (totalMovements > 0) {
+            const topBikerack = bikerackStats[0];
+            const topPercentage = Math.round((topBikerack.total / totalMovements) * 100);
+            
+            if (topPercentage > 50) {
+                recommendations.push(`El bicicletero "${topBikerack.name}" concentra el ${topPercentage}% de la actividad`);
+            }
+        }
+
+        return recommendations.length > 0 ? recommendations : ['Patrón de uso estable y distribuido'];
     }
-    
-    // Recomendaciones por utilización
-    const lowUtilization = bikerackReports.filter(r => r.utilizationRate < 30 && r.capacity > 0);
-    const highUtilization = bikerackReports.filter(r => r.utilizationRate > 80 && r.capacity > 0);
-    
-    if (lowUtilization.length > 0) {
-        recommendations.push(`Evaluar ${lowUtilization.length} bicicletero(s) con baja utilización (<30%)`);
-    }
-    
-    if (highUtilization.length > 0) {
-        recommendations.push(`Considerar ampliar capacidad en ${highUtilization.length} bicicletero(s) con alta utilización (>80%)`);
-    }
-    
-    // Recomendación general si no hay anomalías
-    if (recommendations.length === 0) {
-        recommendations.push('Todos los bicicleteros funcionan dentro de los parámetros normales');
-    }
-    
-    return recommendations;
 }
 
+// Crear instancia
+const reportService = new ReportService();
+
+// Exportar todo
+export {
+    reportService
+};
+
+// Exportar métodos individualmente
+export const generateAndSaveWeeklyReport = reportService.generateAndSaveWeeklyReport.bind(reportService);
+export const generateWeeklyUsageReport = reportService.generateWeeklyUsageReport.bind(reportService);
+export const checkCapacityIssues = reportService.checkCapacityIssues.bind(reportService);
+export const generateRedistributionPlan = reportService.generateRedistributionPlan.bind(reportService);
+export const getReportHistory = reportService.getReportHistory.bind(reportService);
+export const generateAuditReport = reportService.generateAuditReport.bind(reportService);
+
+// Exportar por defecto
+export default reportService;

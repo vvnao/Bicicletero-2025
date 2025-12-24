@@ -79,7 +79,78 @@ export async function getBikerackSpaces(req, res) {
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
+export async function getBikerackGuards(req, res) {
+  try {
+    const { bikerackId } = req.params;
+    
+    // Lógica para obtener guardias asignados
+    const assignments = await guardAssignmentRepository.find({
+      where: { 
+        bikerack: { id: bikerackId },
+        status: "activo" 
+      },
+      relations: ["guard", "guard.user"]
+    });
+    
+    const guards = assignments.map(assignment => ({
+      id: assignment.guard.id,
+      userId: assignment.guard.userId,
+      name: `${assignment.guard.names} ${assignment.guard.lastName}`,
+      email: assignment.guard.email,
+      phone: assignment.guard.phone,
+      isAvailable: assignment.guard.isAvailable,
+      assignmentId: assignment.id,
+      assignedAt: assignment.created_at
+    }));
+    
+    return res.status(200).json({
+      success: true,
+      data: guards
+    });
+  } catch (error) {
+    console.error('Error en getBikerackGuards:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+}
 
+// ✅ Listar bicicleteros con guardias disponibles
+export async function listBikeracksWithGuards(req, res) {
+  try {
+    const racks = await bikerackRepository.find({
+      relations: ["guardAssignments", "guardAssignments.guard"]
+    });
+    
+    const racksWithGuards = racks.map(rack => {
+      const activeGuards = rack.guardAssignments.filter(a => a.status === "activo");
+      
+      return {
+        id: rack.id,
+        name: rack.name,
+        capacity: rack.capacity,
+        activeGuardsCount: activeGuards.length,
+        guards: activeGuards.map(assignment => ({
+          id: assignment.guard.id,
+          name: `${assignment.guard.names} ${assignment.guard.lastName}`,
+          phone: assignment.guard.phone
+        }))
+      };
+    });
+    
+    return res.status(200).json({
+      success: true,
+      data: racksWithGuards
+    });
+  } catch (error) {
+    console.error('Error en listBikeracksWithGuards:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+}
 //* LISTAR TODOS LOS BICICLETEROS
 export async function listBikeracks(req, res) {
   try {
@@ -230,4 +301,6 @@ async function getBikeracksData() {
 
   return racks;
 }
+
+
 

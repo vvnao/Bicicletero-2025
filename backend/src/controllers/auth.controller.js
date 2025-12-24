@@ -11,21 +11,49 @@ export async function login(req, res) {
     try {
         const { email, password } = req.body;
         const { error } = loginValidation.validate({ email, password });
-
+        
         if (error) {
             const mensaje = error.details[0].message;
             return handleErrorClient(res, 400, mensaje);
         }
+        
         if (!email || !password) {
             return handleErrorClient(res, 400, "Email y contraseña requeridos");
         }
 
+        // 1. Hacer login (esto devuelve token y datos básicos)
         const data = await loginUser(email, password);
+        
+        // 2. Si el usuario es guardia, obtener su guardId
+        if (data.user.role === 'guardia') {
+            try {
+                // Buscar el perfil de guardia asociado a este userId
+                const guard = await guardService.getGuardByUserId(data.user.id);
+                
+                if (guard) {
+                    // Agregar guardId a la respuesta
+                    data.user.guardId = guard.id;
+                    
+                    // También podrías agregar más info del guardia si necesitas
+                    data.user.guardInfo = {
+                        phone: guard.phone,
+                        isAvailable: guard.isAvailable,
+                        rating: guard.rating
+                    };
+                }
+            } catch (guardError) {
+                console.warn('⚠️ No se pudo obtener info de guardia:', guardError.message);
+                // No fallar el login si hay error obteniendo info de guardia
+            }
+        }
+
         return handleSuccess(res, 200, "Inicio de sesión exitoso", data);
+        
     } catch (error) {
         return handleErrorClient(res, 401, error.message);
     }
 }
+
 // REGISTRO
 export async function register(req, res) {
     try {

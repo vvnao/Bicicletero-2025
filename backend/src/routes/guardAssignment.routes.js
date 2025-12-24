@@ -1,43 +1,52 @@
-// routes/guardAssignment.routes.js - CORREGIDO
+// routes/guardAssignment.routes.js - VERSIÓN CORREGIDA
 import express from 'express';
-// Cambia esto:
-import { GuardAssignmentController } from '../controllers/guardAssignment.controller.js'; // ← .controller.js
+import { GuardAssignmentController } from '../controllers/guardAssignment.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/authorize.middleware.js';
 
 const router = express.Router();
+const controller = new GuardAssignmentController();
+
+// Middleware de autenticación
 router.use(authMiddleware);
 
-// CRUD básico
-router.post('/', authorize(['admin']), (req, res) => new GuardAssignmentController().create(req, res));
-router.get('/', authorize(['admin', 'guardia']), async (req, res) => {
-    try {
-        const assignments = await new GuardAssignmentController().guardAssignmentService.getAllActiveAssignments();
-        res.json({ success: true, data: assignments });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
+// ================================================
+// ASIGNACIONES DE HORARIOS FIJOS
+// ================================================
 
-// Por ID
-router.get('/:id', authorize(['admin', 'guardia']), async (req, res) => {
-    try {
-        const assignment = await new GuardAssignmentController().guardAssignmentService.getAssignmentById(req.params.id);
-        res.json({ success: true, data: assignment });
-    } catch (error) {
-        if (error.message.includes('no encontrad')) {
-            res.status(404).json({ success: false, message: error.message });
-        } else {
-            res.status(500).json({ success: false, message: error.message });
-        }
-    }
-});
+// Crear asignación (horario fijo semanal)
+router.post('/', authorize(['admin']), controller.create.bind(controller));
 
-router.put('/:id', authorize(['admin']), (req, res) => new GuardAssignmentController().update(req, res));
-router.patch('/:id/deactivate', authorize(['admin']), (req, res) => new GuardAssignmentController().deactivate(req, res));
+// Verificar disponibilidad en un horario
+router.get('/check-availability', authorize(['admin']), controller.checkAvailability.bind(controller));
 
-// Filtros específicos
-router.get('/bikerack/:bikerackId', authorize(['admin', 'guardia']), (req, res) => new GuardAssignmentController().getByBikerack(req, res));
-router.get('/guard/:guardId', authorize(['admin', 'guardia']), (req, res) => new GuardAssignmentController().getByGuard(req, res));
+// Obtener horario de un guardia
+router.get('/guard/:guardId/schedule', authorize(['admin', 'guardia']), controller.getGuardSchedule.bind(controller));
+
+// Obtener horario de un bicicletero
+router.get('/bikerack/:bikerackId/schedule', authorize(['admin', 'guardia', 'user']), controller.getBikerackSchedule.bind(controller));
+
+// ================================================
+// OTRAS OPERACIONES
+// ================================================
+
+// Listar todas las asignaciones activas
+router.get('/', authorize(['admin', 'guardia']), controller.getAllActiveAssignments.bind(controller));
+
+// Obtener asignación por ID
+router.get('/:id', authorize(['admin', 'guardia']), controller.getAssignmentById.bind(controller));
+
+// Actualizar asignación
+router.put('/:id', authorize(['admin']), controller.update.bind(controller));
+
+// Desactivar asignación
+router.patch('/:id/deactivate', authorize(['admin']), controller.deactivate.bind(controller));
+
+// Asignaciones por bicicletero
+router.get('/bikerack/:bikerackId', authorize(['admin', 'guardia']), controller.getByBikerack.bind(controller));
+
+// Asignaciones por guardia
+router.get('/guard/:guardId', authorize(['admin', 'guardia']), controller.getByGuard.bind(controller));
+
 
 export default router;

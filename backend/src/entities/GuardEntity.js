@@ -1,4 +1,4 @@
-// entities/GuardEntity.js
+
 import { EntitySchema } from 'typeorm';
 
 export const GuardEntity = new EntitySchema({
@@ -10,11 +10,51 @@ export const GuardEntity = new EntitySchema({
             type: 'int',
             generated: 'increment',
         },
-         userId: {
+        userId: {
             type: 'int',
             nullable: false,
+            name: 'user_id'
         },
-        max_hours_per_week: { // Cambié a snake_case
+           guardNumber: { // ⬅️ DEBE ESTAR DEFINIDO
+            type: 'int',
+            unique: true,
+            nullable: true, // ⬅️ Temporalmente nullable
+            name: 'guard_number'
+        },
+       
+        phone: {
+            type: 'varchar',
+            length: 20,
+            nullable: true,
+        },
+        address: {
+            type: 'text',
+            nullable: true,
+        },
+        emergencyContact: {
+            type: 'varchar',
+            length: 255,
+            nullable: true,
+            name: 'emergency_contact'
+        },
+        emergencyPhone: {
+            type: 'varchar',
+            length: 20,
+            nullable: true,
+            name: 'emergency_phone'
+        },
+        schedule: {
+            type: 'varchar',
+            length: 100,
+            nullable: true,
+        },
+        workDays: {
+            type: 'varchar',
+            length: 255,
+            nullable: true,
+            name: 'work_days'
+        },
+        maxHoursPerWeek: {
             type: 'int',
             default: 40,
             name: 'max_hours_per_week'
@@ -25,17 +65,17 @@ export const GuardEntity = new EntitySchema({
             scale: 2,
             default: 0,
         },
-        is_available: { // Cambié a snake_case
+        isAvailable: {
             type: 'boolean',
             default: true,
             name: 'is_available'
         },
-        created_at: { // Cambié a snake_case
+        createdAt: {
             type: 'timestamp',
             createDate: true,
             name: 'created_at'
         },
-        updated_at: { // Cambié a snake_case
+        updatedAt: {
             type: 'timestamp',
             updateDate: true,
             name: 'updated_at'
@@ -54,7 +94,7 @@ export const GuardEntity = new EntitySchema({
         assignments: {
             target: 'GuardAssignment',
             type: 'one-to-many',
-            inverseSide: 'guard', // Debe coincidir con GuardAssignmentEntity
+            inverseSide: 'guard',
         },
     },
 });

@@ -1,6 +1,6 @@
+// routes/bikerack.routes.js - VERSIÓN MINIMAL FUNCIONAL
 'use strict';
 import { Router } from 'express';
-import { GuardAssignmentController } from '../controllers/guardAssignment.controller.js';
 import {
   getDashboard,
   getBikerackSpaces,
@@ -8,19 +8,21 @@ import {
   storeBicycleInBikerack, 
   removeBicycleFromBikerack
 } from '../controllers/bikerack.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js'; 
+import { authorize } from '../middleware/authorize.middleware.js';
 
 const router = Router();
-const guardAssignmentController = new GuardAssignmentController();
+
+// Middleware de autenticación
+router.use(authMiddleware);
 
 //------------DASHBOARD Y DETALLES---------------
-router.get('/dashboard', getDashboard);
-router.get('/:id', getBikerackSpaces);
+router.get('/dashboard', authorize(['admin', 'guard']), getDashboard);
+router.get('/:id', authorize(['admin', 'guard']), getBikerackSpaces);
 
 //------------BICICLETERO----------
-router.get("/", listBikeracks);
-router.post("/store-bicycle", storeBicycleInBikerack);
-router.post("/remove-bicycle", removeBicycleFromBikerack);
-
-
+router.get("/", authorize(['admin', 'guard', 'user']), listBikeracks);
+router.post("/store-bicycle", authorize(['admin', 'guard', 'user']), storeBicycleInBikerack);
+router.post("/remove-bicycle", authorize(['admin', 'guard', 'user']), removeBicycleFromBikerack);
 
 export default router;

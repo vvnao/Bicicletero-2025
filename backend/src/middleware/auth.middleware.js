@@ -16,13 +16,40 @@ export function authMiddleware(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload;
+    
+    // Normalizar la estructura del usuario
+    req.user = {
+      // Intentar obtener el ID de diferentes maneras
+      id: payload.id || payload.userId || payload.sub || payload.user?.id,
+      
+      // Intentar obtener el rol
+      role: payload.role || payload.user?.role,
+      
+      // Intentar obtener el email
+      email: payload.email || payload.user?.email,
+      
+      // Mantener el payload completo por si acaso
+      _raw: payload
+    };
+    
+    console.log('✅ Usuario normalizado:', {
+      id: req.user.id,
+      role: req.user.role,
+      email: req.user.email
+    });
+    
+    // Verificar que al menos tengamos un ID
+    if (!req.user.id) {
+      console.error('❌ JWT no contiene ID:', payload);
+      return handleErrorClient(res, 401, "Token no contiene información de usuario válida.");
+    }
+    
     next();
   } catch (error) {
+    console.error('❌ Error verificando token:', error.message);
     return handleErrorClient(res, 401, "Token inválido o expirado.", error.message);
   }
 }
-
 /**
  * Obtener User Agent
  */
@@ -41,44 +68,29 @@ export function getRequestInfo(req) {
         userRole: req.user?.role
     };
 }
-export const isOwnerOrAdmin = (idParam = 'id') => {
+// middleware/ownerOrAdmin.middleware.js - NUEVO ARCHIVO
+export const isOwnerOrAdmin = (paramName = 'id') => {
     return (req, res, next) => {
         try {
-            console.log(`🔑 Verificando propiedad/admin. Parámetro: ${idParam}`);
-            console.log(`🔑 ID solicitado: ${req.params[idParam]}, Usuario ID: ${req.user?.id}`);
-            
-            if (!req.user) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'No autenticado'
-                });
-            }
-
-            const resourceId = parseInt(req.params[idParam]);
+            const resourceId = parseInt(req.params[paramName]);
             const userId = req.user.id;
-
-            // Si es admin, permitir siempre
-            if (req.user.role === 'admin') {
-                console.log('✅ Usuario es admin - acceso permitido');
+            const userRole = req.user.role;
+            
+            // Si es admin o el propietario del recurso
+            if (userRole === 'admin' || userId === resourceId) {
                 return next();
             }
-
-            // Si es el propietario del recurso
-            if (resourceId === userId) {
-                console.log('✅ Usuario es propietario del recurso - acceso permitido');
-                return next();
-            }
-
-            console.log(`❌ Acceso denegado: No es admin ni propietario`);
+            
             return res.status(403).json({
                 success: false,
-                message: 'No tiene permisos para acceder a este recurso'
+                message: "No tienes permisos para acceder a este recurso"
             });
+            
         } catch (error) {
-            console.error('❌ Error en isOwnerOrAdmin:', error);
+            console.error('Error en middleware isOwnerOrAdmin:', error);
             return res.status(500).json({
                 success: false,
-                message: 'Error de autorización'
+                message: "Error de permisos"
             });
         }
     };

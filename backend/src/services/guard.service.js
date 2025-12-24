@@ -1,127 +1,182 @@
-// src/services/guard.service.js
+// services/guard.service.js - VERSIÓN COMPLETA CORREGIDA
 import { AppDataSource } from "../config/configDb.js";
 import { GuardEntity } from "../entities/GuardEntity.js";
 import { UserEntity } from "../entities/UserEntity.js";
-import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
+import bcrypt from 'bcryptjs';
 
 export class GuardService {
     constructor() {
         this.guardRepository = AppDataSource.getRepository(GuardEntity);
         this.userRepository = AppDataSource.getRepository(UserEntity);
-        this.assignmentRepository = AppDataSource.getRepository(GuardAssignmentEntity);
     }
 
     /**
-     * Crear un perfil de guardia
+     * Obtener el próximo número de guardia
      */
-   // services/guard.service.js - MEJORADO CON VALIDACIONES
-async createGuard(userId, guardData, adminId) {
+    async getNextGuardNumber() {
+        try {
+            const lastGuard = await this.guardRepository
+                .createQueryBuilder('guard')
+                .orderBy('guard.guardNumber', 'DESC')
+                .getOne();
+            
+            return lastGuard ? lastGuard.guardNumber + 1 : 1;
+        } catch (error) {
+            console.error('Error obteniendo próximo número de guardia:', error);
+            return 1; // Si hay error, empieza desde 1
+        }
+    }
+
+    /**
+     * Crear un nuevo guardia (con usuario)
+     */
+   async createGuard(guardData, adminId) {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-        console.log(`🔍 Creando guardia para usuario ID: ${userId}`);
+        // 1. Verificar si el email ya existe
+        const existingUser = await queryRunner.manager.findOne(UserEntity, {
+            where: { email: guardData.email }
+        });
 
-        // 1. Obtener usuario destino y admin
-        const [user, admin] = await Promise.all([
-            queryRunner.manager.findOne(UserEntity, {
-                where: { id: userId },
-                select: ['id', 'names', 'lastName', 'email', 'role', 'isActive', 'rut']
-            }),
-            queryRunner.manager.findOne(UserEntity, {
-                where: { id: adminId },
-                select: ['id', 'names', 'lastName']
-            })
-        ]);
-
-        if (!user) {
-            throw new Error("Usuario no encontrado");
+        if (existingUser) {
+            throw new Error('El email ya está registrado');
         }
+
+        // 2. Obtener información del admin
+        const admin = await queryRunner.manager.findOne(UserEntity, {
+            where: { id: adminId },
+            select: ['id', 'names', 'lastName']
+        });
 
         if (!admin) {
             throw new Error("Administrador no encontrado");
         }
 
-        console.log(`✅ Usuario destino: ${user.names} ${user.lastName} (Rol: ${user.role})`);
-        console.log(`✅ Administrador: ${admin.names} ${admin.lastName}`);
+        // 3. OBTENER EL PRÓXIMO NÚMERO DE GUARDIA DENTRO DE LA TRANSACCIÓN
+       const lastGuard = await queryRunner.manager
+    .createQueryBuilder(GuardEntity, 'guard')
+    .orderBy('guard.guardNumber', 'DESC')
+    .getOne();
 
-        // 2. Validar que no sea admin
-        if (user.role === 'admin') {
-            throw new Error("No se puede asignar rol de guardia a un administrador");
+const nextGuardNumber = lastGuard && lastGuard.guardNumber ? 
+    lastGuard.guardNumber + 1 : 1;
+
+        // 4. Definir contraseña
+        let password = guardData.password;
+        let isTemporaryPassword = false;
+        
+        if (!password) {
+            password = Math.random().toString(36).slice(-8);
+            isTemporaryPassword = true;
         }
+        
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 3. Validar que no esté inactivo
-        if (!user.isActive) {
-            throw new Error("El usuario está desactivado. Actívelo primero.");
-        }
+        // 5. Generar RUT temporal si no viene
+        const rut = guardData.rut || this.generateTemporaryRUT();
 
-        // 4. Verificar que no tenga ya perfil de guardia
-        const existingGuard = await queryRunner.manager.findOne(GuardEntity, {
-            where: { userId: userId }
+        // 6. Crear usuario CON ROL 'guardia'
+        const user = this.userRepository.create({
+            names: guardData.names,
+            lastName: guardData.lastName,
+            email: guardData.email,
+            rut: rut,
+            password: hashedPassword,
+            role: 'guardia',
+            typePerson: guardData.typePerson || 'funcionario',
+            requestStatus: 'aprobado',
+            isActive: true,
+            mustChangePassword: isTemporaryPassword,
+            contact: guardData.phone
         });
 
-        if (existingGuard) {
-            throw new Error("Este usuario ya tiene un perfil de guardia");
-        }
+        const savedUser = await queryRunner.manager.save(UserEntity, user);
 
-        // 5. Cambiar rol a 'guardia'
-        await queryRunner.manager.update(UserEntity, userId, {
-            role: 'guardia'
-        });
-
-        // 6. Crear perfil de guardia
+        // 7. Crear perfil de guardia
         const guard = this.guardRepository.create({
-            userId: userId,
-            ...guardData
+            userId: savedUser.id,
+             guardNumber: nextGuardNumber,
+            phone: guardData.phone,
+            address: guardData.address,
+            emergencyContact: guardData.emergencyContact,
+            emergencyPhone: guardData.emergencyPhone,
+            rating: 0,
+            isAvailable: true
         });
 
         const savedGuard = await queryRunner.manager.save(GuardEntity, guard);
 
-        // 7. Registrar en historial
-        const historyService = await import('./history.service.js').then(m => m.default);
-        await historyService.logEvent({
-            historyType: 'guard_assignment',
-            description: `Usuario asignado como guardia por administrador`,
-            details: {
-                userId: user.id,
-                userName: `${user.names} ${user.lastName}`,
-                adminId: admin.id,
-                adminName: `${admin.names} ${admin.lastName}`,
-                previousRole: user.role,
-                newRole: 'guardia'
-            },
-            userId: user.id,
-            guardId: admin.id, // El admin que hizo la acción
-            ipAddress: guardData.ipAddress,
-            userAgent: guardData.userAgent
-        });
+        // 8. Registrar en historial (opcional)
+        try {
+            const historyService = await import('./history.service.js').then(m => m.default);
+            await historyService.logEvent({
+                historyType: 'guard_assignment',
+                description: `Nuevo guardia #${nextGuardNumber} ${guardData.names} ${guardData.lastName} creado`,
+                details: {
+                    action: 'create_guard',
+                    guardProfileId: savedGuard.id,
+                    guardUserId: savedUser.id,
+                    guardNumber: nextGuardNumber,
+                    guardName: `${guardData.names} ${guardData.lastName}`,
+                    adminId: admin.id,
+                    adminName: `${admin.names} ${admin.lastName}`,
+                    email: guardData.email
+                },
+                userId: admin.id,
+                guardId: savedGuard.id,
+                ipAddress: guardData.ipAddress,
+                userAgent: guardData.userAgent
+            });
+        } catch (historyError) {
+            console.warn('⚠️ No se pudo registrar en historial:', historyError.message);
+        }
 
         await queryRunner.commitTransaction();
-        
-        // Obtener datos completos para respuesta
-        const guardWithRelations = await this.guardRepository.findOne({
+
+        // 9. Obtener datos completos para respuesta
+        const guardWithUser = await this.guardRepository.findOne({
             where: { id: savedGuard.id },
-            relations: ['user']
+            relations: ['user'],
+            select: {
+                id: true,
+                userId: true,
+                guardNumber: true,
+                phone: true,
+                address: true,
+                emergencyContact: true,
+                emergencyPhone: true,
+                rating: true,
+                isAvailable: true,
+                createdAt: true,
+                updatedAt: true,
+                user: {
+                    id: true,
+                    role: true,
+                    names: true,
+                    lastName: true,
+                    rut: true,
+                    email: true,
+                    typePerson: true,
+                    isActive: true,
+                    requestStatus: true,
+                    contact: true
+                }
+            }
         });
 
         return {
             success: true,
-            message: `Usuario ${user.names} ${user.lastName} asignado como guardia exitosamente`,
+             message: `Guardia creado exitosamente`,
             data: {
-                guard: guardWithRelations,
-                user: {
-                    id: user.id,
-                    names: user.names,
-                    lastName: user.lastName,
-                    email: user.email,
-                    previousRole: user.role,
-                    newRole: 'guardia'
-                },
-                assignedBy: {
-                    id: admin.id,
-                    names: admin.names,
-                    lastName: admin.lastName
+                guard: guardWithUser,
+                credentials: {
+                    email: guardData.email,
+                    password: isTemporaryPassword ? password : undefined,
+                    isTemporaryPassword: isTemporaryPassword,
+                    rut: rut
                 }
             }
         };
@@ -137,256 +192,447 @@ async createGuard(userId, guardData, adminId) {
     /**
      * Obtener todos los guardias con información de usuario
      */
-   async getAllGuards(filters = {}) {
-    const query = this.guardRepository.createQueryBuilder('guard')
-        .leftJoinAndSelect('guard.user', 'user')
-        .leftJoinAndSelect('guard.assignments', 'assignments')
-        .where('user.isActive = :isActive', { isActive: true });
+    async getAllGuards(filters = {}) {
+        try {
+            const query = this.guardRepository.createQueryBuilder('guard')
+                .leftJoinAndSelect('guard.user', 'user')
+                .where('user.isActive = :isActive', { isActive: true });
 
-    // Aplicar filtros
-    if (filters.isAvailable !== undefined) {
-        query.andWhere('guard.isAvailable = :isAvailable', { 
-            isAvailable: filters.isAvailable 
-        });
+            // Aplicar filtros
+            if (filters.isAvailable !== undefined) {
+                query.andWhere('guard.isAvailable = :isAvailable', { 
+                    isAvailable: filters.isAvailable === 'true' 
+                });
+            }
+
+            if (filters.search) {
+                query.andWhere(
+                    '(user.names LIKE :search OR user.lastName LIKE :search OR user.email LIKE :search OR guard.guardNumber = :searchNum)',
+                    { 
+                        search: `%${filters.search}%`,
+                        searchNum: !isNaN(filters.search) ? parseInt(filters.search) : 0
+                    }
+                );
+            }
+
+            // Ordenar por número de guardia
+            query.orderBy('guard.guardNumber', 'ASC');
+
+            return await query.getMany();
+        } catch (error) {
+            console.error('Error en getAllGuards:', error);
+            throw error;
+        }
     }
-
-    if (filters.search) {
-        query.andWhere(
-            '(user.names LIKE :search OR user.lastName LIKE :search OR user.rut LIKE :search)',
-            { search: `%${filters.search}%` }
-        );
-    }
-
-    // Ordenar por disponibilidad y nombre
-    query.orderBy('guard.isAvailable', 'DESC')
-         .addOrderBy('user.names', 'ASC');
-
-    return await query.getMany();
-}
 
     /**
-     * Obtener guardia por ID con información completa
+     * Obtener guardia por ID
      */
     async getGuardById(guardId) {
-        return await this.guardRepository.findOne({
-            where: { id: guardId },
-            relations: ['user', 'assignments', 'assignments.bikerack']
-        });
+        try {
+            return await this.guardRepository.findOne({
+                where: { id: guardId },
+                relations: ['user', 'assignments']
+            });
+        } catch (error) {
+            console.error('Error obteniendo guardia por ID:', error);
+            throw error;
+        }
     }
 
     /**
-     * Obtener guardia por ID de usuario
+     * Obtener guardia por userId
      */
     async getGuardByUserId(userId) {
-        return await this.guardRepository.findOne({
-            where: { userId },
-            relations: ['user', 'assignments']
-        });
+        try {
+            return await this.guardRepository.findOne({
+                where: { userId: userId },
+                relations: ['user']
+            });
+        } catch (error) {
+            console.error('Error obteniendo guardia por userId:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Obtener guardia por email
+     */
+    async getGuardByEmail(email) {
+        try {
+            return await this.guardRepository
+                .createQueryBuilder('guard')
+                .leftJoinAndSelect('guard.user', 'user')
+                .where('user.email = :email', { email })
+                .getOne();
+        } catch (error) {
+            console.error('Error obteniendo guardia por email:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Obtener guardia por número de guardia
+     */
+    async getGuardByNumber(guardNumber) {
+        try {
+            return await this.guardRepository.findOne({
+                where: { guardNumber: guardNumber },
+                relations: ['user']
+            });
+        } catch (error) {
+            console.error('Error obteniendo guardia por número:', error);
+            throw error;
+        }
     }
 
     /**
      * Actualizar información del guardia
      */
-    async updateGuard(guardId, updateData) {
-        const guard = await this.guardRepository.findOne({
-            where: { id: guardId }
-        });
+    async updateGuard(guardId, updateData, currentUserId, currentUserRole) {
+        const queryRunner = AppDataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        if (!guard) {
-            throw new Error("Guardia no encontrado");
+        try {
+            const guard = await queryRunner.manager.findOne(GuardEntity, {
+                where: { id: guardId },
+                relations: ['user']
+            });
+
+            if (!guard) {
+                throw new Error("Guardia no encontrado");
+            }
+
+            // Validar permisos
+            if (currentUserRole !== 'admin' && currentUserId !== guard.userId) {
+                throw new Error("No tienes permisos para editar este guardia");
+            }
+
+            // Si NO es admin, solo puede editar ciertos campos
+            if (currentUserRole !== 'admin') {
+                const allowedFields = ['phone', 'address', 'schedule', 'workDays'];
+                const unauthorizedFields = Object.keys(updateData).filter(
+                    field => !allowedFields.includes(field)
+                );
+                
+                if (unauthorizedFields.length > 0) {
+                    throw new Error(`Solo puedes editar: ${allowedFields.join(', ')}`);
+                }
+            }
+
+            // No permitir cambiar el número de guardia
+            if (updateData.guardNumber) {
+                delete updateData.guardNumber;
+            }
+
+            // Si se actualizan datos de usuario
+            if (updateData.names || updateData.lastName || updateData.email || updateData.contact) {
+                const userUpdate = {};
+                
+                if (updateData.names) {
+                    userUpdate.names = updateData.names;
+                    delete updateData.names;
+                }
+                
+                if (updateData.lastName) {
+                    userUpdate.lastName = updateData.lastName;
+                    delete updateData.lastName;
+                }
+                
+                if (updateData.email) {
+                    // Verificar que el email no esté en uso por otro usuario
+                    const existingUser = await queryRunner.manager.findOne(UserEntity, {
+                        where: { 
+                            email: updateData.email,
+                            id: guard.userId
+                        }
+                    });
+                    
+                    if (!existingUser) {
+                        const emailExists = await queryRunner.manager.findOne(UserEntity, {
+                            where: { 
+                                email: updateData.email,
+                                id: { $not: guard.userId }
+                            }
+                        });
+                        
+                        if (emailExists) {
+                            throw new Error('El email ya está en uso por otro usuario');
+                        }
+                    }
+                    
+                    userUpdate.email = updateData.email;
+                    delete updateData.email;
+                }
+
+                if (updateData.contact) {
+                    userUpdate.contact = updateData.contact;
+                    // También actualizar en guardia si es teléfono
+                    if (!updateData.phone) {
+                        updateData.phone = updateData.contact;
+                    }
+                    delete updateData.contact;
+                }
+                
+                if (Object.keys(userUpdate).length > 0) {
+                    await queryRunner.manager.update(UserEntity, guard.userId, userUpdate);
+                }
+            }
+
+            // Actualizar campos del guardia
+            if (Object.keys(updateData).length > 0) {
+                await queryRunner.manager.update(GuardEntity, guardId, updateData);
+            }
+
+            await queryRunner.commitTransaction();
+
+            // Retornar guardia actualizado
+            return await this.getGuardById(guardId);
+
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            console.error('Error actualizando guardia:', error);
+            throw error;
+        } finally {
+            await queryRunner.release();
         }
-
-        // No permitir actualizar userId
-        if (updateData.userId) {
-            delete updateData.userId;
-        }
-
-        Object.assign(guard, updateData);
-        return await this.guardRepository.save(guard);
     }
 
     /**
      * Cambiar disponibilidad del guardia
      */
     async toggleAvailability(guardId, isAvailable) {
-        const guard = await this.guardRepository.findOne({
-            where: { id: guardId }
-        });
+        try {
+            const guard = await this.guardRepository.findOne({
+                where: { id: guardId }
+            });
 
-        if (!guard) {
-            throw new Error("Guardia no encontrado");
+            if (!guard) {
+                throw new Error("Guardia no encontrado");
+            }
+
+            guard.isAvailable = isAvailable;
+            return await this.guardRepository.save(guard);
+        } catch (error) {
+            console.error('Error cambiando disponibilidad:', error);
+            throw error;
         }
-
-        guard.isAvailable = isAvailable;
-        return await this.guardRepository.save(guard);
     }
 
     /**
-     * Desactivar/Activar guardia
+     * Desactivar guardia (solo admin)
      */
     async deactivateGuard(guardId) {
-    const queryRunner = AppDataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+        const queryRunner = AppDataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-    try {
-        // 1. Obtener guardia con usuario
-        const guard = await queryRunner.manager.findOne(GuardEntity, {
-            where: { id: guardId },
-            relations: ['user']
-        });
+        try {
+            const guard = await queryRunner.manager.findOne(GuardEntity, {
+                where: { id: guardId },
+                relations: ['user']
+            });
 
-        if (!guard) {
-            throw new Error("Guardia no encontrado");
-        }
-
-        // 2. Desactivar el usuario
-        await queryRunner.manager.update(UserEntity, guard.userId, {
-            isActive: false
-        });
-
-        // 3. Desactivar todas sus asignaciones activas
-        const activeAssignments = await queryRunner.manager.find(GuardAssignmentEntity, {
-            where: { 
-                guard: { id: guardId },
-                status: 'activo' 
+            if (!guard) {
+                throw new Error("Guardia no encontrado");
             }
-        });
 
-        for (const assignment of activeAssignments) {
-            assignment.status = 'inactivo';
-            await queryRunner.manager.save(GuardAssignmentEntity, assignment);
+            // Desactivar el usuario
+            await queryRunner.manager.update(UserEntity, guard.userId, {
+                isActive: false
+            });
+
+            // Desactivar guardia
+            guard.isAvailable = false;
+            await queryRunner.manager.save(GuardEntity, guard);
+
+            await queryRunner.commitTransaction();
+
+            return { 
+                success: true,
+                message: `Guardia #${guard.guardNumber} desactivado exitosamente`,
+                guardId: guardId,
+                guardNumber: guard.guardNumber
+            };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            console.error('Error desactivando guardia:', error);
+            throw error;
+        } finally {
+            await queryRunner.release();
         }
-
-        // 4. Marcar guardia como no disponible
-        guard.isAvailable = false;
-        await queryRunner.manager.save(GuardEntity, guard);
-
-        await queryRunner.commitTransaction();
-        return { message: "Guardia desactivado exitosamente" };
-
-    } catch (error) {
-        await queryRunner.rollbackTransaction();
-        throw error;
-    } finally {
-        await queryRunner.release();
     }
-}
 
     /**
-     * Activar guardia
+     * Activar guardia (solo admin)
      */
     async activateGuard(guardId) {
-        const guard = await this.guardRepository.findOne({
-            where: { id: guardId },
-            relations: ['user']
-        });
+        const queryRunner = AppDataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        if (!guard) {
-            throw new Error("Guardia no encontrado");
+        try {
+            const guard = await queryRunner.manager.findOne(GuardEntity, {
+                where: { id: guardId },
+                relations: ['user']
+            });
+
+            if (!guard) {
+                throw new Error("Guardia no encontrado");
+            }
+
+            // Activar el usuario
+            await queryRunner.manager.update(UserEntity, guard.userId, {
+                isActive: true
+            });
+
+            // Activar guardia
+            guard.isAvailable = true;
+            await queryRunner.manager.save(GuardEntity, guard);
+
+            await queryRunner.commitTransaction();
+
+            return guard;
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            console.error('Error activando guardia:', error);
+            throw error;
+        } finally {
+            await queryRunner.release();
         }
-
-        // Activar el usuario
-        await this.userRepository.update(guard.userId, {
-            isActive: true
-        });
-
-        guard.isAvailable = true;
-        return await this.guardRepository.save(guard);
     }
 
     /**
      * Obtener estadísticas del guardia
      */
     async getGuardStats(guardId) {
-        const guard = await this.getGuardById(guardId);
-        if (!guard) {
-            throw new Error("Guardia no encontrado");
+        try {
+            const guard = await this.getGuardById(guardId);
+            if (!guard) {
+                throw new Error("Guardia no encontrado");
+            }
+
+            // Aquí puedes agregar más estadísticas según tus necesidades
+            return {
+                guardId: guard.id,
+                guardNumber: guard.guardNumber,
+                guardName: `${guard.user.names} ${guard.user.lastName}`,
+                availability: guard.isAvailable,
+                rating: guard.rating || 0,
+                schedule: guard.schedule,
+                workDays: guard.workDays,
+                maxHoursPerWeek: guard.maxHoursPerWeek,
+                // Agregar más estadísticas aquí
+                assignmentsCount: guard.assignments?.length || 0
+            };
+        } catch (error) {
+            console.error('Error obteniendo estadísticas:', error);
+            throw error;
         }
+    }
 
-        // Obtener asignaciones completadas
-        const completedAssignments = await this.assignmentRepository.count({
-            where: {
-                guard: { id: guardId },
-                status: 'completado'
-            }
-        });
+    /**
+     * Generar RUT temporal
+     */
+    generateTemporaryRUT() {
+        const randomNum = Math.floor(Math.random() * 25000000) + 1000000;
+        const rutNum = randomNum.toString();
+        const dv = this.calculateDV(rutNum);
+        return `${rutNum.slice(0, 2)}.${rutNum.slice(2, 5)}.${rutNum.slice(5)}-${dv}`;
+    }
 
-        // Obtener asignaciones activas
-        const activeAssignments = await this.assignmentRepository.count({
-            where: {
-                guard: { id: guardId },
-                status: 'activo'
-            }
-        });
-
-        // Obtener horas trabajadas (esto es un ejemplo, deberías calcularlo)
-        const hoursWorked = completedAssignments * 8; // Asumiendo 8 horas por turno
-
-        return {
-            guardId,
-            completedAssignments,
-            activeAssignments,
-            pendingAssignments: guard.assignments?.filter(a => a.status === 'pendiente').length || 0,
-            hoursWorked,
-            availability: guard.isAvailable,
-            rating: guard.rating || 0
-        };
+    /**
+     * Calcular dígito verificador
+     */
+    calculateDV(rut) {
+        let sum = 0;
+        let mul = 2;
+        
+        for (let i = rut.length - 1; i >= 0; i--) {
+            sum += parseInt(rut.charAt(i)) * mul;
+            mul = mul === 7 ? 2 : mul + 1;
+        }
+        
+        const res = 11 - (sum % 11);
+        
+        if (res === 11) return '0';
+        if (res === 10) return 'K';
+        return res.toString();
     }
 
     /**
      * Buscar guardias disponibles para una fecha/hora específica
      */
- async findAvailableGuards(date, startTime, endTime) {
-    // 1. Obtener todos los guardias disponibles
-    const availableGuards = await this.guardRepository.find({
-        where: { isAvailable: true },
-        relations: ['user', 'assignments', 'assignments.bikerack']
-    });
+    async findAvailableGuards(date, startTime, endTime) {
+        try {
+            // 1. Obtener todos los guardias disponibles
+            const availableGuards = await this.guardRepository.find({
+                where: { isAvailable: true },
+                relations: ['user', 'assignments']
+            });
 
-    // 2. Obtener el día de la semana de la fecha solicitada
-    const dayOfWeek = this.getDayName(date.getDay());
-    
-    // 3. Filtrar guardias sin conflictos de horario
-    const filteredGuards = await Promise.all(
-        availableGuards.map(async (guard) => {
-            // Verificar asignaciones activas para el día y hora solicitados
-            const conflictingAssignments = guard.assignments?.filter(assignment => {
-                // Verificar si la asignación está activa
-                if (assignment.status !== 'activo') return false;
+            // 2. Filtrar por horario
+            const filteredGuards = availableGuards.filter(guard => {
+                if (!guard.schedule || !guard.workDays) return true;
+
+                // Verificar si trabaja en el día solicitado
+                const requestedDate = new Date(date);
+                const dayOfWeek = requestedDate.getDay();
                 
-                // Verificar si el día está en daysOfWeek
-                const assignmentDays = assignment.daysOfWeek ? 
-                    assignment.daysOfWeek.split(',') : [];
+                // Convertir workDays string a array de números
+                const workDaysArray = this.parseWorkDays(guard.workDays);
                 
-                if (!assignmentDays.includes(dayOfWeek)) {
+                if (!workDaysArray.includes(dayOfWeek)) {
                     return false;
                 }
 
-                // Verificar superposición de horarios
-                const assignmentStart = this.timeToMinutes(assignment.startTime);
-                const assignmentEnd = this.timeToMinutes(assignment.endTime);
-                const requestedStart = this.timeToMinutes(startTime);
-                const requestedEnd = this.timeToMinutes(endTime);
-
-                return this.isTimeOverlap(
-                    assignmentStart, assignmentEnd, 
-                    requestedStart, requestedEnd
-                );
+                // Verificar horario
+                if (!guard.schedule) return true;
+                
+                const [guardStart, guardEnd] = guard.schedule.split('-').map(t => t.trim());
+                
+                const requestedStartMinutes = this.timeToMinutes(startTime);
+                const requestedEndMinutes = this.timeToMinutes(endTime);
+                const guardStartMinutes = this.timeToMinutes(guardStart);
+                const guardEndMinutes = this.timeToMinutes(guardEnd);
+                
+                return requestedStartMinutes >= guardStartMinutes && 
+                       requestedEndMinutes <= guardEndMinutes;
             });
 
-            // Si no hay conflictos, incluir al guardia
-            return conflictingAssignments.length === 0 ? guard : null;
-        })
-    );
+            return filteredGuards.map(guard => ({
+                id: guard.id,
+                guardNumber: guard.guardNumber,
+                name: `${guard.user.names} ${guard.user.lastName}`,
+                email: guard.user.email,
+                phone: guard.phone,
+                schedule: guard.schedule,
+                workDays: guard.workDays,
+                rating: guard.rating
+            }));
 
-    return filteredGuards.filter(guard => guard !== null);
-}
+        } catch (error) {
+            console.error('Error buscando guardias disponibles:', error);
+            throw error;
+        }
+    }
 
-    // Métodos auxiliares
-    getDayName(dayIndex) {
-        const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-        return days[dayIndex];
+    /**
+     * Métodos auxiliares
+     */
+    parseWorkDays(workDaysString) {
+        if (!workDaysString) return [];
+        
+        const daysMap = {
+            'lunes': 1, 'martes': 2, 'miércoles': 3, 'jueves': 4,
+            'viernes': 5, 'sábado': 6, 'domingo': 0
+        };
+        
+        return workDaysString.split(',')
+            .map(day => day.trim().toLowerCase())
+            .filter(day => daysMap[day] !== undefined)
+            .map(day => daysMap[day]);
     }
 
     timeToMinutes(timeStr) {
@@ -394,9 +640,10 @@ async createGuard(userId, guardData, adminId) {
         return hours * 60 + minutes;
     }
 
-    isTimeOverlap(start1, end1, start2, end2) {
-        return start1 < end2 && end1 > start2;
+    getDayName(dayIndex) {
+        const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        return days[dayIndex];
     }
 }
 
-export default new GuardService();
+export default GuardService;
