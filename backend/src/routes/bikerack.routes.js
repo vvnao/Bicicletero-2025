@@ -14,8 +14,14 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/dashboard', getDashboard);
-router.get('/:bikerackId', getBikerackSpaces);
+//!silvana----------------------------------------------------
+router.get('/dashboard', authorize(['admin', 'guardia', 'user']), getDashboard);
+router.get(
+  '/:bikerackId',
+  authorize(['admin', 'guardia', 'user']),
+  getBikerackSpaces
+);
+//!-----------------------------------------------------------
 
 //------------BICICLETERO----------
 router.get('/', authorize(['admin', 'guard', 'user']), listBikeracks);

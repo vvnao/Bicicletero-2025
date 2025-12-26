@@ -3,7 +3,6 @@ import { UserEntity } from '../entities/UserEntity.js';
 import { BicycleEntity } from '../entities/BicycleEntity.js';
 import Bikerack from '../entities/BikerackEntity.js';
 import { GuardAssignmentEntity } from '../entities/GuardAssignmentEntity.js';
-import { createHistoryRecord } from '../services/history.service.js';
 import {
   getBikeracksSummary,
   getBikerackDetail,
@@ -15,7 +14,6 @@ import {
 } from '../Handlers/responseHandlers.js';
 
 const bikerackRepository = AppDataSource.getRepository(Bikerack);
-const userRepository = AppDataSource.getRepository(UserEntity);
 const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 const guardAssignmentRepository = AppDataSource.getRepository(
   GuardAssignmentEntity
@@ -41,9 +39,9 @@ export async function getDashboard(req, res) {
 //! PARA LA VISTA DETALLADA DE CADA BICICLETERO
 export async function getBikerackSpaces(req, res) {
   try {
-    const { id } = req.params;
+    const { bikerackId } = req.params;
 
-    if (!id || isNaN(parseInt(id))) {
+    if (!bikerackId || isNaN(parseInt(bikerackId))) {
       return handleErrorClient(
         res,
         400,
@@ -51,8 +49,8 @@ export async function getBikerackSpaces(req, res) {
       );
     }
 
-    const bikerackId = parseInt(id);
-    const bikerackDetail = await getBikerackDetail(bikerackId);
+    const bikerackIdNum = parseInt(bikerackId);
+    const bikerackDetail = await getBikerackDetail(bikerackIdNum);
 
     handleSuccess(
       res,
@@ -61,7 +59,10 @@ export async function getBikerackSpaces(req, res) {
       bikerackDetail
     );
   } catch (error) {
-    console.error(`[BikerackDetail Error] ID ${req.params.id}:`, error.message);
+    console.error(
+      `[BikerackDetail Error] ID ${req.params.bikerackId}:`,
+      error.message
+    );
 
     if (error.message.includes('no encontrado')) {
       return handleErrorClient(res, 404, 'El bicicletero solicitado no existe');
@@ -76,15 +77,6 @@ export async function getBikerackSpaces(req, res) {
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //* esto es de say
-export async function listBikeracks(req, res) {
-  try {
-    const racks = await getBikeracks();
-    return handleSuccess(res, 200, 'Bicicleteros obtenidos', racks);
-  } catch (error) {
-    return handleErrorServer(res, 500, error.message);
-  }
-}
-
 export async function assignGuardController(req, res) {
   try {
     const { bikerackId, guardId } = req.params;

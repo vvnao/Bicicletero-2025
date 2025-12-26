@@ -2,14 +2,25 @@
 
 import { EntitySchema } from 'typeorm';
 
-const INCIDENCE_STATUS = {
+export const INCIDENCE_TYPES = {
+  DAMAGE: 'Daño a propiedad',
+  ABANDONED: 'Bicicleta abandonada',
+  INAPPROPRIATE_BEHAVIOR: 'Comportamiento inapropiado',
+  USER_CONFLICT: 'Conflicto entre usuarios',
+  THEFT_ATTEMPT: 'Intento de robo',
+  SECURITY_BREACH: 'Incumplimiento de seguridad',
+  EQUIPMENT_FAILURE: 'Fallo de equipamiento',
+  OTHER: 'Otro',
+};
+
+export const INCIDENCE_STATUS = {
   OPEN: 'Abierta',
   IN_PROGRESS: 'En Proceso',
   RESOLVED: 'Resuelta',
   CLOSED: 'Cerrada',
 };
 
-const SEVERITY_LEVELS = {
+export const SEVERITY_LEVELS = {
   LOW: 'Baja',
   MEDIUM: 'Media',
   HIGH: 'Alta',
@@ -25,9 +36,8 @@ export const Incidence = new EntitySchema({
       generated: 'increment',
     },
     incidenceType: {
-      //! Será una lista predefinida: Daño, Robo, etc
       type: 'varchar',
-      length: 255,
+      length: 100,
       nullable: false,
     },
     severity: {
@@ -74,7 +84,27 @@ export const Incidence = new EntitySchema({
     },
   },
   relations: {
-    bikeracks: {
+    //* guardia que reporta la incidencia 
+    reporter: {
+      type: 'many-to-one',
+      target: 'User',
+      inverseSide: 'reportedIncidences',
+      nullable: false,
+      joinColumn: {
+        name: 'reporterId',
+      },
+    },
+    //* usuario involucrado (opcional)
+    involvedUser: {
+      type: 'many-to-one',
+      target: 'User',
+      inverseSide: 'involvedIncidences',
+      nullable: true,
+      joinColumn: {
+        name: 'involvedUserId',
+      },
+    },
+    bikerack: {
       type: 'many-to-one',
       target: 'Bikerack',
       inverseSide: 'incidences',
@@ -83,7 +113,7 @@ export const Incidence = new EntitySchema({
         name: 'bikerackId',
       },
     },
-    spaces: {
+    space: {
       type: 'many-to-one',
       target: 'Space',
       inverseSide: 'incidences',
@@ -95,7 +125,4 @@ export const Incidence = new EntitySchema({
   },
 });
 
-export { INCIDENCE_STATUS, SEVERITY_LEVELS };
-export default Incidence
-
-//! FALTA RELACIÓN CON USER
+export default Incidence;
