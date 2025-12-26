@@ -20,6 +20,8 @@ import ReportesAdmin from "./pages/admin/ReportesAdmin";
 import PrivateProfile from "@pages/PrivateProfile";
 import BicycleProfile from "@pages/BicycleProfile";
 import Bicycles from "./pages/Bicycles";
+import LayoutAdmin from "./components/admin/LayoutAdmin";
+import LayoutUser from "./components/user/LayoutUser";
 import "./styles/Styles.css";
 
 const router = createBrowserRouter([
@@ -81,33 +83,28 @@ const router = createBrowserRouter([
                 path: "home/user",
                 element: (
                     <ProtectedRoute>
-                        <HomeUser />
+                        <LayoutUser />
                     </ProtectedRoute>
                 ),
-            },
-            {
-                path: "/home/user/privateProfile",
-                element: (
-                    <ProtectedRoute>
-                        <PrivateProfile />
-                    </ProtectedRoute>
-                ),
-            },
-            {
-                path: "/home/user/bicycles",
-                element: (
-                    <ProtectedRoute>
-                        <BicycleProfile/>
-                    </ProtectedRoute>
-                )
-            },
-            {
-                path: "/home/user/AddBicycles",
-                element: (
-                    <ProtectedRoute>
-                        <Bicycles/>
-                    </ProtectedRoute>
-                )
+                children: 
+                [
+                    {
+                        index: true,
+                        element: <HomeUser />,
+                    },
+                    {
+                        path: "privateProfile",
+                        element: <PrivateProfile />,
+                    },
+                    {
+                        path: "bicycles",
+                        element: <BicycleProfile />,
+                    },
+                    {
+                        path: "addBicycles",
+                        element: <Bicycles />,
+                    },
+                ],
             },
             // NUEVAS RUTAS DEL ADMIN
             {
@@ -146,7 +143,9 @@ const router = createBrowserRouter([
                 path: "home/admin/perfil",
                 element: (
                     <ProtectedRoute>
-                        <PrivateProfile />
+                        <LayoutAdmin>
+                            <PrivateProfile />
+                        </LayoutAdmin>
                     </ProtectedRoute>
                 ),
             },

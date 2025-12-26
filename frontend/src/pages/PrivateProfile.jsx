@@ -1,6 +1,4 @@
 "use strict";
-import NavBar from "@components/NavBar";
-import Sidebar from "@components/Sidebar";
 import { usePrivateProfile } from "@hooks/profile/usePrivateProfile";
 
 const PrivateProfile = () => {
@@ -8,10 +6,8 @@ const PrivateProfile = () => {
 
     return (
         <div className="flex flex-col min-h-screen bg-[#272e4b]">
-        <NavBar />
 
         <div className="flex flex-1">
-            <Sidebar />
 
             <main className="flex-1 p-8 transition-all duration-300">
             <div className="flex justify-between items-center mb-8 p-6 bg-white rounded-2xl shadow-xl border-b-4 border-blue-500">

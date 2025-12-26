@@ -4,27 +4,25 @@ import { useNavigate } from "react-router-dom";
 
 const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
     const [activeItem, setActiveItem] = useState('dashboard');
-  const navigate = useNavigate(); 
+    const navigate = useNavigate(); 
     const mainMenuItems = [
         { name: 'Dashboard', path: '/admin/home', icon: '📊' },
         { name: 'Bicicleteros', path: '/home/admin/bicicletas', icon: '🚲' },
         { name: 'Guardias', path: '/home/admin/guardias', icon: '👮' },
         { name: 'Historial', path: '/home/admin/historial', icon: '📁' },
         { name: 'Repotes', path: '/home/admin/reportes', icon: '💬' },
-        
-        
+        { name: 'Perfil', path: '/home/admin/perfil', icon: '💬' },
     ];
 
     const handleNavigation = (path, name) => {
     setActiveItem(name.toLowerCase());
-     console.log(`Navegando a: ${path}`);
+    console.log(`Navegando a: ${path}`);
         navigate(path);
-   
 };
 
     const handleLogout = () => {
         console.log('Cerrando sesión...');
-          navigate("/auth/login", { replace: true });
+        navigate("/auth/login", { replace: true });
     };
 
     return (
@@ -90,7 +88,6 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                                 color: '#ffffff',
                                 transition: 'all 0.3s ease',
                                 backgroundColor: activeItem === item.name.toLowerCase() ? '#272e4b' : 'transparent',
-                              
                             }}
                             onClick={() => handleNavigation(item.path, item.name)}
                             onMouseOver={(e) => {
@@ -174,8 +171,7 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                         display: 'flex',
                         justifyContent: 'center',
                         color: '#ff6b6b'
-                    }}>
-                      -  
+                    }}>  
                     </span>
                     <span style={{ 
                         opacity: sidebarHover ? 1 : 0,
