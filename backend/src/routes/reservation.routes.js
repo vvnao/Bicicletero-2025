@@ -1,7 +1,7 @@
 'use strict';
 import { Router } from 'express';
 import {authMiddleware} from "../middleware/auth.middleware.js";
-import {createReservation,cancelReservationController,getUserReservationsController} from "../controllers/reserva.controller.js";
+import {createReservation,cancelReservationController,getUserReservationsController} from "../controllers/reservation.controller.js";
 
 const router = Router();
 

@@ -24,7 +24,7 @@ export const UserReview = {
     async approve(req, res) {
         try {
             const { id } = req.params;
-            const guardId = req.user.sub;
+            const guardId = req.user.id;
 
             const user = await approveUser(id, guardId);
             return handleSuccess(res, 200, "Usuario aprobado", user);
@@ -38,7 +38,7 @@ export const UserReview = {
         try {
             const { id } = req.params;
             const { comment } = req.body;
-            const guardId = req.user.sub;
+            const guardId = req.user.id;
 
             const user = await rejectUser(id, guardId, comment);
             return handleSuccess(res, 200, "Usuario rechazado", user);
@@ -75,7 +75,7 @@ export const UserReview = {
                 return handleErrorClient(res, 400, "Estado inválido");
             }
 
-            const result = await updateUserStatusFromReview(id, newStatus, comment, req.user.sub);
+            const result = await updateUserStatusFromReview(id, newStatus, comment, req.user.id);
             return handleSuccess(res, 200, "Estado actualizado", result);
         } catch (error) {
             return handleErrorClient(res, 400, error.message);

@@ -1,8 +1,9 @@
 import axios from './root.service.js';
+import cookies from 'js-cookie';
 
 export async function reservation(){
     try{
-        const token = localStorage.getItem('token');
+        const token = cookies.get('jwt-auth');
         const response = await axios.post('/reservations', {
             headers: { Authorization: `Bearer ${token}`}
         });

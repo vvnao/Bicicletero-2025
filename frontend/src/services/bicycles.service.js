@@ -1,8 +1,9 @@
 import axios from './root.service.js';
+import cookies from 'js-cookie';
 
 export async function createBicycle(formValues){
     try{
-        const token = localStorage.getItem('token');
+        const token = cookies.get('jwt-auth');
         const response = await axios.post('/bicycles', formValues,{
             headers: { Authorization: `Bearer ${token}`}
         });
@@ -13,7 +14,7 @@ export async function createBicycle(formValues){
 }
 export async function getBicycles() {
     try {
-        const token = localStorage.getItem('token');
+        const token = cookies.get('jwt-auth');
         const response = await axios.get('/bicycles', {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -24,7 +25,7 @@ export async function getBicycles() {
 }
 export async function getAllBicycles(){
     try{
-        const token = localStorage.setItem('token');
+        const token = cookies.get('jwt-auth');
         const response = await axios.get('/bicycles/all',{
             headers: {authorization: `Bearer ${token}`}
         })

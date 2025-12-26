@@ -3,40 +3,18 @@ import { createAutomaticReservation, cancelReservation, getUserReservations } fr
 import { handleSuccess, handleErrorClient, handleErrorServer } from '../Handlers/responseHandlers.js';
 import { sendEmail } from '../services/email.service.js';
 import { emailTemplates } from '../templates/reservationEmail.template.js';
-import { getUserBicycles } from '../services/reservation.service.js';
-////////////////////////////////////////////////////////////////////////////////////////////
-//! OBTENER LAS BICIS DEL USUARIO PARA QUE PUEDA SELECCIONAR 1 EN LA RESERVA
-export async function getUserBicyclesForReservation(req, res) {
-  try {
-    const { userId } = req.params;
 
-    if (!userId) {
-      return handleErrorClient(res, 400, 'ID de usuario requerido');
-    }
-
-    const bicycles = await getUserBicycles(parseInt(userId));
-
-    handleSuccess(res, 200, 'Bicicletas obtenidas exitosamente', bicycles);
-  } catch (error) {
-    console.error('Error en getUserBicyclesForReservation:', error);
-    handleErrorServer(
-      res,
-      500,
-      'Error al obtener las bicicletas',
-      error.message
-    );
-  }
-}
-////////////////////////////////////////////////////////////////////////////////////////////
-//! CREAR RESERVA AUTOMÁTICA
 export async function createReservation(req, res) {
   try {
-    const { userId, bikerackId, estimatedHours, bicycleId } = req.body;
+    const userId = req.user.id;
+    const {bikerackId, estimatedHours, bicycleId } = req.body;
 
-    if (!userId || !bikerackId || !estimatedHours || !bicycleId) {
+    if(!userId){
+      return handleErrorClient(res, 404, "Usuario no encontrado");
+    }
+    if (!bikerackId || !estimatedHours || !bicycleId) {
       return handleErrorClient(res, 400, 'Todos los campos son requeridos: userId, bikerackId, estimatedHours, bicycleId');
     }
-
     if (estimatedHours < 1 || estimatedHours > 24) {
       return handleErrorClient(res, 400, 'Las horas estimadas deben estar entre 1 y 24 horas');
     }
@@ -53,29 +31,36 @@ export async function createReservation(req, res) {
     );
 
     handleSuccess(res, 201, 'Reserva creada exitosamente', {
-      reservationCode: reservation.reservationCode,
-      spaceCode: reservation.space.spaceCode,
-      bikerackName: reservation.space.bikerack.name,
-      estimatedHours: reservation.estimatedHours,
-      expirationTime: reservation.expirationTime
+    reservationCode: reservation.reservationCode,
+    spaceCode: reservation.space.spaceCode,
+    bikerackName: reservation.space.bikerack.name,
+    estimatedHours: reservation.estimatedHours,
+    expirationTime: reservation.expirationTime
     });
 
   } catch (error) {
     console.error('Error en createReservation:', error);
-    
-    if (error.message.includes('No hay espacios disponibles')) {
-      return handleErrorClient(res, 409, 'No hay espacios disponibles en este bicicletero');
+
+    if (error.message.includes('reserva vigente')) {
+      return handleErrorClient(res,409,'Ya tienes una reserva activa o pendiente. Cancélala para crear otra.');
     }
-    
-    handleErrorServer(res, 500, 'Error al crear la reserva', error.message);
+    if(error.message.includes('Usuario no encontrado')) {
+      return handleErrorClient(res, 404, error.message);
+    }
+    if(error.message.includes('Bicicleta no pertenece al usuario') ||error.message.includes('Bicicleta no encontrada')){
+      return handleErrorClient(res, 403, error.message);
+    }
+    if(error.message.includes('No hay espacios disponibles')) {
+      return handleErrorClient(res, 409, error.message);
+    }
+    return handleErrorServer(res,500,'Error al crear la reserva',error.message);
   }
 }
-////////////////////////////////////////////////////////////////////////////////////////////
-//! CANCELAR RESERVA
+
 export async function cancelReservationController(req, res) {
   try {
     const { reservationId } = req.params;
-    const { userId } = req.body;
+    const userId = req.user.id;
 
     if (!reservationId) {
       return handleErrorClient(res, 400, 'ID de reserva requerido');
@@ -106,11 +91,10 @@ export async function cancelReservationController(req, res) {
     handleErrorServer(res, 500, 'Error al cancelar la reserva', error.message);
   }
 }
-////////////////////////////////////////////////////////////////////////////////////////////
-//! OBTENER RESERVAS DE UN USUARIO
+//Obtener reservas de usuario
 export async function getUserReservationsController(req, res) {
   try {
-    const { userId } = req.params;
+    const userId = req.user.id;
 
     if (!userId) {
       return handleErrorClient(res, 400, 'ID de usuario requerido');

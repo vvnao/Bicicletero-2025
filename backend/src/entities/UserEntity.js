@@ -50,6 +50,10 @@ export const UserEntity = new EntitySchema({
       type: String,
       nullable: true,
     },
+    personalPhoto:{
+      type: String,
+      nullable: true,
+    },
     //Para desactivar un perfil pero no borrarlo de la base de datos
     isActive: {
       type: "boolean",

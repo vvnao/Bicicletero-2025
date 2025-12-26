@@ -9,8 +9,13 @@ const storage = multer.diskStorage({
         const field = file.fieldname.toLowerCase();
         let folder = "others";
 
-        if (field === "tnephoto") folder = "tne";
-        else if (field === "photo" || field === "bicyclephoto") folder = "bicycle";
+        if (field === "tnephoto") {
+            folder = "tne";
+        } else if (field === "photo" || field === "bicyclephoto") {
+            folder = "bicycle";
+        } else if (field === "personalphoto") { 
+            folder = "personal";
+        }
 
         const uploadPath = path.join("./src/uploads", folder);
 
@@ -45,10 +50,11 @@ const upload = multer({
     fileFilter,
 });
 
-// Middleware para subir ambos archivos
+// Middleware para subir archivos
 export const uploadDocuments = upload.fields([
     { name: "tnePhoto", maxCount: 1 },
-    { name: "photo", maxCount: 1 }, // foto de la bicicleta
+    { name: "photo", maxCount: 1 },         // foto de la bicicleta
+    { name: "personalPhoto", maxCount: 1 },
 ]);
 
 // Middleware de manejo de errores

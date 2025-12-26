@@ -32,14 +32,13 @@ app.get('/', (req, res) => {
 // Inicializa la conexión a la base de datos
 connectDB()
   .then(async () => {
+    await createBikeracks();
     await createSpaces();
     await createDefaultUsers();
     await createBicycles();
     await createDefaultGuards(); 
     await createDefaultGuardAssignments(); 
     await createReservations();
-
-    await createBikeracks();
     // Carga todas las rutas de la aplicación
     routerApi(app);
 

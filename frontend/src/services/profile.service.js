@@ -1,8 +1,9 @@
 import axios from './root.service.js';
+import cookies from 'js-cookie';
 
 export async function getPrivateProfile() {
     try {
-        const token = localStorage.getItem('token');
+        const token = cookies.get('jwt-auth');
         const response = await axios.get('/profile', {
             headers: { Authorization: `Bearer ${token}`}
         });
@@ -24,7 +25,7 @@ export async function getProfiles() {
 }
 export async function updatePrivateProfile(formValues){
     try{
-        const token = localStorage.getItem('token');
+        const token = cookies.get('jwt-auth');
         const response = await axios.put('/profile',formValues,{
             headers: {Authorization: `Bearer ${token}` }
         });
