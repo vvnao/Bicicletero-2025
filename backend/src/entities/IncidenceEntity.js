@@ -26,7 +26,7 @@ export const SEVERITY_LEVELS = {
   HIGH: 'Alta',
 };
 
-export const Incidence = new EntitySchema({
+export const IncidenceEntity = new EntitySchema({
   name: 'Incidence',
   tableName: 'incidences',
   columns: {
@@ -125,4 +125,4 @@ export const Incidence = new EntitySchema({
   },
 });
 
-export default Incidence;
+export default IncidenceEntity;

@@ -14,6 +14,7 @@ import bikerackRoutes from './bikerack.routes.js';
 import spaceManagementRoutes from './spaceManagement.routes.js';
 import reservationRoutes from './reservation.routes.js';
 import spaceDetailsRoutes from './spaceDetails.routes.js';
+import incidenceRoutes from './incidence.routes.js';
 
 export function routerApi(app) {
   const router = Router();
@@ -33,4 +34,5 @@ export function routerApi(app) {
   router.use('/space-management', spaceManagementRoutes);
   router.use('/reservations', reservationRoutes);
   router.use('/space-details', spaceDetailsRoutes);
+  router.use('/incidences', incidenceRoutes);
 }
