@@ -1,397 +1,543 @@
-// controllers/guardAssignment.controller.js - VERSIÓN COMPLETA Y CORREGIDA
-import { GuardAssignmentService } from "../services/guardAssignment.service.js";
-import { validateCreateAssignment } from "../validations/guardAssignment.validation.js";
+// controllers/guardAssignment.controller.js - VERSIÓN CORREGIDA
+import { AppDataSource } from '../config/configDb.js'; // ← CAMBIO IMPORTANTE
+import { GuardAssignmentEntity } from '../entities/GuardAssignmentEntity.js';
+import { GuardEntity } from '../entities/GuardEntity.js';
+import { BikerackEntity } from '../entities/BikerackEntity.js';
+import { validateCreateAssignment } from '../validations/guardAssignment.validation.js';
+import { Not } from 'typeorm';
 
 export class GuardAssignmentController {
-    constructor() {
-        this.guardAssignmentService = new GuardAssignmentService();
+    // Obtener repositorios
+    get assignmentRepository() {
+        return AppDataSource.getRepository(GuardAssignmentEntity);
     }
 
-    /**
-     * Crear nueva asignación - SOLO ADMIN
-     */
- create = async (req, res) => {
-    try {
-        // DEBUG EXTENDIDO
-        console.log('🔍 ========== DEBUG DETALLADO ==========');
-        console.log('1. Headers completos:', JSON.stringify(req.headers, null, 2));
-        console.log('2. Authorization header:', req.headers.authorization);
-        console.log('3. req.user completo:', JSON.stringify(req.user, null, 2));
-        console.log('4. req.user.id:', req.user?.id);
-        console.log('5. req.user.userId:', req.user?.userId);
-        console.log('6. req.user.role:', req.user?.role);
-        console.log('7. Método HTTP:', req.method);
-        console.log('8. URL:', req.url);
-        console.log('========================================');
-        
-        // 1. Verificar que el usuario esté autenticado y sea admin
-        if (!req.user) {
-            console.log('❌ ERROR: req.user es null/undefined');
-            return res.status(401).json({
-                success: false,
-                message: "Usuario no autenticado"
-            });
-        }
+    get guardRepository() {
+        return AppDataSource.getRepository(GuardEntity);
+    }
 
-        // Normalizar el ID
-        const userId = req.user.id || req.user.userId || req.user.sub;
-        console.log('🔍 ID normalizado:', userId);
-        
-        if (!userId) {
-            console.log('❌ ERROR: No se pudo extraer ID de req.user');
-            console.log('❌ req.user estructura:', Object.keys(req.user || {}));
-            return res.status(400).json({
-                success: false,
-                message: "No se pudo identificar al usuario",
-                debug_info: { user_structure: req.user }
-            });
-        }
+    get bikerackRepository() {
+        return AppDataSource.getRepository(BikerackEntity);
+    }
 
-        // Asignar el ID normalizado
-        req.user.id = userId;
-        
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({
-                success: false,
-                message: "Solo los administradores pueden asignar guardias"
-            });
-        }
-
-        // 2. Validar datos
-        console.log('🔍 Body recibido:', req.body);
-        const { error, value } = validateCreateAssignment(req.body);
-        if (error) {
-            console.log('❌ Error de validación:', error.details);
-            return res.status(400).json({
-                success: false,
-                message: "Error de validación",
-                errors: error.details.map(err => err.message)
-            });
-        }
-
-        // 3. Usar el ID normalizado
-        const assignedByUserId = req.user.id;
-        console.log('✅ assignedByUserId definitivo:', assignedByUserId);
-        console.log('✅ Tipo de assignedByUserId:', typeof assignedByUserId);
-
-        // 4. Crear asignación
-        console.log('📝 Llamando a createAssignment con:', {
-            value,
-            assignedByUserId
-        });
-        
-        const result = await this.guardAssignmentService.createAssignment(
-            value,
-            assignedByUserId
-        );
-
-        console.log('✅ Asignación creada exitosamente');
-        res.status(201).json(result);
-
-    } catch (error) {
-        console.error("❌ ERROR EN CREATE ASSIGNMENT:");
-        console.error("❌ Mensaje:", error.message);
-        console.error("❌ Stack:", error.stack);
-        console.error("❌ Error completo:", error);
-        
-        if (error.message.includes('violates not-null constraint')) {
-            console.error('❌ ERROR DE BASE DE DATOS: Campo required es NULL');
-            console.error('❌ Verificar que assigned_by tenga valor:', req.user?.id);
-            return res.status(400).json({
-                success: false,
-                message: "Error en base de datos: Falta información del usuario asignador",
-                debug: {
-                    assignedByUserId: req.user?.id,
-                    userStructure: req.user
-                }
-            });
-        }
-            res.status(500).json({
-                success: false,
-                message: error.message || "Error al asignar guardia"
-            });
-        }
-    };
-
-    /**
-     * Verificar disponibilidad en un horario
-     */
-    checkAvailability = async (req, res) => {
+    async create(req, res) {
         try {
-            const { bikerackId, dayOfWeek, startTime, endTime } = req.query;
-            
-            if (!bikerackId || !dayOfWeek || !startTime || !endTime) {
+            // 1. Validar entrada
+            const { error, value } = validateCreateAssignment(req.body);
+            if (error) {
                 return res.status(400).json({
                     success: false,
-                    message: "Se requieren: bikerackId, dayOfWeek, startTime, endTime"
+                    message: 'Error de validación',
+                    errors: error.details.map(detail => detail.message)
                 });
             }
 
-            const availability = await this.guardAssignmentService.checkAvailability(
-                parseInt(bikerackId),
-                dayOfWeek,
-                startTime,
-                endTime
-            );
+            const { guardId, bikerackId, dayOfWeek, startTime, endTime } = value;
 
-            res.status(200).json({
+            // 2. Verificar que el guardia existe
+            const guard = await this.guardRepository.findOne({
+                where: { 
+                    id: guardId,
+                    isAvailable: true 
+                },
+                relations: ['user']
+            });
+
+            if (!guard) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Guardia no encontrado o no está disponible'
+                });
+            }
+
+            // 3. Verificar que el bicicletero existe
+            const bikerack = await this.bikerackRepository.findOne({
+                where: { 
+                    id: bikerackId
+                    // No hay campo 'status' en BikerackEntity según tu código
+                    // status: 'active' 
+                }
+            });
+
+            if (!bikerack) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Bicicletero no encontrado'
+                });
+            }
+
+            // 4. Convertir dayOfWeek a número si es string
+            const dayNumber = typeof dayOfWeek === 'string' 
+                ? this.parseDayToNumber(dayOfWeek)
+                : parseInt(dayOfWeek);
+
+            // 5. Validar que el día sea válido (0-6)
+            if (dayNumber < 0 || dayNumber > 6) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Día de la semana inválido. Use 0-6 (0=domingo) o nombre del día'
+                });
+            }
+
+            // 6. **VALIDACIONES DE CONFLICTO**
+            
+            // A) Verificar conflicto: mismo guardia + mismo bicicletero + mismo horario
+            const existingSameGuardBikerack = await this.assignmentRepository.findOne({
+                where: {
+                    guardId,
+                    bikerackId,
+                    dayOfWeek: dayNumber,
+                    startTime,
+                    endTime,
+                    status: 'activo'
+                }
+            });
+
+            if (existingSameGuardBikerack) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Este guardia ya está asignado a este bicicletero en este horario'
+                });
+            }
+
+            // B) Verificar conflicto: mismo bicicletero + OTRO guardia + mismo horario
+            const existingSameBikerack = await this.assignmentRepository.findOne({
+                where: {
+                    bikerackId,
+                    dayOfWeek: dayNumber,
+                    startTime,
+                    endTime,
+                    status: 'activo',
+                    guardId: Not(guardId)
+                }
+            });
+
+            if (existingSameBikerack) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Este bicicletero ya tiene un guardia asignado en este horario'
+                });
+            }
+
+            // C) Verificar si el mismo guardia está en otro bicicletero al mismo tiempo
+            const existingSameGuardOtherBikerack = await this.assignmentRepository.findOne({
+                where: {
+                    guardId,
+                    dayOfWeek: dayNumber,
+                    startTime,
+                    endTime,
+                    status: 'activo',
+                    bikerackId: Not(bikerackId)
+                }
+            });
+
+            if (existingSameGuardOtherBikerack) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Este guardia ya está asignado a otro bicicletero en este horario'
+                });
+            }
+
+            // 7. Calcular duración en horas
+            const duration = this.calculateDuration(startTime, endTime);
+
+            // 8. Verificar límite de horas semanales del guardia
+            const weeklyHours = await this.getGuardWeeklyHours(guardId, dayNumber);
+            if (weeklyHours + duration > (guard.maxHoursPerWeek || 40)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `El guardia excede su límite de horas semanales. Actual: ${weeklyHours}h, Límite: ${guard.maxHoursPerWeek || 40}h`
+                });
+            }
+
+            // 9. Crear la asignación
+            const newAssignment = this.assignmentRepository.create({
+                guardId,
+                bikerackId,
+                dayOfWeek: dayNumber,
+                startTime,
+                endTime,
+                schedule: `${startTime}-${endTime}`,
+                workDays: this.getDayName(dayNumber),
+                maxHoursPerWeek: guard.maxHoursPerWeek || 40,
+                effectiveFrom: value.effectiveFrom || new Date(),
+                effectiveUntil: value.effectiveUntil || null,
+                status: 'activo',
+                assignedBy: req.user.id // Usar el ID del usuario autenticado
+            });
+
+            await this.assignmentRepository.save(newAssignment);
+
+            // 10. Obtener con relaciones para la respuesta
+            const assignmentWithRelations = await this.assignmentRepository.findOne({
+                where: { id: newAssignment.id },
+                relations: ['guard', 'guard.user', 'bikerack', 'assignedByUser']
+            });
+
+            res.status(201).json({
                 success: true,
-                data: availability
+                message: 'Asignación creada exitosamente',
+                data: assignmentWithRelations
             });
 
         } catch (error) {
-            console.error("Error verificando disponibilidad:", error);
+            console.error('Error creating assignment:', error);
             res.status(500).json({
                 success: false,
-                message: error.message
+                message: 'Error del servidor',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
-    };
+    }
 
-    /**
-     * Obtener horario semanal de un guardia
-     */
-    getGuardSchedule = async (req, res) => {
+    // Métodos auxiliares
+    parseDayToNumber(dayName) {
+        const daysMap = {
+            'domingo': 0, 'lunes': 1, 'martes': 2, 'miércoles': 3,
+            'jueves': 4, 'viernes': 5, 'sábado': 6, 'sabado': 6
+        };
+        
+        const normalizedDay = dayName.toLowerCase().trim();
+        if (daysMap[normalizedDay] !== undefined) {
+            return daysMap[normalizedDay];
+        }
+        
+        throw new Error(`Día inválido: ${dayName}`);
+    }
+
+    getDayName(dayIndex) {
+        const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        return days[dayIndex];
+    }
+
+    calculateDuration(startTime, endTime) {
+        const [startHours, startMinutes] = startTime.split(':').map(Number);
+        const [endHours, endMinutes] = endTime.split(':').map(Number);
+        
+        const startTotal = startHours * 60 + startMinutes;
+        const endTotal = endHours * 60 + endMinutes;
+        
+        return (endTotal - startTotal) / 60; // Retorna horas
+    }
+
+    async getGuardWeeklyHours(guardId, dayOfWeek) {
+        // Obtener todas las asignaciones activas del guardia
+        const assignments = await this.assignmentRepository.find({
+            where: {
+                guardId,
+                status: 'activo'
+            }
+        });
+
+        let totalHours = 0;
+        assignments.forEach(assignment => {
+            const duration = this.calculateDuration(assignment.startTime, assignment.endTime);
+            totalHours += duration;
+        });
+
+        return totalHours;
+    }
+
+    async checkAvailability(req, res) {
+        try {
+            const { dayOfWeek, startTime, endTime, excludeAssignmentId } = req.query;
+
+            if (!dayOfWeek || !startTime || !endTime) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Faltan parámetros: dayOfWeek, startTime, endTime'
+                });
+            }
+
+            // Convertir dayOfWeek a número
+            const dayNumber = isNaN(dayOfWeek) 
+                ? this.parseDayToNumber(dayOfWeek)
+                : parseInt(dayOfWeek);
+
+            // Construir query
+            const whereClause = {
+                dayOfWeek: dayNumber,
+                startTime,
+                endTime,
+                status: 'activo'
+            };
+
+            if (excludeAssignmentId) {
+                whereClause.id = Not(parseInt(excludeAssignmentId));
+            }
+
+            // Buscar asignaciones existentes
+            const existingAssignments = await this.assignmentRepository.find({
+                where: whereClause,
+                relations: ['bikerack', 'guard', 'guard.user']
+            });
+
+            // Obtener todos los bicicleteros
+            const allBikeracks = await this.bikerackRepository.find();
+
+            // Identificar bicicleteros ocupados
+            const occupiedBikerackIds = existingAssignments
+                .map(assignment => assignment.bikerackId)
+                .filter(id => id !== null);
+
+            // Separar bicicleteros disponibles
+            const availableBikeracks = allBikeracks.filter(bikerack => 
+                !occupiedBikerackIds.includes(bikerack.id)
+            );
+
+            res.json({
+                success: true,
+                data: {
+                    day: this.getDayName(dayNumber),
+                    startTime,
+                    endTime,
+                    availableBikeracks: availableBikeracks.map(b => ({
+                        id: b.id,
+                        name: b.name,
+                        capacity: b.capacity
+                    })),
+                    occupiedAssignments: existingAssignments.map(a => ({
+                        id: a.id,
+                        bikerack: a.bikerack ? {
+                            id: a.bikerack.id,
+                            name: a.bikerack.name
+                        } : null,
+                        guard: a.guard ? {
+                            id: a.guard.id,
+                            name: a.guard.user ? 
+                                `${a.guard.user.names} ${a.guard.user.lastName}` : 
+                                'N/A'
+                        } : null
+                    })),
+                    summary: {
+                        totalBikeracks: allBikeracks.length,
+                        available: availableBikeracks.length,
+                        occupied: occupiedBikerackIds.length
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Error checking availability:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error del servidor'
+            });
+        }
+    }
+
+    async getByGuard(req, res) {
         try {
             const { guardId } = req.params;
+
+            const assignments = await this.assignmentRepository.find({
+                where: {
+                    guardId: parseInt(guardId),
+                    status: 'activo'
+                },
+                relations: ['bikerack'],
+                order: {
+                    dayOfWeek: 'ASC',
+                    startTime: 'ASC'
+                }
+            });
+
+            // Formatear por días de la semana
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const scheduleByDay = {};
             
-            // Validar permisos: admin puede ver todos, guardia solo su propio horario
-            if (req.user.role !== 'admin' && req.user.id !== parseInt(guardId)) {
-                return res.status(403).json({
-                    success: false,
-                    message: "Solo puedes ver tu propio horario"
-                });
-            }
+            days.forEach((day, index) => {
+                scheduleByDay[day] = [];
+            });
 
-            const schedule = await this.guardAssignmentService.getGuardWeeklySchedule(
-                parseInt(guardId)
-            );
+            assignments.forEach(assignment => {
+                const dayName = days[assignment.dayOfWeek];
+                if (scheduleByDay[dayName]) {
+                    scheduleByDay[dayName].push({
+                        id: assignment.id,
+                        startTime: assignment.startTime,
+                        endTime: assignment.endTime,
+                        schedule: assignment.schedule,
+                        bikerack: assignment.bikerack ? {
+                            id: assignment.bikerack.id,
+                            name: assignment.bikerack.name,
+                            capacity: assignment.bikerack.capacity
+                        } : null
+                    });
+                }
+            });
 
-            // Formatear respuesta
-            const formattedSchedule = {};
-            for (let day = 0; day < 7; day++) {
-                const dayName = this.guardAssignmentService.getDayName(day);
-                formattedSchedule[dayName] = schedule[day];
-            }
-
-            res.status(200).json({
+            res.json({
                 success: true,
-                data: formattedSchedule
+                data: {
+                    guardId: parseInt(guardId),
+                    schedule: scheduleByDay,
+                    totalAssignments: assignments.length,
+                    totalHours: assignments.reduce((total, assignment) => {
+                        return total + this.calculateDuration(assignment.startTime, assignment.endTime);
+                    }, 0)
+                }
             });
 
         } catch (error) {
-            console.error("Error obteniendo horario:", error);
+            console.error('Error getting guard assignments:', error);
             res.status(500).json({
                 success: false,
-                message: error.message
+                message: 'Error del servidor'
             });
         }
-    };
+    }
 
-    /**
-     * Obtener horario semanal de un bicicletero
-     */
-    getBikerackSchedule = async (req, res) => {
+    async getAllActiveAssignments(req, res) {
         try {
-            const { bikerackId } = req.params;
-
-            const schedule = await this.guardAssignmentService.getBikerackWeeklySchedule(
-                parseInt(bikerackId)
-            );
-
-            // Formatear respuesta
-            const formattedSchedule = {};
-            for (let day = 0; day < 7; day++) {
-                const dayName = this.guardAssignmentService.getDayName(day);
-                formattedSchedule[dayName] = schedule[day];
-            }
-
-            res.status(200).json({
-                success: true,
-                data: formattedSchedule
+            const assignments = await this.assignmentRepository.find({
+                where: { status: 'activo' },
+                relations: ['guard', 'guard.user', 'bikerack', 'assignedByUser'],
+                order: {
+                    dayOfWeek: 'ASC',
+                    startTime: 'ASC'
+                }
             });
 
-        } catch (error) {
-            console.error("Error obteniendo horario:", error);
-            res.status(500).json({
-                success: false,
-                message: error.message
-            });
-        }
-    };
+            // Formatear respuesta según rol del usuario
+            const formattedAssignments = assignments.map(assignment => {
+                const baseData = {
+                    id: assignment.id,
+                    dayOfWeek: assignment.dayOfWeek,
+                    dayName: this.getDayName(assignment.dayOfWeek),
+                    startTime: assignment.startTime,
+                    endTime: assignment.endTime,
+                    duration: this.calculateDuration(assignment.startTime, assignment.endTime),
+                    bikerack: {
+                        id: assignment.bikerack.id,
+                        name: assignment.bikerack.name,
+                        capacity: assignment.bikerack.capacity
+                    }
+                };
 
-    /**
-     * Obtener todas las asignaciones activas
-     */
-    getAllActiveAssignments = async (req, res) => {
-        try {
-            const assignments = await this.guardAssignmentService.getAllActiveAssignments();
+                // Información según rol
+                if (req.user.role === 'admin') {
+                    return {
+                        ...baseData,
+                        guard: {
+                            id: assignment.guard.id,
+                            guardNumber: assignment.guard.guardNumber,
+                            user: {
+                                id: assignment.guard.user.id,
+                                names: assignment.guard.user.names,
+                                lastName: assignment.guard.user.lastName,
+                                email: assignment.guard.user.email
+                            }
+                        },
+                        assignedBy: assignment.assignedByUser ? {
+                            id: assignment.assignedByUser.id,
+                            names: assignment.assignedByUser.names,
+                            lastName: assignment.assignedByUser.lastName
+                        } : null,
+                        effectiveFrom: assignment.effectiveFrom,
+                        effectiveUntil: assignment.effectiveUntil,
+                        status: assignment.status
+                    };
+                } else if (req.user.role === 'guardia') {
+                    return {
+                        ...baseData,
+                        guard: {
+                            id: assignment.guard.id,
+                            guardNumber: assignment.guard.guardNumber
+                        }
+                    };
+                } else {
+                    return {
+                        ...baseData,
+                        guardName: `${assignment.guard.user.names} ${assignment.guard.user.lastName}`
+                    };
+                }
+            });
+
             res.json({
                 success: true,
                 count: assignments.length,
-                data: assignments
+                data: formattedAssignments
             });
+
         } catch (error) {
-            console.error("Error obteniendo asignaciones:", error);
+            console.error('Error getting assignments:', error);
             res.status(500).json({
                 success: false,
-                message: error.message
+                message: 'Error del servidor'
             });
         }
-    };
+    }
 
-    /**
-     * Obtener asignación por ID
-     */
-    getAssignmentById = async (req, res) => {
+    async getAssignmentById(req, res) {
         try {
-            const assignment = await this.guardAssignmentService.getAssignmentById(req.params.id);
+            const { id } = req.params;
             
+            const assignment = await this.assignmentRepository.findOne({
+                where: { id: parseInt(id) },
+                relations: ['guard', 'guard.user', 'bikerack', 'assignedByUser']
+            });
+
             if (!assignment) {
                 return res.status(404).json({
                     success: false,
-                    message: "Asignación no encontrada"
+                    message: 'Asignación no encontrada'
                 });
             }
 
-            // Validar permisos: admin puede ver todo, guardia solo sus propias asignaciones
-            if (req.user.role !== 'admin' && req.user.id !== assignment.guard?.userId) {
+            // Verificar permisos
+            if (req.user.role !== 'admin' && req.user.id !== assignment.guard.userId) {
                 return res.status(403).json({
                     success: false,
-                    message: "No tienes permiso para ver esta asignación"
+                    message: 'No tienes permisos para ver esta asignación'
                 });
             }
 
             res.json({
                 success: true,
-                data: assignment
+                data: {
+                    id: assignment.id,
+                    dayOfWeek: assignment.dayOfWeek,
+                    dayName: this.getDayName(assignment.dayOfWeek),
+                    startTime: assignment.startTime,
+                    endTime: assignment.endTime,
+                    duration: this.calculateDuration(assignment.startTime, assignment.endTime),
+                    bikerack: {
+                        id: assignment.bikerack.id,
+                        name: assignment.bikerack.name,
+                        capacity: assignment.bikerack.capacity
+                    },
+                    guard: {
+                        id: assignment.guard.id,
+                        guardNumber: assignment.guard.guardNumber,
+                        user: {
+                            id: assignment.guard.user.id,
+                            names: assignment.guard.user.names,
+                            lastName: assignment.guard.user.lastName,
+                            email: assignment.guard.user.email
+                        }
+                    },
+                    assignedBy: assignment.assignedByUser ? {
+                        id: assignment.assignedByUser.id,
+                        names: assignment.assignedByUser.names,
+                        lastName: assignment.assignedByUser.lastName
+                    } : null,
+                    effectiveFrom: assignment.effectiveFrom,
+                    effectiveUntil: assignment.effectiveUntil,
+                    status: assignment.status,
+                    createdAt: assignment.createdAt,
+                    updatedAt: assignment.updatedAt
+                }
             });
+
         } catch (error) {
-            console.error("Error obteniendo asignación:", error);
-            
-            if (error.message.includes('no encontrad')) {
-                return res.status(404).json({
-                    success: false,
-                    message: error.message
-                });
-            }
-            
+            console.error('Error getting assignment:', error);
             res.status(500).json({
                 success: false,
-                message: error.message
+                message: 'Error del servidor'
             });
         }
-    };
-
-    /**
-     * Actualizar asignación - SOLO ADMIN
-     */
-    update = async (req, res) => {
-        try {
-            if (req.user.role !== 'admin') {
-                return res.status(403).json({
-                    success: false,
-                    message: "Solo los administradores pueden actualizar asignaciones"
-                });
-            }
-
-            const updated = await this.guardAssignmentService.updateAssignment(
-                req.params.id, 
-                req.body
-            );
-            
-            res.json({
-                success: true,
-                message: 'Asignación actualizada',
-                data: updated
-            });
-        } catch (error) {
-            console.error("Error actualizando asignación:", error);
-            res.status(400).json({
-                success: false,
-                message: error.message
-            });
-        }
-    };
-
-    /**
-     * Desactivar asignación - SOLO ADMIN
-     */
-    deactivate = async (req, res) => {
-        try {
-            if (req.user.role !== 'admin') {
-                return res.status(403).json({
-                    success: false,
-                    message: "Solo los administradores pueden desactivar asignaciones"
-                });
-            }
-
-            await this.guardAssignmentService.deactivateAssignment(req.params.id);
-            
-            res.json({
-                success: true,
-                message: 'Asignación desactivada'
-            });
-        } catch (error) {
-            console.error("Error desactivando asignación:", error);
-            res.status(500).json({
-                success: false,
-                message: error.message
-            });
-        }
-    };
-
-    /**
-     * Obtener asignaciones por bicicletero
-     */
-    getByBikerack = async (req, res) => {
-        try {
-            const assignments = await this.guardAssignmentService.getAssignmentsByBikerack(
-                req.params.bikerackId
-            );
-            
-            res.json({
-                success: true,
-                count: assignments.length,
-                data: assignments
-            });
-        } catch (error) {
-            console.error("Error obteniendo asignaciones por bicicletero:", error);
-            res.status(500).json({
-                success: false,
-                message: error.message
-            });
-        }
-    };
-
-    /**
-     * Obtener asignaciones por guardia
-     */
-    getByGuard = async (req, res) => {
-        try {
-            const guardId = req.params.guardId;
-            
-            // Validar permisos: admin puede ver todo, guardia solo sus propias asignaciones
-            if (req.user.role !== 'admin' && req.user.id !== parseInt(guardId)) {
-                return res.status(403).json({
-                    success: false,
-                    message: "Solo puedes ver tus propias asignaciones"
-                });
-            }
-
-            const assignments = await this.guardAssignmentService.getAssignmentsByGuard(guardId);
-            
-            res.json({
-                success: true,
-                count: assignments.length,
-                data: assignments
-            });
-        } catch (error) {
-            console.error("Error obteniendo asignaciones por guardia:", error);
-            res.status(500).json({
-                success: false,
-                message: error.message
-            });
-        }
-    };
+    }
 }
+
+export default GuardAssignmentController;

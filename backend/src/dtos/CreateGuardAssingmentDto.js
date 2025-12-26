@@ -3,13 +3,14 @@ export class CreateGuardAssignmentDto {
     constructor(data) {
         this.guardId = data.guardId;
         this.bikerackId = data.bikerackId;
-        this.startDate = data.startDate;
-        this.endDate = data.endDate;
-        this.startTime = data.startTime;  // Debería aceptar HH:MM o HH:MM:SS
-        this.endTime = data.endTime;      // Debería aceptar HH:MM o HH:MM:SS
-        this.daysOfWeek = data.daysOfWeek || [];
-        this.status = data.status || 'activo';
+        this.dayOfWeek = data.dayOfWeek;
+        this.startTime = data.startTime;
+        this.endTime = data.endTime;
+        this.schedule = data.schedule;
+        this.workDays = data.workDays;
+        this.maxHoursPerWeek = data.maxHoursPerWeek || 40;
     }
+
 
     validate() {
         const errors = [];

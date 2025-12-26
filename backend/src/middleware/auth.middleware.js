@@ -32,7 +32,7 @@ export function authMiddleware(req, res, next) {
       _raw: payload
     };
     
-    console.log('✅ Usuario normalizado:', {
+    console.log(' Usuario normalizado:', {
       id: req.user.id,
       role: req.user.role,
       email: req.user.email
@@ -40,13 +40,13 @@ export function authMiddleware(req, res, next) {
     
     // Verificar que al menos tengamos un ID
     if (!req.user.id) {
-      console.error('❌ JWT no contiene ID:', payload);
+      console.error(' JWT no contiene ID:', payload);
       return handleErrorClient(res, 401, "Token no contiene información de usuario válida.");
     }
     
     next();
   } catch (error) {
-    console.error('❌ Error verificando token:', error.message);
+    console.error('X Error verificando token:', error.message);
     return handleErrorClient(res, 401, "Token inválido o expirado.", error.message);
   }
 }

@@ -9,6 +9,8 @@ import { createSpaces } from './config/initSpacesDb.js';
 import { createDefaultUsers } from './config/defaultUsers.js';
 import { createBicycles } from './config/initBicyclesDb.js';
 import { createReservations } from './config/initReservationsDb.js';
+import { createDefaultGuards } from './config/initGuardsDb.js';
+import { createDefaultGuardAssignments } from './config/initGuardAssignmentsDb.js';
 
 import 'dotenv/config';
 
@@ -32,6 +34,8 @@ connectDB()
     await createSpaces();
     await createDefaultUsers();
     await createBicycles();
+    await createDefaultGuards(); 
+    await createDefaultGuardAssignments(); 
     await createReservations();
 
     await createBikeracks();

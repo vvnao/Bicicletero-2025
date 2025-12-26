@@ -36,14 +36,13 @@ export class GuardController {
                 userAgent: req.headers['user-agent']
             };
 
-            // 🔴 IMPORTANTE: El servicio YA devuelve {success, message, data}
-            // NO lo envuelvas en otro objeto
+      
             const result = await this.guardService.createGuard(
                 guardDataWithRequest, 
                 req.user.id
             );
             
-            // ✅ CORRECTO: Devuelve DIRECTAMENTE lo que devuelve el servicio
+          
             res.status(201).json(result);
 
         } catch (error) {

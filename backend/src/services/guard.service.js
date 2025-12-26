@@ -30,7 +30,7 @@ export class GuardService {
     /**
      * Crear un nuevo guardia (con usuario)
      */
-   async createGuard(guardData, adminId) {
+  async createGuard(guardData, adminId) {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -55,14 +55,14 @@ export class GuardService {
             throw new Error("Administrador no encontrado");
         }
 
-        // 3. OBTENER EL PRÓXIMO NÚMERO DE GUARDIA DENTRO DE LA TRANSACCIÓN
-       const lastGuard = await queryRunner.manager
-    .createQueryBuilder(GuardEntity, 'guard')
-    .orderBy('guard.guardNumber', 'DESC')
-    .getOne();
+        // 3. OBTENER EL PRÓXIMO NÚMERO DE GUARDIA
+        const lastGuard = await queryRunner.manager
+            .createQueryBuilder(GuardEntity, 'guard')
+            .orderBy('guard.guardNumber', 'DESC')
+            .getOne();
 
-const nextGuardNumber = lastGuard && lastGuard.guardNumber ? 
-    lastGuard.guardNumber + 1 : 1;
+        const nextGuardNumber = lastGuard && lastGuard.guardNumber ? 
+            lastGuard.guardNumber + 1 : 1;
 
         // 4. Definir contraseña
         let password = guardData.password;
@@ -78,8 +78,8 @@ const nextGuardNumber = lastGuard && lastGuard.guardNumber ?
         // 5. Generar RUT temporal si no viene
         const rut = guardData.rut || this.generateTemporaryRUT();
 
-        // 6. Crear usuario CON ROL 'guardia'
-        const user = this.userRepository.create({
+        // 6. Crear usuario
+        const user = queryRunner.manager.create(UserEntity, {
             names: guardData.names,
             lastName: guardData.lastName,
             email: guardData.email,
@@ -96,9 +96,9 @@ const nextGuardNumber = lastGuard && lastGuard.guardNumber ?
         const savedUser = await queryRunner.manager.save(UserEntity, user);
 
         // 7. Crear perfil de guardia
-        const guard = this.guardRepository.create({
+        const guard = queryRunner.manager.create(GuardEntity, {
             userId: savedUser.id,
-             guardNumber: nextGuardNumber,
+            guardNumber: nextGuardNumber,
             phone: guardData.phone,
             address: guardData.address,
             emergencyContact: guardData.emergencyContact,
@@ -110,34 +110,13 @@ const nextGuardNumber = lastGuard && lastGuard.guardNumber ?
         const savedGuard = await queryRunner.manager.save(GuardEntity, guard);
 
         // 8. Registrar en historial (opcional)
-        try {
-            const historyService = await import('./history.service.js').then(m => m.default);
-            await historyService.logEvent({
-                historyType: 'guard_assignment',
-                description: `Nuevo guardia #${nextGuardNumber} ${guardData.names} ${guardData.lastName} creado`,
-                details: {
-                    action: 'create_guard',
-                    guardProfileId: savedGuard.id,
-                    guardUserId: savedUser.id,
-                    guardNumber: nextGuardNumber,
-                    guardName: `${guardData.names} ${guardData.lastName}`,
-                    adminId: admin.id,
-                    adminName: `${admin.names} ${admin.lastName}`,
-                    email: guardData.email
-                },
-                userId: admin.id,
-                guardId: savedGuard.id,
-                ipAddress: guardData.ipAddress,
-                userAgent: guardData.userAgent
-            });
-        } catch (historyError) {
-            console.warn('⚠️ No se pudo registrar en historial:', historyError.message);
-        }
+        // ... (código existente)
 
         await queryRunner.commitTransaction();
 
-        // 9. Obtener datos completos para respuesta
-        const guardWithUser = await this.guardRepository.findOne({
+        // 9. Obtener datos completos usando el repositorio principal
+        const guardRepository = AppDataSource.getRepository(GuardEntity);
+        const guardWithUser = await guardRepository.findOne({
             where: { id: savedGuard.id },
             relations: ['user'],
             select: {
@@ -169,7 +148,7 @@ const nextGuardNumber = lastGuard && lastGuard.guardNumber ?
 
         return {
             success: true,
-             message: `Guardia creado exitosamente`,
+            message: `Guardia creado exitosamente`,
             data: {
                 guard: guardWithUser,
                 credentials: {
@@ -183,7 +162,7 @@ const nextGuardNumber = lastGuard && lastGuard.guardNumber ?
 
     } catch (error) {
         await queryRunner.rollbackTransaction();
-        console.error('❌ Error en createGuard:', error);
+        console.error('Error en createGuard:', error);
         throw error;
     } finally {
         await queryRunner.release();
@@ -598,7 +577,7 @@ const nextGuardNumber = lastGuard && lastGuard.guardNumber ?
                 const guardEndMinutes = this.timeToMinutes(guardEnd);
                 
                 return requestedStartMinutes >= guardStartMinutes && 
-                       requestedEndMinutes <= guardEndMinutes;
+                    requestedEndMinutes <= guardEndMinutes;
             });
 
             return filteredGuards.map(guard => ({

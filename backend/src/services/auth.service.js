@@ -4,8 +4,6 @@ import jwt from "jsonwebtoken";
 import { findUserByEmail } from "./user.service.js";
 import guardServiceInstance from "./guard.service.js"; // ← Importar la instancia directamente
 
-// NOTA: Ya no necesitas crear una nueva instancia
-// const guardService = new GuardService(); // ❌ ELIMINAR ESTO
 
 export async function loginUser(email, password) {
   // Buscar usuario por email
@@ -42,7 +40,7 @@ export async function loginUser(email, password) {
         };
       }
     } catch (error) {
-      console.warn('⚠️ No se pudo obtener información del guardia:', error.message);
+      console.warn(' No se pudo obtener información del guardia:', error.message);
     }
   }
 
@@ -63,7 +61,7 @@ export async function loginUser(email, password) {
   };
 
   // Generar token JWT
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5d" });
 
   // Eliminar contraseña antes de devolver
   delete user.password;

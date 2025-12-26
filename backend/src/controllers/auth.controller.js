@@ -42,7 +42,7 @@ export async function login(req, res) {
                     };
                 }
             } catch (guardError) {
-                console.warn('⚠️ No se pudo obtener info de guardia:', guardError.message);
+                console.warn(' No se pudo obtener info de guardia:', guardError.message);
                 // No fallar el login si hay error obteniendo info de guardia
             }
         }

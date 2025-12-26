@@ -1,140 +1,362 @@
-// services/guardAssignment.service.js - VERSIÓN COMPLETA
-import { AppDataSource } from "../config/configDb.js";
-import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
-import { GuardEntity } from "../entities/GuardEntity.js";
-import { BikerackEntity } from "../entities/BikerackEntity.js";
-import { UserEntity } from "../entities/UserEntity.js";
+// controllers/guardAssignment.controller.js - CORREGIDO
+import { AppDataSource } from '../config/configDb.js'; // IMPORT CORREGIDO
+import { GuardAssignmentEntity } from '../entities/GuardAssignmentEntity.js';
+import { GuardEntity } from '../entities/GuardEntity.js';
+import { BikeRackEntity } from '../entities/BikerackEntity.js';
+import { validateCreateAssignment } from '../validations/guardAssignment.validation.js';
+import { Not } from 'typeorm';
 
-export class GuardAssignmentService {
-    constructor() {
-        this.assignmentRepository = AppDataSource.getRepository(GuardAssignmentEntity);
-        this.guardRepository = AppDataSource.getRepository(GuardEntity);
-        this.bikerackRepository = AppDataSource.getRepository(BikerackEntity);
-        this.userRepository = AppDataSource.getRepository(UserEntity);
+export class GuardAssignmentController {
+    // Obtener repositorios
+    get assignmentRepository() {
+        return AppDataSource.getRepository(GuardAssignmentEntity);
     }
 
-    // ========== MÉTODOS PRINCIPALES ==========
+    get guardRepository() {
+        return AppDataSource.getRepository(GuardEntity);
+    }
 
-    async createAssignment(data, assignedByUserId) {
-        const queryRunner = AppDataSource.createQueryRunner();
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
+    get bikerackRepository() {
+        return AppDataSource.getRepository(BikeRackEntity);
+    }
 
+    async create(req, res) {
         try {
-            console.log('🔍 Creando asignación con:', { data, assignedByUserId });
-
-            // 1. Validaciones básicas
-            const guard = await queryRunner.manager.findOne(GuardEntity, {
-                where: { id: data.guardId }
-            });
-
-            if (!guard) {
-                throw new Error('Guardia no encontrado');
-            }
-
-            const bikerack = await queryRunner.manager.findOne(BikerackEntity, {
-                where: { id: data.bikerackId }
-            });
-
-            if (!bikerack) {
-                throw new Error('Bicicletero no encontrado');
-            }
-
-            // 2. Parsear y validar
-            const dayOfWeek = typeof data.dayOfWeek === 'string' 
-                ? this.parseDayOfWeek(data.dayOfWeek)
-                : parseInt(data.dayOfWeek);
-
-            if (!this.isValidTime(data.startTime) || !this.isValidTime(data.endTime)) {
-                throw new Error('Formato de hora inválido. Use HH:MM (24h)');
-            }
-
-            if (!this.isStartBeforeEnd(data.startTime, data.endTime)) {
-                throw new Error('La hora de inicio debe ser menor que la hora de fin');
-            }
-
-            // 3. Validar solapamientos
-            const hasOverlap = await this.checkForOverlap(
-                data.guardId, 
-                data.bikerackId, 
-                dayOfWeek, 
-                data.startTime, 
-                data.endTime
-            );
-            
-            if (hasOverlap) {
-                throw new Error('Ya existe una asignación en ese horario');
-            }
-
-            // 4. Crear asignación
-            const assignment = this.assignmentRepository.create({
-                guardId: data.guardId,
-                bikerackId: data.bikerackId,
-                dayOfWeek: dayOfWeek,
-                startTime: data.startTime,
-                endTime: data.endTime,
-                assignedBy: parseInt(assignedByUserId),
-                effectiveFrom: data.effectiveFrom || new Date(),
-                effectiveUntil: data.effectiveUntil || null,
-                status: 'activo'
-            });
-
-            const savedAssignment = await queryRunner.manager.save(GuardAssignmentEntity, assignment);
-
-            // 5. Actualizar guardia si hay datos adicionales
-            if (data.schedule || data.workDays || data.maxHoursPerWeek) {
-                await queryRunner.manager.update(GuardEntity, data.guardId, {
-                    schedule: data.schedule,
-                    workDays: data.workDays,
-                    maxHoursPerWeek: data.maxHoursPerWeek
+            // 1. Validar entrada
+            const { error, value } = validateCreateAssignment(req.body);
+            if (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Error de validación',
+                    errors: error.details.map(detail => detail.message)
                 });
             }
 
-            await queryRunner.commitTransaction();
+            const { guardId, bikerackId, dayOfWeek, startTime, endTime } = value;
 
-            // 6. Retornar con relaciones
+            // 2. Verificar que el guardia existe
+            const guard = await this.guardRepository.findOne({
+                where: { 
+                    id: guardId,
+                    isAvailable: true 
+                },
+                relations: ['user']
+            });
+
+            if (!guard) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Guardia no encontrado o no está disponible'
+                });
+            }
+
+            // 3. Verificar que el bicicletero existe
+            const bikerack = await this.bikerackRepository.findOne({
+                where: { 
+                    id: bikerackId,
+                    status: 'active' 
+                }
+            });
+
+            if (!bikerack) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Bicicletero no encontrado o no está activo'
+                });
+            }
+
+            // 4. **VALIDACIONES DE CONFLICTO**
+            
+            // Convertir dayOfWeek a número si es string
+            const dayNumber = typeof dayOfWeek === 'string' 
+                ? this.parseDayToNumber(dayOfWeek)
+                : dayOfWeek;
+
+            // A) Verificar conflicto: mismo guardia + mismo bicicletero + mismo horario
+            const existingSameGuardBikerack = await this.assignmentRepository.findOne({
+                where: {
+                    guardId,
+                    bikerackId,
+                    dayOfWeek: dayNumber,
+                    startTime,
+                    endTime,
+                    status: 'activo' // CAMBIO: usar 'status' en lugar de 'isActive'
+                }
+            });
+
+            if (existingSameGuardBikerack) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Este guardia ya está asignado a este bicicletero en este horario'
+                });
+            }
+
+            // B) Verificar conflicto: mismo bicicletero + OTRO guardia + mismo horario
+            const existingSameBikerack = await this.assignmentRepository.findOne({
+                where: {
+                    bikerackId,
+                    dayOfWeek: dayNumber,
+                    startTime,
+                    endTime,
+                    status: 'activo', // CAMBIO: usar 'status' en lugar de 'isActive'
+                    guardId: Not(guardId) // Busca OTROS guardias
+                }
+            });
+
+            if (existingSameBikerack) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Este bicicletero ya tiene un guardia asignado en este horario'
+                });
+            }
+
+            // C) Verificar si el mismo guardia está en otro bicicletero al mismo tiempo
+            const existingSameGuardOtherBikerack = await this.assignmentRepository.findOne({
+                where: {
+                    guardId,
+                    dayOfWeek: dayNumber,
+                    startTime,
+                    endTime,
+                    status: 'activo', // CAMBIO: usar 'status' en lugar de 'isActive'
+                    bikerackId: Not(bikerackId)
+                }
+            });
+
+            if (existingSameGuardOtherBikerack) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Este guardia ya está asignado a otro bicicletero en este horario'
+                });
+            }
+
+            // 5. Crear la asignación
+            const schedule = value.schedule || `${startTime}-${endTime}`;
+            
+            const newAssignment = this.assignmentRepository.create({
+                guardId,
+                bikerackId,
+                dayOfWeek: dayNumber,
+                startTime,
+                endTime,
+                schedule,
+                workDays: value.workDays || '',
+                maxHoursPerWeek: value.maxHoursPerWeek || 40,
+                effectiveFrom: value.effectiveFrom || new Date(),
+                effectiveUntil: value.effectiveUntil || null,
+                status: 'activo',
+                assignedBy: req.user.id // Usar el ID del usuario autenticado
+            });
+
+            await this.assignmentRepository.save(newAssignment);
+
+            // 6. Obtener con relaciones para la respuesta
             const assignmentWithRelations = await this.assignmentRepository.findOne({
-                where: { id: savedAssignment.id },
+                where: { id: newAssignment.id },
                 relations: ['guard', 'guard.user', 'bikerack', 'assignedByUser']
             });
 
-            return {
+            res.status(201).json({
                 success: true,
                 message: 'Asignación creada exitosamente',
                 data: assignmentWithRelations
-            };
+            });
 
         } catch (error) {
-            await queryRunner.rollbackTransaction();
-            console.error('❌ Error en createAssignment:', error);
-            throw error;
-        } finally {
-            await queryRunner.release();
+            console.error('Error creating assignment:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error del servidor',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
         }
     }
 
-   async getAllActiveAssignments(filters = {}) {
-    try {
-        const query = this.assignmentRepository
-            .createQueryBuilder('assignment')
-            .leftJoinAndSelect('assignment.guard', 'guard')
-            .leftJoinAndSelect('guard.user', 'user')
-            .leftJoinAndSelect('assignment.bikerack', 'bikerack')
-            .leftJoinAndSelect('assignment.assignedByUser', 'assignedByUser')
-            .where('assignment.status = :status', { status: 'activo' })
-            .andWhere('(assignment.effectiveUntil IS NULL OR assignment.effectiveUntil >= CURRENT_DATE)');
-
-        // ... filtros
+    parseDayToNumber(dayName) {
+        const daysMap = {
+            'domingo': 0, 'lunes': 1, 'martes': 2, 'miércoles': 3,
+            'jueves': 4, 'viernes': 5, 'sábado': 6, 'sabado': 6
+        };
         
-        const assignments = await query.getMany();
+        const normalizedDay = dayName.toLowerCase().trim();
+        if (daysMap[normalizedDay] !== undefined) {
+            return daysMap[normalizedDay];
+        }
         
-        // Transformar la respuesta según el rol
-        return this.transformAssignments(assignments, filters.role);
-        
-    } catch (error) {
-        throw error;
+        throw new Error(`Día inválido: ${dayName}`);
     }
-}
+
+    async checkAvailability(req, res) {
+        try {
+            const { dayOfWeek, startTime, endTime, excludeAssignmentId } = req.query;
+
+            if (!dayOfWeek || !startTime || !endTime) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Faltan parámetros: dayOfWeek, startTime, endTime'
+                });
+            }
+
+            // Convertir dayOfWeek a número si es necesario
+            const dayNumber = isNaN(dayOfWeek) 
+                ? this.parseDayToNumber(dayOfWeek)
+                : parseInt(dayOfWeek);
+
+            // Construir query
+            const whereClause = {
+                dayOfWeek: dayNumber,
+                startTime,
+                endTime,
+                status: 'activo' // CAMBIO: usar 'status'
+            };
+
+            if (excludeAssignmentId) {
+                whereClause.id = Not(parseInt(excludeAssignmentId));
+            }
+
+            // Buscar asignaciones existentes
+            const existingAssignments = await this.assignmentRepository.find({
+                where: whereClause,
+                relations: ['bikerack', 'guard', 'guard.user']
+            });
+
+            // Obtener todos los bicicleteros activos
+            const allBikeracks = await this.bikerackRepository.find({
+                where: { status: 'active' }
+            });
+
+            // Identificar bicicleteros ocupados
+            const occupiedBikerackIds = existingAssignments
+                .map(assignment => assignment.bikerackId)
+                .filter(id => id !== null);
+
+            // Separar bicicleteros disponibles
+            const availableBikeracks = allBikeracks.filter(bikerack => 
+                !occupiedBikerackIds.includes(bikerack.id)
+            );
+
+            res.json({
+                success: true,
+                data: {
+                    availableBikeracks: availableBikeracks.map(b => ({
+                        id: b.id,
+                        name: b.name,
+                        capacity: b.capacity,
+                        location: b.location
+                    })),
+                    occupiedAssignments: existingAssignments.map(a => ({
+                        id: a.id,
+                        bikerack: a.bikerack ? {
+                            id: a.bikerack.id,
+                            name: a.bikerack.name
+                        } : null,
+                        guard: a.guard ? {
+                            id: a.guard.id,
+                            name: a.guard.user ? 
+                                `${a.guard.user.names} ${a.guard.user.lastName}` : 
+                                'N/A'
+                        } : null
+                    })),
+                    summary: {
+                        totalBikeracks: allBikeracks.length,
+                        available: availableBikeracks.length,
+                        occupied: occupiedBikerackIds.length
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Error checking availability:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error del servidor'
+            });
+        }
+    }
+
+    async getByGuard(req, res) {
+        try {
+            const { guardId } = req.params;
+
+            const assignments = await this.assignmentRepository.find({
+                where: {
+                    guardId: parseInt(guardId),
+                    status: 'activo' // CAMBIO: usar 'status'
+                },
+                relations: ['bikerack'],
+                order: {
+                    dayOfWeek: 'ASC',
+                    startTime: 'ASC'
+                }
+            });
+
+            // Formatear por días de la semana
+            const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const scheduleByDay = {};
+            
+            days.forEach((day, index) => {
+                scheduleByDay[day] = [];
+            });
+
+            assignments.forEach(assignment => {
+                const dayName = days[assignment.dayOfWeek];
+                if (scheduleByDay[dayName]) {
+                    scheduleByDay[dayName].push({
+                        id: assignment.id,
+                        startTime: assignment.startTime,
+                        endTime: assignment.endTime,
+                        schedule: assignment.schedule,
+                        bikerack: assignment.bikerack ? {
+                            id: assignment.bikerack.id,
+                            name: assignment.bikerack.name,
+                            location: assignment.bikerack.location
+                        } : null
+                    });
+                }
+            });
+
+            res.json({
+                success: true,
+                data: {
+                    guardId: parseInt(guardId),
+                    schedule: scheduleByDay,
+                    totalAssignments: assignments.length
+                }
+            });
+
+        } catch (error) {
+            console.error('Error getting guard assignments:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error del servidor'
+            });
+        }
+    }
+
+    async getAllActiveAssignments(req, res) {
+        try {
+            const assignments = await this.assignmentRepository.find({
+                where: { status: 'activo' }, // CAMBIO: usar 'status'
+                relations: ['guard', 'guard.user', 'bikerack'],
+                order: {
+                    dayOfWeek: 'ASC',
+                    startTime: 'ASC'
+                }
+            });
+
+            res.json({
+                success: true,
+                count: assignments.length,
+                data: assignments
+            });
+
+        } catch (error) {
+            console.error('Error getting assignments:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error del servidor'
+            });
+        }
+    }
 
 transformAssignments(assignments, role = 'public') {
     return assignments.map(assignment => {

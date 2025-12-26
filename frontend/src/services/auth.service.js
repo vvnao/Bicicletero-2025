@@ -1,4 +1,4 @@
-import axios from './root.service.js';
+import axios from './root.service';
 import cookies from 'js-cookie';
 
 // LOGIN
@@ -37,9 +37,30 @@ export const register = async (formData) => {
 // LOGOUT
 export const logout = () => {
     try {
-        sessionStorage.removeItem('user');   
+        sessionStorage.removeItem('usuario');
         cookies.remove('jwt-auth');
+        window.location.href = '/login';
     } catch (error) {
         console.error('Error al cerrar sesión:', error);
+    }
+};
+
+// Obtener token de cookies
+export const getToken = () => {
+    return cookies.get('jwt-auth');
+};
+
+// Verificar autenticación
+export const isAuthenticated = () => {
+    return !!getToken();
+};
+
+// Obtener datos del usuario
+export const getUserData = () => {
+    try {
+        const user = sessionStorage.getItem('usuario');
+        return user ? JSON.parse(user) : null;
+    } catch {
+        return null;
     }
 };
