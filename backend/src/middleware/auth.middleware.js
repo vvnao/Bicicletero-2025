@@ -68,6 +68,46 @@ export function getRequestInfo(req) {
         userRole: req.user?.role
     };
 }
+
+/**
+ * Middleware: Check if user is an Admin
+ */
+export const isAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        return next();
+    }
+    return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin role required."
+    });
+};
+
+/**
+ * Middleware: Check if user is a Guard
+ */
+export const isGuard = (req, res, next) => {
+    // Adjust the role name if your system uses a different term (e.g., 'guardia', 'guard')
+    if (req.user && req.user.role === 'guardia') {
+        return next();
+    }
+    return res.status(403).json({
+        success: false,
+        message: "Access denied. Guard role required."
+    });
+};
+
+/**
+ * Middleware: Check if user is Admin OR Guard
+ */
+export const isAdminOrGuard = (req, res, next) => {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'guardia')) {
+        return next();
+    }
+    return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin or Guard role required."
+    });
+};
 // middleware/ownerOrAdmin.middleware.js - NUEVO ARCHIVO
 export const isOwnerOrAdmin = (paramName = 'id') => {
     return (req, res, next) => {

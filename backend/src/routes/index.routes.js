@@ -10,6 +10,8 @@ import reviewRoutes from "./review.routes.js";
 import reportRoutes from "./report.routes.js";     
 import historyRoutes from "./history.routes.js";
 import userRequestHistoryRoutes from "./userRequestHistory.routes.js";
+import guardRoutes from './guard.routes.js'; 
+import guardAssignmentRoutes from './guardAssignment.routes.js'; 
 
 import spaceManagementRoutes from './spaceManagement.routes.js';
 import reservationRoutes from './reservation.routes.js';
@@ -26,7 +28,8 @@ export function routerApi(app) {
   router.use("/bikeracks", bikerackRoutes);
 
   router.use("/reviews", reviewRoutes);
-
+  router.use("/guards", guardRoutes); 
+  router.use("/guard-assignments", guardAssignmentRoutes); 
   router.use("/history", historyRoutes);
   router.use("/profile", profileRoutes);
   router.use("/reports", reportRoutes);
