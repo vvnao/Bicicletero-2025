@@ -4,8 +4,6 @@ import { AppDataSource } from './configDb.js';
 
 import { BikerackEntity } from '../entities/BikerackEntity.js';
 
-
-
 export async function createBikeracks() {
   try {
     const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
