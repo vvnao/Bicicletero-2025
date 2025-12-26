@@ -1,0 +1,80 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-bici {
+    background: rgba(13, 25, 40, 0.9);
+    width: 450px;
+    padding: 2rem;
+    border-radius: 18px;
+    position: relative;
+    animation: aparecer 0.3s ease-out;
+}
+
+@keyframes aparecer {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-bici h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 26px;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.modal-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.modal-cerrar {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    background: #a3c1ff;
+    color: #0d1928;
+    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+@media (max-width: 1024px) {
+    .modal-bici {
+        width: 400px;
+        padding: 1.5rem;
+    }
+
+    .modal-bici h3 {
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-bici {
+        width: 90%;
+        padding: 1.2rem;
+    }
+
+    .modal-bici h3 {
+        font-size: 20px;
+    }
+}

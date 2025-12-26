@@ -1,8 +1,8 @@
 //! PARA INICIALIZAR LOS ESPACIOS DE LOS BICICLETEROS EN LA BASE DE DATOS
 'use strict';
 import { AppDataSource } from './configDb.js';
-import  {SpaceEntity, SPACE_STATUS}  from '../entities/SpaceEntity.js';
-import { BikerackEntity } from "../entities/BikeRackEntity.js";
+import { SpaceEntity, SPACE_STATUS } from '../entities/SpaceEntity.js';
+import { BikerackEntity } from "../entities/BikerackEntity.js";
 
 export async function createSpaces() {
   try {

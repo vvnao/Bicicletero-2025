@@ -11,21 +11,49 @@ export async function login(req, res) {
     try {
         const { email, password } = req.body;
         const { error } = loginValidation.validate({ email, password });
-
+        
         if (error) {
             const mensaje = error.details[0].message;
             return handleErrorClient(res, 400, mensaje);
         }
+        
         if (!email || !password) {
             return handleErrorClient(res, 400, "Email y contraseña requeridos");
         }
 
+        // 1. Hacer login (esto devuelve token y datos básicos)
         const data = await loginUser(email, password);
+        
+        // 2. Si el usuario es guardia, obtener su guardId
+        if (data.user.role === 'guardia') {
+            try {
+                // Buscar el perfil de guardia asociado a este userId
+                const guard = await guardService.getGuardByUserId(data.user.id);
+                
+                if (guard) {
+                    // Agregar guardId a la respuesta
+                    data.user.guardId = guard.id;
+                    
+                    // También podrías agregar más info del guardia si necesitas
+                    data.user.guardInfo = {
+                        phone: guard.phone,
+                        isAvailable: guard.isAvailable,
+                        rating: guard.rating
+                    };
+                }
+            } catch (guardError) {
+                console.warn(' No se pudo obtener info de guardia:', guardError.message);
+                // No fallar el login si hay error obteniendo info de guardia
+            }
+        }
+
         return handleSuccess(res, 200, "Inicio de sesión exitoso", data);
+        
     } catch (error) {
         return handleErrorClient(res, 401, error.message);
     }
 }
+
 // REGISTRO
 export async function register(req, res) {
     try {
@@ -34,14 +62,12 @@ export async function register(req, res) {
         console.log("FILES RECIBIDOS:", req.files);
         console.log("BODY:", req.body);
 
-        // Limpiar valores vacíos
         for (const key in data) {
             if (data[key] === "" || data[key] === "null" || data[key] === "undefined") {
                 data[key] = null;
             }
         }
 
-        // Parsear la bicicleta si viene como string
         if (typeof data.bicycle === "string") {
             try {
                 data.bicycle = JSON.parse(data.bicycle);
@@ -50,48 +76,46 @@ export async function register(req, res) {
             }
         }
 
-        // Si no hay bicicleta, crear objeto vacío
-        if (!data.bicycle) data.bicycle = {};
-
-        // Incorporar rutas de archivos
         if (req.files?.tnePhoto?.[0]) data.tnePhoto = req.files.tnePhoto[0].path;
         if (req.files?.photo?.[0]) data.bicycle.photo = req.files.photo[0].path;
 
-        // Forzar serialNumber a string si existe
         if (data.bicycle?.serialNumber != null) {
             data.bicycle.serialNumber = String(data.bicycle.serialNumber);
         }
 
-        // Validar datos del usuario
         const { error: userError } = registerUserValidation.validate(data, { abortEarly: false });
 
-        // Validar datos de la bicicleta solo si tiene propiedades y serialNumber
         let bicycleError;
         if (data.bicycle && Object.keys(data.bicycle).length > 0 && data.bicycle.serialNumber) {
             const { error } = bicycleValidation.validate(data.bicycle, { abortEarly: false });
             bicycleError = error;
         }
 
-        // Unir errores
         const mensajes = [
             ...(userError?.details.map(d => d.message) || []),
             ...(bicycleError?.details.map(d => d.message) || [])
         ];
 
         if (mensajes.length > 0) {
-    console.log("Errores de validación:", userError, bicycleError);
-    return handleErrorClient(res, 400, "Error de validación", mensajes);
-}
+            console.log("Errores de validación:", userError, bicycleError);
+            return handleErrorClient(res, 400, "Error de validación", mensajes);
+        }
 
+        const hasValidBicycle =
+            data.bicycle &&
+            Object.values(data.bicycle).some(
+                v => v !== null && v !== "" && v !== undefined
+            );
 
-        // Crear usuario (las validaciones de dominio se hacen en el servicio)
+        if (!hasValidBicycle) {
+            delete data.bicycle;
+        }
+        
         const newUser = await createUser(data);
 
-        // Enviar correo de confirmación
         await sendEmail(
             newUser.email,
             "Solicitud de registro recibida - Bicicletero UBB",
-            `Hola ${newUser.names}, tu solicitud fue recibida.`,
             registrationEmailTemplate(newUser.names)
         );
 

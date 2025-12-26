@@ -1,76 +1,168 @@
 .register-selector-container {
-  max-width: 500px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: url('../assets/fondo-selector.png') no-repeat center center/cover;
+  padding: 20px;
+  position: relative;
+  text-align: center;
 }
 
 .register-selector-title {
-  color: #1f2937;
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 2rem;
-  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  font-size: 3rem;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 40px;
+  text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 1s ease-in-out;
 }
 
 .register-selector-grid {
   display: grid;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 40px;
 }
 
 .register-selector-card {
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 1.5rem;
+  background-color: rgba(40, 40, 41, 0.8);
+  border-radius: 12px;
+  padding: 35px;
+  color: white;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   text-align: center;
+  border: 2px solid transparent;
+  width: 100%;
 }
 
 .register-selector-card:hover {
-  border-color: #3b82f6;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-}
-
-.register-selector-card:active {
-  transform: translateY(0);
+  transform: translateY(-10px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+  border-color: #ff6b6b;
 }
 
 .register-selector-card-title {
-  color: #1f2937;
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 20px;
 }
 
 .register-selector-card-description {
-  color: #6b7280;
-  font-size: 0.875rem;
+  font-size: 1.4rem;
+  line-height: 1.6;
+  font-family: 'Nunito', sans-serif;
 }
 
-.register-selector-back-button {
-  width: 100%;
-  background: none;
-  border: 1px solid #d1d5db;
-  color: #374151;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
+.back-button {
+  position: absolute;
+  bottom: 300px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #ff6b6b;
+  color: white;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  align-items: center;
+  font-size: 3rem;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.register-selector-back-button:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+.back-button:hover {
+  background-color: #ff4c4c;
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
+}
+
+.back-button svg {
+  width: 40px;
+  height: 40px;
+  transition: transform 0.2s ease;
+}
+
+.back-button:hover svg {
+  transform: scale(1.1);
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .register-selector-title {
+    font-size: 2.5rem;
+  }
+
+  .register-selector-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .register-selector-card {
+    padding: 20px;
+  }
+
+  .register-selector-card-title {
+    font-size: 1.6rem;
+  }
+
+  .register-selector-card-description {
+    font-size: 1rem;
+  }
+
+  .back-button {
+    width: 70px;
+    height: 70px;
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-selector-title {
+    font-size: 2rem;
+  }
+
+  .register-selector-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .register-selector-card {
+    padding: 15px;
+  }
+
+  .register-selector-card-title {
+    font-size: 1.4rem;
+  }
+
+  .register-selector-card-description {
+    font-size: 0.9rem;
+  }
+
+  .back-button {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+  }
 }

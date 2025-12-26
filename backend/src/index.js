@@ -7,6 +7,12 @@ import cors from 'cors';
 import { createBikeracks } from './config/initBikeracksDb.js';
 import { createSpaces } from './config/initSpacesDb.js';
 import { createDefaultUsers } from './config/defaultUsers.js';
+import { createBicycles } from './config/initBicyclesDb.js';
+import { createReservations } from './config/initReservationsDb.js';
+import { createDefaultGuards } from './config/initGuardsDb.js';
+import { createDefaultGuardAssignments } from './config/initGuardAssignmentsDb.js';
+
+import 'dotenv/config';
 
 const app = express();
 app.use(
@@ -28,6 +34,10 @@ connectDB()
   .then(async () => {
     await createSpaces();
     await createDefaultUsers();
+    await createBicycles();
+    await createDefaultGuards(); 
+    await createDefaultGuardAssignments(); 
+    await createReservations();
 
     await createBikeracks();
     // Carga todas las rutas de la aplicación

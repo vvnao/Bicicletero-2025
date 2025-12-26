@@ -7,50 +7,50 @@ export const BicycleEntity = new EntitySchema({
     tableName: 'bicycles',
     columns: {
         id: {
-        type: Number,
-        primary: true,
-        generated: true,
+            type: Number,
+            primary: true,
+            generated: true,
         },
         brand: {
-        type: String,
-        nullable: false,
+            type: String,
+            nullable: false,
         },
         model: {
-        type: String,
-        nullable: false,
+            type: String,
+            nullable: false,
         },
         color: {
-        type: String,
-        nullable: false,
+            type: String,
+            nullable: false,
         },
         serialNumber: {
-        // opcional si se usa para reserva o control
-        type: String,
-        nullable: true,
-        unique: true,
+            // opcional si se usa para reserva o control
+            type: String,
+            nullable: true,
+            unique: true,
         },
         photo: {
-        type: 'varchar',
-        nullable: true,
+            type: 'varchar',
+            nullable: true,
         },
     },
     relations: {
         user: {
-        target: 'User',
-        type: 'many-to-one',
-        joinColumn: true,
-        nullable: false,
-        onDelete: 'CASCADE',
+            target: 'User',
+            type: 'many-to-one',
+            joinColumn: true,
+            nullable: false,
+            onDelete: 'CASCADE',
         },
         reservations: {
-        target: 'Reservation',
-        type: 'one-to-many',
-        inverseSide: 'bicycle',
+            target: 'Reservation',
+            type: 'one-to-many',
+            inverseSide: 'bicycle',
         },
         spaceLogs: {
-        target: 'SpaceLog',
-        type: 'one-to-many',
-        inverseSide: 'bicycle',
+            target: 'SpaceLog',
+            type: 'one-to-many',
+            inverseSide: 'bicycle',
         },
 
         bikerack: {
@@ -60,7 +60,7 @@ export const BicycleEntity = new EntitySchema({
             nullable: true,
             eager: true,
             inverseSide: 'bicycles',
-        }
+        },
     },
 });
 
