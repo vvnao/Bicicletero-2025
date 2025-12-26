@@ -93,6 +93,7 @@ const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
             },
+            
             {
                 path: "/home/user/bicycles",
                 element: (
