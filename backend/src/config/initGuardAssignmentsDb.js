@@ -281,7 +281,7 @@ export async function createDefaultGuardAssignments() {
     // Bicicletero Central
     console.log(`\n  ${bikeracks[0].name}:`);
     console.log(`   Guardia: #${guards[0].guardNumber} - ${guards[0].user.names} ${guards[0].user.lastName}`);
-    console.log(`   Horario: 08:00-12:00 y 13:00-17:00 (8h diarias)`);
+    console.log(`   Horario: 08:00-12:00 y 13:00-17:00 (8sh diarias)`);
     console.log(`   Descanso: 12:00-13:00 (cubierto por guardia de apoyo)`);
     
     // Bicicletero Norte

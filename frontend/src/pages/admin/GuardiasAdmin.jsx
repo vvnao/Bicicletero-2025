@@ -17,7 +17,7 @@ const GuardiasAdmin = () => {
     const [showAssignmentForm, setShowAssignmentForm] = useState(false);
     const [selectedGuardia, setSelectedGuardia] = useState(null);
     const [refresh, setRefresh] = useState(false);
-const [assignmentToEdit, setAssignmentToEdit] = useState(null);
+    const [assignmentToEdit, setAssignmentToEdit] = useState(null);
 
     const token = getToken();
 
@@ -172,6 +172,25 @@ const [assignmentToEdit, setAssignmentToEdit] = useState(null);
             alert('❌ Error al crear la asignación');
         }
     };
+
+    const handleUpdateAssignment = async (assignmentData, assignmentId) => {
+    try {
+        const response = await apiService.updateAssignment(assignmentId, assignmentData, token);
+        
+        if (response.success) {
+            alert('✅ Asignación actualizada exitosamente');
+            setShowAssignmentForm(false);
+            setSelectedGuardia(null);
+            setAssignmentToEdit(null);
+            setRefresh(prev => !prev);
+        } else {
+            alert(`❌ Error: ${response.message}`);
+        }
+    } catch (err) {
+        console.error('Error updating assignment:', err);
+        alert('❌ Error al actualizar la asignación');
+    }
+};
 
     const handleToggleAvailability = async (guardId, isAvailable) => {
         try {
@@ -572,68 +591,67 @@ const [assignmentToEdit, setAssignmentToEdit] = useState(null);
 
                         {activeTab === 'horario' && (
                             <div>
-                            {guardSchedule.length > 0 ? (
-    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-        {guardSchedule.map((schedule, index) => (
-            <div key={schedule.id || index} style={{
-                ...styles.infoItem,
-                backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white',
-                padding: '10px',
-                borderRadius: '8px',
-                marginBottom: '8px',
-                borderLeft: '4px solid #4361ee',
-                cursor: 'pointer', // Agrega cursor pointer
-                '&:hover': {
-                    backgroundColor: '#e8f4fd'
-                }
-            }}
-            onClick={() => {
-                // Buscar la asignación completa por ID
-                const fullAssignment = assignments.find(a => a.id === schedule.id);
-                if (fullAssignment) {
-                    setSelectedGuardia(guardia);
-                    // Abrir modal en modo edición
-                    setAssignmentToEdit(fullAssignment);
-                    setShowAssignmentForm(true);
-                }
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ 
-                        fontSize: '12px', 
-                        backgroundColor: '#4361ee', 
-                        color: 'white',
-                        padding: '2px 8px',
-                        borderRadius: '4px'
-                    }}>
-                        {schedule.dia}
-                    </span>
-                    <span style={{ fontWeight: '600', color: '#272e4b' }}>
-                        {schedule.horario}
-                    </span>
-                    <span style={{ 
-                        marginLeft: 'auto',
-                        fontSize: '12px',
-                        color: '#3498db',
-                        cursor: 'pointer'
-                    }}>
-                        ✏️ Editar
-                    </span>
-                </div>
-                <div style={{ 
-                    fontSize: '14px', 
-                    color: '#495057',
-                    marginTop: '5px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px'
-                }}>
-                    <span>📍</span>
-                    <span>{schedule.bicicletero}</span>
-                </div>
-            </div>
-        ))}
-    </div>
-) : (
+                                {guardSchedule.length > 0 ? (
+                                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                        {guardSchedule.map((schedule, index) => (
+                                            <div 
+                                                key={schedule.id || index} 
+                                                style={{
+                                                    ...styles.infoItem,
+                                                    backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white',
+                                                    padding: '10px',
+                                                    borderRadius: '8px',
+                                                    marginBottom: '8px',
+                                                    borderLeft: '4px solid #4361ee',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onClick={() => {
+                                                    // Buscar la asignación completa por ID
+                                                    const fullAssignment = assignments.find(a => a.id === schedule.id);
+                                                    if (fullAssignment) {
+                                                        setSelectedGuardia(guardia);
+                                                        setAssignmentToEdit(fullAssignment);
+                                                        setShowAssignmentForm(true);
+                                                    }
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <span style={{ 
+                                                        fontSize: '12px', 
+                                                        backgroundColor: '#4361ee', 
+                                                        color: 'white',
+                                                        padding: '2px 8px',
+                                                        borderRadius: '4px'
+                                                    }}>
+                                                        {schedule.dia}
+                                                    </span>
+                                                    <span style={{ fontWeight: '600', color: '#272e4b' }}>
+                                                        {schedule.horario}
+                                                    </span>
+                                                    <span style={{ 
+                                                        marginLeft: 'auto',
+                                                        fontSize: '12px',
+                                                        color: '#3498db',
+                                                        cursor: 'pointer'
+                                                    }}>
+                                                        ✏️ Editar
+                                                    </span>
+                                                </div>
+                                                <div style={{ 
+                                                    fontSize: '14px', 
+                                                    color: '#495057',
+                                                    marginTop: '5px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '5px'
+                                                }}>
+                                                    <span>📍</span>
+                                                    <span>{schedule.bicicletero}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
                                     <div style={{ 
                                         textAlign: 'center', 
                                         color: '#6c757d', 
@@ -665,110 +683,7 @@ const [assignmentToEdit, setAssignmentToEdit] = useState(null);
                                 )}
                             </div>
                         )}
-const [assignmentToEdit, setAssignmentToEdit] = useState(null);
 
-// Y modifica la llamada al AssignmentForm:
-{showAssignmentForm && (
-    <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.7)', // Cambia de 0.5 a 0.7 para más oscuro
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1000,
-        backdropFilter: 'blur(3px)' // Agrega efecto blur opcional
-    }}>
-        <div style={{
-            background: 'white',
-            borderRadius: '15px',
-            padding: '30px',
-            maxWidth: '500px',
-            width: '90%',
-            maxHeight: '85vh', // Cambia de 80vh a 85vh
-            overflowY: 'auto',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            position: 'relative' // Agrega posición relativa
-        }}>
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px',
-                position: 'sticky',
-                top: 0,
-                background: 'white',
-                paddingBottom: '10px',
-                zIndex: 1
-            }}>
-                <h2 style={{
-                    fontSize: '24px',
-                    fontWeight: '600',
-                    color: '#272e4b',
-                    margin: 0
-                }}>
-                    {assignmentToEdit ? '✏️ Editar Asignación' : '📅 Nueva Asignación'} - {selectedGuardia?.user?.names}
-                </h2>
-                <button 
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        fontSize: '24px',
-                        cursor: 'pointer',
-                        color: '#6c757d',
-                        width: '30px',
-                        height: '30px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '50%',
-                        transition: 'all 0.2s ease'
-                    }}
-                    onClick={() => {
-                        setShowAssignmentForm(false);
-                        setSelectedGuardia(null);
-                        setAssignmentToEdit(null);
-                    }}
-                    onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#f8f9fa';
-                        e.target.style.color = '#e74c3c';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = 'transparent';
-                        e.target.style.color = '#6c757d';
-                    }}
-                >
-                    ×
-                </button>
-            </div>
-            
-            <div style={{
-                maxHeight: 'calc(85vh - 100px)', // Ajusta la altura del contenido
-                overflowY: 'auto',
-                paddingRight: '5px' // Espacio para scrollbar
-            }}>
-                <AssignmentForm 
-                    guardId={selectedGuardia?.id}
-                    bikeracks={bikeracks}
-                    onSubmit={handleCreateAssignment}
-                    onCancel={() => {
-                        setShowAssignmentForm(false);
-                        setSelectedGuardia(null);
-                        setAssignmentToEdit(null);
-                    }}
-                    existingAssignments={assignments}
-                    assignmentToEdit={assignmentToEdit}
-                    onAssignmentUpdated={() => {
-                        setRefresh(prev => !prev);
-                    }}
-                />
-            </div>
-        </div>
-    </div>
-)}
                         {activeTab === 'contacto' && (
                             <div>
                                 <div style={styles.infoItem}>
@@ -829,122 +744,170 @@ const [assignmentToEdit, setAssignmentToEdit] = useState(null);
     }
 
     return (
-        <>
-            <LayoutAdmin>
-                <div style={styles.container}>
-                    <h1 style={styles.header}>Gestión de Guardias</h1>
-                    <p style={styles.subtitle}>
-                        Total de guardias: {guardias.length} | Asignaciones activas: {assignments.length}
-                    </p>
-                    
-                    {error && <div style={styles.error}>{error}</div>}
-                    
-                    <h3 style={styles.sectionTitle}>Guardias Registrados</h3>
-                    
-                    <div style={styles.cardsContainer}>
-                        {guardias.length > 0 ? (
-                            guardias.map(guardia => (
-                                <CardGuardia key={guardia.id} guardia={guardia} />
-                            ))
-                        ) : (
-                            <div style={styles.emptyState}>
-                                <h3 style={{ color: '#6c757d', marginBottom: '15px' }}>No hay guardias registrados</h3>
-                                <p style={{ marginBottom: '20px' }}>
-                                    Comienza agregando tu primer guardia haciendo clic en el botón "Agregar Nuevo Guardia"
-                                </p>
-                                <button 
-                                    style={{ 
-                                        ...styles.button, 
-                                        ...styles.buttonPrimary,
-                                        width: 'auto',
-                                        padding: '10px 20px'
-                                    }}
-                                    onClick={() => setShowGuardForm(true)}
-                                >
-                                    + Agregar Primer Guardia
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    <div style={{ marginTop: '40px', textAlign: 'center' }}>
-                        <button 
-                            style={{ 
-                                ...styles.button, 
-                                ...styles.buttonPrimary, 
-                                width: '200px', 
-                                marginRight: '10px' 
-                            }}
-                            onClick={() => setShowGuardForm(true)}
-                        >
-                            + Agregar Nuevo Guardia
-                        </button>
-                    </div>
+        <LayoutAdmin>
+            <div style={styles.container}>
+                <h1 style={styles.header}>Gestión de Guardias</h1>
+                <p style={styles.subtitle}>
+                    Total de guardias: {guardias.length} | Asignaciones activas: {assignments.length}
+                </p>
+                
+                {error && <div style={styles.error}>{error}</div>}
+                
+                <h3 style={styles.sectionTitle}>Guardias Registrados</h3>
+                
+                <div style={styles.cardsContainer}>
+                    {guardias.length > 0 ? (
+                        guardias.map(guardia => (
+                            <CardGuardia key={guardia.id} guardia={guardia} />
+                        ))
+                    ) : (
+                        <div style={styles.emptyState}>
+                            <h3 style={{ color: '#6c757d', marginBottom: '15px' }}>No hay guardias registrados</h3>
+                            <p style={{ marginBottom: '20px' }}>
+                                Comienza agregando tu primer guardia haciendo clic en el botón "Agregar Nuevo Guardia"
+                            </p>
+                            <button 
+                                style={{ 
+                                    ...styles.button, 
+                                    ...styles.buttonPrimary,
+                                    width: 'auto',
+                                    padding: '10px 20px'
+                                }}
+                                onClick={() => setShowGuardForm(true)}
+                            >
+                                + Agregar Primer Guardia
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {/* Modal para crear guardia */}
-                {showGuardForm && (
-                    <div style={styles.modalOverlay}>
-                        <div style={styles.modal}>
-                            <div style={styles.modalHeader}>
-                                <h2 style={styles.modalTitle}>Nuevo Guardia</h2>
-                                <button 
-                                    style={styles.closeButton}
-                                    onClick={() => setShowGuardForm(false)}
-                                >
-                                    ×
-                                </button>
-                            </div>
-                            <GuardForm 
-                                onSubmit={handleCreateGuard}
-                                onCancel={() => setShowGuardForm(false)}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Modal para asignar horario */}
-             {showAssignmentForm && (
-    <div style={styles.modalOverlay}>
-        <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-                <h2 style={styles.modalTitle}>
-                    {assignmentToEdit ? '✏️ Editar Asignación' : '📅 Nueva Asignación'} - {selectedGuardia?.user?.names}
-                </h2>
-                <button 
-                    style={styles.closeButton}
-                    onClick={() => {
-                        setShowAssignmentForm(false);
-                        setSelectedGuardia(null);
-                        setAssignmentToEdit(null); // Limpiar asignación a editar
-                    }}
-                >
-                    ×
-                </button>
+                <div style={{ marginTop: '40px', textAlign: 'center' }}>
+                    <button 
+                        style={{ 
+                            ...styles.button, 
+                            ...styles.buttonPrimary, 
+                            width: '200px', 
+                            marginRight: '10px' 
+                        }}
+                        onClick={() => setShowGuardForm(true)}
+                    >
+                        + Agregar Nuevo Guardia
+                    </button>
+                </div>
             </div>
-            <AssignmentForm 
-                guardId={selectedGuardia?.id}
-                bikeracks={bikeracks}
-                onSubmit={handleCreateAssignment}
-                onCancel={() => {
-                    setShowAssignmentForm(false);
-                    setSelectedGuardia(null);
-                    setAssignmentToEdit(null);
-                }}
-                existingAssignments={assignments}
-                assignmentToEdit={assignmentToEdit} // Pasar asignación a editar
-                onAssignmentUpdated={() => {
-                    // Refrescar datos después de actualizar
-                    setRefresh(prev => !prev);
-                }}
-            />
-        </div>
-    </div>
-)}
 
-            </LayoutAdmin>
+            {/* Modal para crear guardia */}
+            {showGuardForm && (
+                <div style={styles.modalOverlay}>
+                    <div style={styles.modal}>
+                        <div style={styles.modalHeader}>
+                            <h2 style={styles.modalTitle}>Nuevo Guardia</h2>
+                            <button 
+                                style={styles.closeButton}
+                                onClick={() => setShowGuardForm(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <GuardForm 
+                            onSubmit={handleCreateGuard}
+                            onCancel={() => setShowGuardForm(false)}
+                        />
+                    </div>
+                </div>
+            )}
 
-        </>
+            {/* Modal para asignar/editar horario */}
+            {showAssignmentForm && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.7)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 1000,
+                    backdropFilter: 'blur(3px)'
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '15px',
+                        padding: '30px',
+                        maxWidth: '500px',
+                        width: '90%',
+                        maxHeight: '85vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                        position: 'relative'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '20px',
+                            position: 'sticky',
+                            top: 0,
+                            background: 'white',
+                            paddingBottom: '10px',
+                            zIndex: 1
+                        }}>
+                            <h2 style={{
+                                fontSize: '24px',
+                                fontWeight: '600',
+                                color: '#272e4b',
+                                margin: 0
+                            }}>
+                                {assignmentToEdit ? '✏️ Editar Asignación' : '📅 Nueva Asignación'} - {selectedGuardia?.user?.names}
+                            </h2>
+                            <button 
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '24px',
+                                    cursor: 'pointer',
+                                    color: '#6c757d',
+                                    width: '30px',
+                                    height: '30px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: '50%',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onClick={() => {
+                                    setShowAssignmentForm(false);
+                                    setSelectedGuardia(null);
+                                    setAssignmentToEdit(null);
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        
+                       <AssignmentForm 
+    guardId={selectedGuardia?.id}
+    bikeracks={bikeracks}
+    onSubmit={assignmentToEdit ? 
+        (data) => handleUpdateAssignment(data, assignmentToEdit.id) : 
+        handleCreateAssignment}
+    onCancel={() => {
+        setShowAssignmentForm(false);
+        setSelectedGuardia(null);
+        setAssignmentToEdit(null);
+    }}
+    existingAssignments={assignments}
+    assignmentToEdit={assignmentToEdit}
+    onAssignmentUpdated={() => {
+        setRefresh(prev => !prev);
+    }}
+/>
+                    </div>
+                </div>
+            )}
+        </LayoutAdmin>
     );
 };
 

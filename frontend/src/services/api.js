@@ -172,6 +172,34 @@ async getGuardAssignments(token, guardId = null) {
         };
     }
 },
+ deleteAssignment: async (assignmentId, token) => {
+        try {
+            const response = await fetch(`${API_URL}/guard-assignments/${assignmentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                return { 
+                    success: false, 
+                    message: errorData.message || 'Error al eliminar asignación' 
+                };
+            }
+            
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error deleting assignment:', error);
+            return { 
+                success: false, 
+                message: error.message || 'Error de conexión' 
+            };
+        }
+    },
 
     async createAssignment(assignmentData, token) {
         try {

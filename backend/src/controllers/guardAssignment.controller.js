@@ -4,6 +4,7 @@ import { GuardAssignmentEntity } from '../entities/GuardAssignmentEntity.js';
 import { GuardEntity } from '../entities/GuardEntity.js';
 import { BikerackEntity } from '../entities/BikerackEntity.js';
 import { validateCreateAssignment } from '../validations/guardAssignment.validation.js';
+
 import { Not } from 'typeorm';
 
 export class GuardAssignmentController {
@@ -465,6 +466,124 @@ export class GuardAssignmentController {
             res.status(500).json({
                 success: false,
                 message: 'Error del servidor'
+            });
+        }
+    }
+
+
+     async deleteAssignment(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.id; // Asumiendo que el middleware authMiddleware agrega req.user
+            
+            console.log(`🗑️ Usuario ${userId} (admin) eliminando asignación ID: ${id}`);
+            
+            // Validar que el ID sea un número
+            const assignmentId = parseInt(id);
+            if (isNaN(assignmentId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'ID de asignación inválido'
+                });
+            }
+            
+            // Obtener el repositorio
+            const assignmentRepository = AppDataSource.getRepository(GuardAssignmentEntity);
+            
+            // Buscar la asignación
+            const assignment = await assignmentRepository.findOne({
+                where: { id: assignmentId },
+                relations: ['guard', 'bikerack'] // Si tienes relaciones
+            });
+            
+            // Verificar si existe
+            if (!assignment) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Asignación no encontrada'
+                });
+            }
+            
+            // Opcional: Registrar información antes de eliminar
+            console.log(`📋 Asignación a eliminar:`, {
+                id: assignment.id,
+                guardId: assignment.guardId,
+                bikerackId: assignment.bikerackId,
+                horario: `${assignment.startTime} - ${assignment.endTime}`,
+                dia: assignment.dayOfWeek
+            });
+            
+            // Eliminar la asignación
+            await assignmentRepository.remove(assignment);
+            
+            console.log(`✅ Asignación ${assignmentId} eliminada exitosamente`);
+            
+            return res.status(200).json({
+                success: true,
+                message: 'Asignación eliminada exitosamente',
+                data: {
+                    id: assignmentId,
+                    guardId: assignment.guardId,
+                    bikerackId: assignment.bikerackId
+                }
+            });
+            
+        } catch (error) {
+            console.error('❌ Error en deleteAssignment:', error);
+            
+            // Manejar errores específicos de TypeORM
+            if (error.code === '23503') { // Foreign key constraint violation
+                return res.status(400).json({
+                    success: false,
+                    message: 'No se puede eliminar la asignación porque tiene registros relacionados'
+                });
+            }
+            
+            return res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor al eliminar la asignación',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
+    }
+    
+    // Método alternativo usando delete (sin recuperar el objeto primero)
+    async deleteAssignmentAlt(req, res) {
+        try {
+            const { id } = req.params;
+            const assignmentId = parseInt(id);
+            
+            if (isNaN(assignmentId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'ID inválido'
+                });
+            }
+            
+            const assignmentRepository = AppDataSource.getRepository(GuardAssignmentEntity);
+            
+            // Usar delete para eliminar directamente por ID
+            const deleteResult = await assignmentRepository.delete(assignmentId);
+            
+            if (deleteResult.affected === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Asignación no encontrada'
+                });
+            }
+            
+            return res.status(200).json({
+                success: true,
+                message: 'Asignación eliminada exitosamente',
+                data: { id: assignmentId }
+            });
+            
+        } catch (error) {
+            console.error('❌ Error en deleteAssignmentAlt:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Error al eliminar la asignación',
+                error: error.message
             });
         }
     }

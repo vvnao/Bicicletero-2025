@@ -1,12 +1,31 @@
+// components/admin/LayoutAdmin.jsx - VERSIÓN MEJORADA
 "use strict";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import NavBarAdmin from "./NavBarAdmin";
 import SidebarAdmin from "./SidebarAdmin";
 
 const LayoutAdmin = ({ children }) => {
-    const [sidebarHover, setSidebarHover] = useState(false);
-     const navigate = useNavigate();
+    // Función segura para cargar desde localStorage
+    const loadSidebarState = () => {
+        try {
+            const saved = localStorage.getItem('sidebarState');
+            return saved ? JSON.parse(saved) : false;
+        } catch (error) {
+            console.error('Error al cargar estado del sidebar:', error);
+            return false;
+        }
+    };
+
+    const [sidebarHover, setSidebarHover] = useState(loadSidebarState);
+
+    // Guardar estado en localStorage
+    useEffect(() => {
+        try {
+            localStorage.setItem('sidebarState', JSON.stringify(sidebarHover));
+        } catch (error) {
+            console.error('Error al guardar estado del sidebar:', error);
+        }
+    }, [sidebarHover]);
 
     return (
         <div style={{ 
@@ -14,26 +33,34 @@ const LayoutAdmin = ({ children }) => {
             backgroundColor: '#030d18ff',
             display: 'flex',
             flexDirection: 'column',
-            position: 'relative'
+            position: 'relative',
+            overflow: 'hidden'
         }}>
-            {/* Sidebar primero para que esté por encima */}
-            <SidebarAdmin sidebarHover={sidebarHover} setSidebarHover={setSidebarHover} />
+            <SidebarAdmin 
+                sidebarHover={sidebarHover} 
+                setSidebarHover={setSidebarHover} 
+            />
             
-            {/* Navbar después con z-index menor */}
             <NavBarAdmin sidebarHover={sidebarHover} />
             
-            <main style={{
+            <div style={{
                 marginLeft: sidebarHover ? '240px' : '80px',
-                padding: '20px',
                 paddingTop: '80px',
-                transition: 'margin-left 0.3s ease',
                 minHeight: '100vh',
-                backgroundColor: '#272e4b',
+                transition: 'margin-left 0.3s ease',
                 position: 'relative',
-                zIndex: 1
+                zIndex: 1,
+                overflow: 'auto' // Cambié a 'auto' para scroll interno
             }}>
-                {children}
-            </main>
+                <div style={{
+                    padding: '20px',
+                    minHeight: 'calc(100vh - 80px)',
+                    backgroundColor: '#272e4b',
+                    position: 'relative'
+                }}>
+                    {children}
+                </div>
+            </div>
         </div>
     );
 };
