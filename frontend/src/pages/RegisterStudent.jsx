@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register } from '@services/auth.service';
+import '../styles/Register.css';
 import '../styles/RegisterStudent.css';
+import '../styles/ModalBicycle.css';
 import fondo from '../assets/fondo-estudiante.png';
 import { User, Mail, Phone, IdCard, Lock, Eye, EyeOff, Bike, ArrowLeft } from "lucide-react";
 
@@ -22,6 +24,11 @@ export default function RegisterStudent() {
   const [mostrarBici, setMostrarBici] = useState(false);
   const [mostrarPass, setMostrarPass] = useState(false);
 
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [errors, setErrors] = useState([]);
+
   const colorIcono = "#3e4856";
 
   const handleChange = (e) =>
@@ -36,22 +43,51 @@ export default function RegisterStudent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    setLoading(true);
+    setSuccessMessage('');
+    setErrorMessage('');
+    setErrors([]);
+
+
     const form = new FormData();
     Object.entries(formData).forEach(([k, v]) => {
       if (v !== undefined && v !== null && v !== '') form.append(k, v);
     });
 
-    if (bicycle.brand || bicycle.model || bicycle.color) {
-      form.append('bicycle', JSON.stringify(bicycle));
-    }
-
     if (tnePhoto) form.append('tnePhoto', tnePhoto);
     if (photo) form.append('photo', photo);
 
-    const res = await register(form);
-    console.log('Registro estudiante:', res);
-    alert(res.message || 'Registro enviado');
-    navigate('/auth/login');
+    try {
+      const res = await register(form);
+      console.log('Registro estudiante:', res);
+
+      if (res) {
+        setSuccessMessage('Formulario enviado con éxito');
+        setTimeout(() => {
+          navigate('/auth/login');
+        }, 2000);
+      } else {
+        setErrorMessage('Hubo un error al enviar el formulario');
+      }
+    } catch (err) {
+      console.error('Error al registrar:', err);
+
+      if (err?.errorDetails && Array.isArray(err.errorDetails)) {
+        setErrors(err.errorDetails);
+        setErrorMessage(err.message);
+      } else if (err?.message) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('Ocurrió un error inesperado');
+      }
+      setTimeout(() => {
+        setErrorMessage('');
+        setErrors([]);
+      }, 3000);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,6 +103,21 @@ export default function RegisterStudent() {
         <h2 className='register-title'>Solicitud de Registro</h2>
 
         <form onSubmit={handleSubmit}>
+          {loading && <div className="loading-message">Cargando...</div>}
+          {successMessage && <div className="success-message">{successMessage}</div>}
+          {(errorMessage || errors.length > 0) && (
+            <div className="error-message error-box">
+              <strong>{errorMessage}</strong>
+
+              {errors.length > 0 && (
+                <ul className="error-list">
+                  {errors.map((e, i) => (
+                    <li key={i}>{e}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           <div className='form-group'>
             <label className='form-label'>NOMBRES</label>
@@ -116,7 +167,7 @@ export default function RegisterStudent() {
               <Mail size={20} color={colorIcono} className="input-icon" />
               <input
                 name='email'
-                placeholder='valu123@gmail.com'
+                placeholder='ejemplo@gmail.com'
                 onChange={handleChange}
                 className='form-input'
                 required
@@ -170,7 +221,6 @@ export default function RegisterStudent() {
                 required
               />
             </label>
-
             {tnePhoto && <p className="file-name">{tnePhoto.name}</p>}
           </div>
 
@@ -193,7 +243,12 @@ export default function RegisterStudent() {
                 <label className="form-label">MARCA</label>
                 <div className="input-wrapper">
                   <Bike size={20} color={colorIcono} className="input-icon" />
-                  <input name="brand" placeholder="Oxford" onChange={handleBicycleChange} className="form-input" />
+                  <input
+                    name="brand"
+                    placeholder="Oxford"
+                    value={bicycle.brand}
+                    onChange={handleBicycleChange}
+                    className="form-input" />
                 </div>
               </div>
 
@@ -201,7 +256,12 @@ export default function RegisterStudent() {
                 <label className="form-label">MODELO</label>
                 <div className="input-wrapper">
                   <Bike size={20} color={colorIcono} className="input-icon" />
-                  <input name="model" placeholder="MTB 300" onChange={handleBicycleChange} className="form-input" />
+                  <input
+                    name="model"
+                    placeholder="MTB 300"
+                    value={bicycle.model}
+                    onChange={handleBicycleChange}
+                    className="form-input" />
                 </div>
               </div>
 
@@ -209,7 +269,12 @@ export default function RegisterStudent() {
                 <label className="form-label">COLOR</label>
                 <div className="input-wrapper">
                   <Bike size={20} color={colorIcono} className="input-icon" />
-                  <input name="color" placeholder="Azul" onChange={handleBicycleChange} className="form-input" />
+                  <input
+                    name="color"
+                    placeholder="Azul"
+                    value={bicycle.color}
+                    onChange={handleBicycleChange}
+                    className="form-input" />
                 </div>
               </div>
 
@@ -218,7 +283,11 @@ export default function RegisterStudent() {
                 <label className="file-btn">
                   <Bike size={18} color={colorIcono} />
                   <span>Seleccionar archivo</span>
-                  <input type="file" name="photo" accept="image/*" onChange={handleFileChange} />
+                  <input
+                    type="file"
+                    name="photo"
+                    accept="image/*"
+                    onChange={handleFileChange} />
                 </label>
                 {photo && <p className="file-name">{photo.name}</p>}
               </div>

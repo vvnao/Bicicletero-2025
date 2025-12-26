@@ -6,20 +6,24 @@ export const registerUserValidation = Joi.object({
         .min(3)
         .max(50)
         .required()
+        .pattern(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/)
         .messages({
             "string.empty": "El nombre no puede estar vacío",
             "string.min": "El nombre debe tener al menos 3 caracteres",
             "any.required": "Debe ingresar su nombre",
+            "string.pattern.base": "El nombre solo puede contener letras y espacios",
         }),
 
     lastName: Joi.string()
         .min(3)
         .max(50)
         .required()
+        .pattern(/^[a-zA-ZáéíóúÁÉÍÓÚ\s]+$/)
         .messages({
             "string.empty": "El apellido no puede estar vacío",
             "string.min": "El apellido debe tener al menos 3 caracteres",
             "any.required": "Debe ingresar su apellido",
+            "string.pattern.base": "El apellido solo puede contener letras y espacios",
         }),
 
     rut: Joi.string()
@@ -48,10 +52,10 @@ export const registerUserValidation = Joi.object({
 
     contact: Joi.string()
         .allow(null, "")
-        .pattern(/^[0-9+()\s-]*$/)
+        .pattern(/^\+569\d{8}$/)
         .messages({
             "string.pattern.base":
-                "El número de contacto solo puede contener dígitos y símbolos válidos (+, -, (, ))",
+                "El número de contacto debe tener el formato +569XXXXXXXX"
         }),
 
     // Tipo de persona
@@ -71,19 +75,19 @@ export const registerUserValidation = Joi.object({
 
     // Bicicleta (opcional)
     bicycle: Joi.object({
-        brand: Joi.string().required().messages({
+        brand: Joi.string().optional().messages({
             "any.required": "Debe ingresar la marca de la bicicleta",
         }),
-        model: Joi.string().required().messages({
+        model: Joi.string().optional().messages({
             "any.required": "Debe ingresar el modelo de la bicicleta",
         }),
-        color: Joi.string().required().messages({
+        color: Joi.string().optional().messages({
             "any.required": "Debe ingresar el color de la bicicleta",
         }),
         serialNumber: Joi.string().allow(null, ""),
         description: Joi.string().allow(null, ""),
         photo: Joi.string().allow(null, ""), // bicyclePhoto
-    }).optional(), 
+    }).optional(),
 })
     .custom((value, helpers) => {
         const { typePerson, email, tnePhoto, position, positionDescription } = value;
@@ -91,38 +95,28 @@ export const registerUserValidation = Joi.object({
         //Estudiante
         if (typePerson === "estudiante") {
             if (!/@alumnos\.ubiobio\.cl$/.test(email)) {
-                return helpers.error("any.custom", {
-                    message:
-                        "Los estudiantes deben usar un correo @alumnos.ubiobio.cl",
-                });
+                return helpers.message(
+                    "Los estudiantes deben usar un correo @alumnos.ubiobio.cl"
+                );
             }
             if (!tnePhoto) {
-                return helpers.error("any.custom", {
-                    message: "Los estudiantes deben subir una foto de su TNE",
-                });
+                return helpers.message("Los estudiantes deben subir una foto de su TNE");
             }
         }
 
         // Académico
         if (typePerson === "academico") {
             if (!/@ubiobio\.cl$/.test(email)) {
-                return helpers.error("any.custom", {
-                    message:
-                        "Los académicos deben usar un correo institucional @ubiobio.cl",
-                });
+                return helpers.message("Los académicos deben usar un correo institucional @ubiobio.cl");
             }
         }
 
         // Funcionario
         if (typePerson === "funcionario") {
             if (!position || !positionDescription) {
-                return helpers.error("any.custom", {
-                    message:
-                        "Los funcionarios deben ingresar su cargo y una descripción de su labor",
-                });
+                return helpers.message("Los funcionarios deben ingresar su cargo y una descripción de su labor");
             }
         }
-
         return value;
     });
 

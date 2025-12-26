@@ -48,8 +48,6 @@ export async function register(req, res) {
             }
         }
 
-        if (!data.bicycle) data.bicycle = {};
-
         if (req.files?.tnePhoto?.[0]) data.tnePhoto = req.files.tnePhoto[0].path;
         if (req.files?.photo?.[0]) data.bicycle.photo = req.files.photo[0].path;
 
@@ -74,6 +72,17 @@ export async function register(req, res) {
             console.log("Errores de validación:", userError, bicycleError);
             return handleErrorClient(res, 400, "Error de validación", mensajes);
         }
+
+        const hasValidBicycle =
+            data.bicycle &&
+            Object.values(data.bicycle).some(
+                v => v !== null && v !== "" && v !== undefined
+            );
+
+        if (!hasValidBicycle) {
+            delete data.bicycle;
+        }
+        
         const newUser = await createUser(data);
 
         await sendEmail(

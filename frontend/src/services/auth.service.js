@@ -17,7 +17,7 @@ export const login = async (credentials) => {
         return response.data;
     } catch (error) {
         console.error('Error en login:', error);
-        return error.response?.data || { message: 'Error al iniciar sesión' };
+        throw error.response?.data || error; 
     }
 };
 
@@ -30,14 +30,14 @@ export const register = async (formData) => {
         return response.data;
     } catch (error) {
         console.error('Error en register:', error);
-        return error.response?.data || { message: 'Error al conectar con el servidor' };
+        throw error.response?.data || error;
     }
 };
 
 // LOGOUT
 export const logout = () => {
     try {
-        sessionStorage.removeItem('user');   
+        sessionStorage.removeItem('user');
         cookies.remove('jwt-auth');
     } catch (error) {
         console.error('Error al cerrar sesión:', error);

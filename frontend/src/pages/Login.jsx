@@ -4,6 +4,7 @@ import { login } from "@services/auth.service";
 import { useAuth } from "@context/AuthContext";
 import "../styles/Login.css";
 import mascotImage from "../assets/mascot.png";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Login = () => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [mostrarPass, setMostrarPass] = useState(false);
 
     const handleChange = (e) => {
         setCredentials({
@@ -55,7 +57,6 @@ const Login = () => {
                 sessionStorage.setItem("user", JSON.stringify(userInfo));
                 setUser(userInfo);
 
-                // Redirigir según el rol
                 const redirectPath = getRedirectPathByRole(userData.role);
                 navigate(redirectPath, { replace: true });
 
@@ -64,7 +65,12 @@ const Login = () => {
             }
         } catch (err) {
             console.error("Error al iniciar sesión:", err);
-            setError("Ocurrió un error al iniciar sesión.");
+
+            const backendMessage =
+                err?.message ||
+                err?.errorDetails?.[0] ||
+                "Credenciales incorrectas.";
+            setError(backendMessage);
         } finally {
             setLoading(false);
         }
@@ -74,38 +80,46 @@ const Login = () => {
         <main className="login-container">
             <div className="login-wrapper">
                 <div className="login-form-container">
-                    <h1 className="login-title">Bicicletero UBB 🚲</h1>
-                    <p className="login-subtitle">Ingresa a tu cuenta</p>
-
+                    <h1 className="login-title">BICICLETERO UBB</h1>
                     {error && (
                         <div className="login-error">
                             {error}
                         </div>
                     )}
-
                     <form onSubmit={handleSubmit}>
                         <div className="login-field">
-                            <label className="login-label">Correo electrónico</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={credentials.email}
-                                onChange={handleChange}
-                                className="login-input"
-                                required
-                            />
+                            <label className="login-label">CORREO ELECTRÓNICO</label>
+                            <div className="login-input-wrapper">
+                                <Mail size={20} color="#3e4856" className="login-input-icon" />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    placeholder="tucorreo@ejemplo.cl"
+                                    value={credentials.email}
+                                    onChange={handleChange}
+                                    className="login-input"
+                                    required
+                                />
+                            </div>
                         </div>
 
                         <div className="login-field">
-                            <label className="login-label">Contraseña</label>
-                            <input
-                                type="password"
-                                name="password"
-                                value={credentials.password}
-                                onChange={handleChange}
-                                className="login-input"
-                                required
-                            />
+                            <label className="login-label">CONTRASEÑA</label>
+                            <div className="login-input-wrapper login-pass-wrapper">
+                                <Lock size={20} color="#3e4856" className="login-input-icon" />
+                                <input
+                                    type={mostrarPass ? "text" : "password"}
+                                    name="password"
+                                    placeholder="*******"
+                                    value={credentials.password}
+                                    onChange={handleChange}
+                                    className="login-input"
+                                    required
+                                />
+                                <button type="button" className="toggle-pass" onClick={() => setMostrarPass(!mostrarPass)}>
+                                    {mostrarPass ? <EyeOff size={20} color="#3e4856" /> : <Eye size={20} color="#3e4856" />}
+                                </button>
+                            </div>
                         </div>
 
                         <button
