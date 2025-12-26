@@ -14,7 +14,7 @@ const NavBarAdmin = ({ sidebarHover }) => {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '0 30px',
-            zIndex:1000,
+            zIndex:100,
             boxShadow: '0 2px 15px rgba(0, 0, 0, 0.1)',
             color: '#ffffff',
             borderBottom: 'none'
