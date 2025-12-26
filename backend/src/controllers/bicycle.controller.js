@@ -2,7 +2,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import BicycleEntity from "../entities/BicycleEntity.js";
 import { handleSuccess, handleErrorClient, handleErrorServer } from "../Handlers/responseHandlers.js";
-import { createBicycleService } from "../services/bicycle.service.js";
+import { createBicycleService, updateBicyclesServices, deleteBicyclesServices, getBicyclesServices } from "../services/bicycle.service.js";
 import { bicycleValidation } from "../validations/bicycle.validation.js";
 
 export async function createBicycle(req, res) {
@@ -24,10 +24,10 @@ export async function createBicycle(req, res) {
 }
 export async function getBicycles(req, res) {
     try {
-        const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
-
         const userId = req.user.sub;
-        const bicycles = await bicycleRepository.find({ where:{ user: {id: userId}} });
+        
+        const bicycles = await getBicyclesServices(userId);
+
         if (!bicycles || bicycles.length === 0){
         handleSuccess(res, 200, "El usuario no tiene bicicletas registradas",bicycles);
         }
@@ -49,4 +49,36 @@ export async function getAllBicycles(req, res){
         handleErrorServer(res,500,"Error del servidor",error);
     }
 }
+export async function deleteBicycles(req, res) {
+    try {
+        const userId = req.user.sub;
+        const { id } = req.body;
 
+        const bicycle = await deleteBicyclesServices(userId, id);
+
+        if (!bicycle) {
+            return handleErrorClient(res,404,"Bicicleta no encontrada o no pertenece al usuario" );
+        }
+        return handleSuccess(res,200, "Bicicleta eliminada exitosamente");
+    } catch (error) {
+        handleErrorServer( res, 500, "Error del servidor",error);
+    }
+}
+export async function updateBicycles(req, res) {
+    try {
+        const userId = req.user.sub;
+        const data = req.body;
+
+        const updatedBike = await updateBicyclesServices(userId, data);
+
+        if (!updatedBike)
+            return handleErrorClient(res, 404, "Bicicleta no encontrada");
+
+        return handleSuccess(res, 200, "Perfil de bicicleta actualizado exitosamente", {
+            color: updatedBike.color,
+            photo: updatedBike.photo,
+        });
+    } catch (error) {
+        handleErrorServer(res, 500, "Error del servidor", error);
+    }
+}

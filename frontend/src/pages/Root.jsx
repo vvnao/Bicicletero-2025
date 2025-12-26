@@ -1,12 +1,7 @@
-import { Outlet } from 'react-router-dom';
-import { AuthProvider } from '@context/AuthContext';
+import { Outlet } from "react-router-dom";
 
 function Root() {
-  return (
-    <AuthProvider>
-      <Outlet />
-    </AuthProvider>
-  );
+  return <Outlet />;
 }
 
 export default Root;

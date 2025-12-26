@@ -22,7 +22,6 @@ export async function getProfiles() {
         return error.response?.data || { message: 'Error al obtener perfil' };
     }
 }
-
 export async function updatePrivateProfile(formValues){
     try{
         const token = localStorage.getItem('token');

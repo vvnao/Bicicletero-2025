@@ -1,5 +1,5 @@
 "use strict"
-import Joi from "Joi"
+import Joi from "joi"
 
 export const reservationValidation = Joi.object({
     reservationCode: Joi.string () //* Creo que este tampoco va, ya que es un código que nosotros podemos generar en el sistema

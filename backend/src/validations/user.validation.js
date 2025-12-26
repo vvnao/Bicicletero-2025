@@ -1,5 +1,5 @@
 "use strict";
-import Joi from "Joi";
+import Joi from "joi";
 
 export const registerUserValidation = Joi.object({
     names: Joi.string()
@@ -83,12 +83,12 @@ export const registerUserValidation = Joi.object({
         serialNumber: Joi.string().allow(null, ""),
         description: Joi.string().allow(null, ""),
         photo: Joi.string().allow(null, ""), // bicyclePhoto
-    }).optional(), // 👈 ahora es opcional
+    }).optional(), 
 })
     .custom((value, helpers) => {
         const { typePerson, email, tnePhoto, position, positionDescription } = value;
 
-        /* Estudiante
+        //Estudiante
         if (typePerson === "estudiante") {
             if (!/@alumnos\.ubiobio\.cl$/.test(email)) {
                 return helpers.error("any.custom", {
@@ -101,7 +101,7 @@ export const registerUserValidation = Joi.object({
                     message: "Los estudiantes deben subir una foto de su TNE",
                 });
             }
-        }*/
+        }
 
         // Académico
         if (typePerson === "academico") {

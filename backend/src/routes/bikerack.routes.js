@@ -4,19 +4,30 @@ import {
   getDashboard,
   getBikerackSpaces,
   listBikeracks,
-  assignGuardController,
-  storeBicycleController,
-  removeBicycleController,
+  storeBicycleInBikerack,
+  removeBicycleFromBikerack,
 } from '../controllers/bikerack.controller.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { authorize } from '../middleware/authorize.middleware.js';
 
 const router = Router();
 
+router.use(authMiddleware);
+
 router.get('/dashboard', getDashboard);
 router.get('/:bikerackId', getBikerackSpaces);
-//////////////////////////////////////////
-router.get('/', listBikeracks);
-router.put('/:bikerackId/assign-guard/:guardId', assignGuardController);
-router.put('/:bikerackId/store/:bicycleId', storeBicycleController);
-router.put('/remove/:bicycleId', removeBicycleController);
+
+//------------BICICLETERO----------
+router.get('/', authorize(['admin', 'guard', 'user']), listBikeracks);
+router.post(
+  '/store-bicycle',
+  authorize(['admin', 'guard', 'user']),
+  storeBicycleInBikerack
+);
+router.post(
+  '/remove-bicycle',
+  authorize(['admin', 'guard', 'user']),
+  removeBicycleFromBikerack
+);
 
 export default router;
