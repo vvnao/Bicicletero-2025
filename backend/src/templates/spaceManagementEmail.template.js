@@ -1,9 +1,7 @@
-import { generateWithdrawalCode } from '../helpers/spaceManagementEmail.helper.js';
-
 export const emailTemplates = {
-  //! CORREO DE INGRESO ESTÁNDAR (para con y sin reserva)
+  //* CORREO DE INGRESO ESTÁNDAR PARA CON Y SIN RESERVA (checkin)
   checkinStandard: (user, space, data) => {
-    const withdrawalCode = generateWithdrawalCode();
+    const withdrawalCode = data.retrievalCode;
     const hasReservation = data.reservationCode;
 
     return `
@@ -254,5 +252,577 @@ export const emailTemplates = {
 </body>
 </html>
     `;
+  },
+  /////////////////////////////////////////////////////////////////////////////////////////
+  //* CORREO DE RETIRO NORMAL (checkout)
+  checkoutStandard: (user, space) => {
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retiro Confirmado - Bicicletero UBB</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #ffffff;
+      font-family: 'Public Sans', Arial, sans-serif;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: #cf2323;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .header {
+      background: #ffffff;
+      padding: 15px 20px 15px 50px; 
+      text-align: left;
+    }
+    
+    .content {
+      padding: 20px;
+      background: #ffffff;
+    }
+    
+    .title {
+      font-family: 'Public Sans', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      color: #0d870b;
+      text-align: left;
+      margin: 0 0 10px 0;
+    }
+    
+    .greeting {
+      font-family: 'Public Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      text-align: left;
+      margin: 15px 0;
+    }
+    
+    .divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 20px 0;
+    }
+    
+    .summary-title {
+      font-family: 'Public Sans', sans-serif;
+      font-size: 20px;
+      text-align: center;
+      margin: 20px 0 15px 0;
+    }
+    
+    .summary-box {
+      background: rgba(0, 74, 173, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #004aad;
+    }
+    
+    .detail-row {
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    
+    .detail-label {
+      font-family: 'Public Sans', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      display: inline;
+    }
+    
+    .detail-value {
+      font-family: 'Public Sans', sans-serif;
+      font-size: 15px;
+      display: inline;
+    }
+    
+    .footer {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      color: #b4b4b4;
+      text-align: center;
+      margin: 25px 0 15px 0;
+    }
+
+    /* Responsividad para los celus */
+    @media only screen and (max-width: 500px) {
+      .container {
+        max-width: 100% !important;
+        margin: 10px !important;
+      }
+      
+      .content {
+        padding: 15px !important;
+      }
+      
+      .title { font-size: 20px !important; }
+      .greeting { font-size: 15px !important; }
+      .summary-title { font-size: 18px !important; }
+      .detail-label, .detail-value { font-size: 14px !important; }
+      .footer { font-size: 13px !important; }
+    }
+  </style>
+</head>
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table class="container" width="500" cellpadding="0" cellspacing="0" border="0">
+          <!-- logo y título -->
+          <tr>
+            <td class="header">
+              <img src="cid:header" alt="Bicicletero Universidad del Bío-Bío" style="max-width: 80%; height: auto;">
+            </td>
+          </tr>
+          
+          <!-- contenido principal -->
+          <tr>
+            <td class="content">
+              <!-- título principal -->
+              <h2 class="title">Retiro Confirmado!</h2>
+              
+              <!-- saludo y mensaje inicial -->
+              <div class="greeting">
+                <p>¡Hola ${user.names} ${user.lastName}!</p>
+                <p>Tu bicicleta ha sido retirada exitosamente del sistema.</p>
+              </div>
+              
+              <!-- separador -->
+              <div class="divider"></div>
+              
+              <!-- resumen de la estadía -->
+              <h3 class="summary-title">Resumen de tu estadía:</h3>
+              
+              <div class="summary-box">
+                <div class="detail-row">
+                  <span class="detail-label">Espacio liberado:</span>
+                  <span class="detail-value"> ${space.spaceCode}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Bicicletero:</span>
+                  <span class="detail-value"> ${
+                    space.bikerack?.name || 'Bicicletero'
+                  }</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Fecha y hora de retiro:</span>
+                  <span class="detail-value"> ${new Date().toLocaleString(
+                    'es-CL'
+                  )}</span>
+                </div>
+              </div>
+              
+              <!-- pie de página -->
+              <div class="footer">
+                <p>Sistema de Bicicleteros UBB</p>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+  },
+  /////////////////////////////////////////////////////////////////////////////////////////
+  //* CORREO DE ALERTA POR TIEMPO EXCEDIDO
+  timeExceeded: (user, space, infractionStart) => {
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alerta de Infracción - Bicicletero UBB</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #ffffff;
+      font-family: 'Public Sans', Arial, sans-serif;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: #ffffff; 
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .header {
+      background: #ffffff;
+      padding: 15px 20px 15px 50px; 
+      text-align: left;
+    }
+    
+    .content {
+      padding: 20px;
+      background: #ffffff;
+    }
+    
+    .title {
+      font-family: 'Public Sans', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      color: #cf2323; 
+      text-align: left;
+      margin: 0 0 10px 0;
+    }
+    
+    .greeting {
+      font-family: 'Public Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      text-align: left;
+      margin: 15px 0;
+    }
+    
+    .divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 20px 0;
+    }
+    
+    .summary-box-alert {
+      background: rgba(207, 35, 35, 0.05);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #cf2323;
+    }
+    
+    .detail-row {
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    
+    .detail-label {
+      font-family: 'Public Sans', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      display: inline;
+    }
+    
+    .detail-value {
+      font-family: 'Public Sans', sans-serif;
+      font-size: 15px;
+      display: inline;
+    }
+    
+    .footer {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      color: #b4b4b4;
+      text-align: center;
+      margin: 25px 0 15px 0;
+    }
+
+    /* Responsividad para los celus */
+    @media only screen and (max-width: 500px) {
+      .container {
+        max-width: 100% !important;
+        margin: 10px !important;
+      }
+      
+      .content {
+        padding: 15px !important;
+      }
+      
+      .title { font-size: 20px !important; }
+      .greeting { font-size: 15px !important; }
+      .detail-label, .detail-value { font-size: 14px !important; }
+      .footer { font-size: 13px !important; }
+    }
+  </style>
+</head>
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table class="container" width="500" cellpadding="0" cellspacing="0" border="0">
+          <!-- logo y título -->
+          <tr>
+            <td class="header">
+              <img src="cid:header" alt="Bicicletero Universidad del Bío-Bío" style="max-width: 80%; height: auto;">
+            </td>
+          </tr>
+          
+          <!-- contenido principal -->
+          <tr>
+            <td class="content">
+              <!-- título principal -->
+              <h2 class="title">Alerta de Infracción!</h2>
+              
+              <!-- saludo y mensaje inicial -->
+              <div class="greeting">
+                <p>¡Hola ${user.names} ${user.lastName}!</p>
+                <p>Has superado el tiempo estimado y los 15 min de gracia en el espacio <strong>${
+                  space.spaceCode
+                }</strong>.</p>
+              </div>
+              
+              <!-- línea divisoria gris (igual que en checkinStandard) -->
+              <div class="divider"></div>
+              
+              <!-- recuadro de alerta -->
+              <div class="summary-box-alert">
+                <div class="detail-row">
+                  <span class="detail-label">Infracción iniciada:</span>
+                  <span class="detail-value"> ${new Date(
+                    infractionStart
+                  ).toLocaleTimeString('es-CL')}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-value" style="color: #cf2323; font-weight: 600;">
+                    Por favor, retira tu bicicleta a la brevedad!
+                  </span>
+                </div>
+              </div>
+              
+              <!-- pie de página -->
+              <div class="footer">
+                <p>Sistema de Bicicleteros UBB</p>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  },
+  /////////////////////////////////////////////////////////////////////////////////////////
+  //* RETIRO CON INFRACCIÓN (Checkout Tardío)
+  infractionCheckout: (user, space, infractionDuration) => {
+    const hours = Math.floor(infractionDuration / 60);
+    const minutes = infractionDuration % 60;
+
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retiro Confirmado - Bicicletero UBB</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #ffffff;
+      font-family: 'Public Sans', Arial, sans-serif;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: #ffffff; 
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .header {
+      background: #ffffff;
+      padding: 15px 20px 15px 50px; 
+      text-align: left;
+    }
+    
+    .content {
+      padding: 20px;
+      background: #ffffff;
+    }
+    
+    .title {
+      font-family: 'Public Sans', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      color: #0d870b; 
+      text-align: left;
+      margin: 0 0 10px 0;
+    }
+    
+    .greeting {
+      font-family: 'Public Sans', sans-serif;
+      font-size: 16px;
+      line-height: 1.4;
+      text-align: left;
+      margin: 15px 0;
+    }
+    
+    .divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 20px 0;
+    }
+    
+    .summary-title {
+      font-family: 'Public Sans', sans-serif;
+      font-size: 20px;
+      text-align: center;
+      margin: 20px 0 15px 0;
+    }
+    
+    .summary-box {
+      background: rgba(0, 74, 173, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #004aad;
+    }
+    
+    .detail-row {
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    
+    .detail-label {
+      font-family: 'Public Sans', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      display: inline;
+    }
+    
+    .detail-value {
+      font-family: 'Public Sans', sans-serif;
+      font-size: 15px;
+      display: inline;
+    }
+    
+    .infraction-row {
+      margin-bottom: 12px;
+      line-height: 1.4;
+      color: #cf2323; 
+      font-weight: 600;
+    }
+    
+    .infraction-label {
+      font-family: 'Public Sans', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      display: inline;
+      color: #cf2323; 
+    }
+    
+    .infraction-value {
+      font-family: 'Public Sans', sans-serif;
+      font-size: 15px;
+      display: inline;
+      color: #cf2323; 
+      font-weight: 600;
+    }
+    
+    .footer {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      color: #b4b4b4;
+      text-align: center;
+      margin: 25px 0 15px 0;
+    }
+
+    /* Responsividad para los celus */
+    @media only screen and (max-width: 500px) {
+      .container {
+        max-width: 100% !important;
+        margin: 10px !important;
+      }
+      
+      .content {
+        padding: 15px !important;
+      }
+      
+      .title { font-size: 20px !important; }
+      .greeting { font-size: 15px !important; }
+      .summary-title { font-size: 18px !important; }
+      .detail-label, .detail-value, .infraction-label, .infraction-value { font-size: 14px !important; }
+      .footer { font-size: 13px !important; }
+    }
+  </style>
+</head>
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table class="container" width="500" cellpadding="0" cellspacing="0" border="0">
+          <!-- logo y título -->
+          <tr>
+            <td class="header">
+              <img src="cid:header" alt="Bicicletero Universidad del Bío-Bío" style="max-width: 80%; height: auto;">
+            </td>
+          </tr>
+          
+          <!-- contenido principal -->
+          <tr>
+            <td class="content">
+              <!-- título principal -->
+              <h2 class="title">Retiro Confirmado!</h2>
+              
+              <!-- saludo y mensaje inicial (igual que checkoutStandard) -->
+              <div class="greeting">
+                <p>¡Hola ${user.names} ${user.lastName}!</p>
+                <p>Tu bicicleta ha sido retirada exitosamente del sistema.</p>
+              </div>
+              
+              <!-- línea divisoria gris (igual que checkoutStandard) -->
+              <div class="divider"></div>
+              
+              <!-- resumen de la estadía -->
+              <h3 class="summary-title">Resumen de tu estadía:</h3>
+              
+              <div class="summary-box">
+                <div class="detail-row">
+                  <span class="detail-label">Espacio liberado:</span>
+                  <span class="detail-value"> ${space.spaceCode}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Bicicletero:</span>
+                  <span class="detail-value"> ${
+                    space.bikerack?.name || 'Bicicletero'
+                  }</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Fecha y hora de retiro:</span>
+                  <span class="detail-value"> ${new Date().toLocaleString(
+                    'es-CL'
+                  )}</span>
+                </div>
+                <div class="infraction-row">
+                  <span class="infraction-label">Tiempo total de infracción:</span>
+                  <span class="infraction-value"> ${
+                    hours > 0 ? `${hours}h ` : ''
+                  }${minutes}min</span>
+                </div>
+              </div>
+              
+              <!-- pie de página -->
+              <div class="footer">
+                <p>Sistema de Bicicleteros UBB</p>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
   },
 };

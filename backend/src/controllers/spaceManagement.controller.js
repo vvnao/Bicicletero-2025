@@ -11,7 +11,7 @@ import {
 import { sendEmail } from '../services/email.service.js';
 import { emailTemplates } from '../templates/spaceManagementEmail.template.js';
 ////////////////////////////////////////////////////////////////////////////////////////////
-//! MARCAR OCUPADO CON RESERVA
+//! MARCAR OCUPADO - CON RESERVA
 export async function occupyWithReservation(req, res) {
   try {
     const { reservationCode } = req.body;
@@ -29,6 +29,7 @@ export async function occupyWithReservation(req, res) {
       emailTemplates.checkinStandard(result.user, result.space, {
         reservationCode: result.reservation.reservationCode,
         estimatedHours: result.reservation.estimatedHours,
+        retrievalCode: result.retrievalCode,
       })
     );
     console.log('Correo enviado');
@@ -40,24 +41,43 @@ export async function occupyWithReservation(req, res) {
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
-//! MARCAR OCUPADO SIN RESERVA
+//! MARCAR OCUPADO - SIN RESERVA
 export async function occupyWithoutReservation(req, res) {
   try {
     const { spaceId } = req.params;
-    const { rut, estimatedHours } = req.body;
+    const { rut, estimatedHours, bicycleId } = req.body;
 
-    if (!spaceId || !rut || !estimatedHours) {
+    if (!spaceId || isNaN(parseInt(spaceId))) {
+      return handleErrorClient(res, 400, 'ID de espacio inválido');
+    }
+    if (!rut || !estimatedHours || !bicycleId) {
       return handleErrorClient(
         res,
         400,
-        'SpaceId, rut y estimatedHours requeridos'
+        'Faltan campos obligatorios: rut, estimatedHours o bicycleId'
+      );
+    }
+    const hours = parseFloat(estimatedHours);
+    if (isNaN(hours) || hours <= 0) {
+      return handleErrorClient(
+        res,
+        400,
+        'Las horas estimadas deben ser un número válido mayor a 0'
+      );
+    }
+    if (isNaN(parseInt(bicycleId))) {
+      return handleErrorClient(
+        res,
+        400,
+        'El ID de la bicicleta debe ser un número'
       );
     }
 
     const result = await occupySpaceWithoutReservation(
       parseInt(spaceId),
       rut,
-      parseInt(estimatedHours)
+      hours,
+      parseInt(bicycleId)
     );
 
     await sendEmail(
@@ -65,6 +85,7 @@ export async function occupyWithoutReservation(req, res) {
       'Ingreso Confirmado - Bicicletero UBB',
       `Tu bicicleta está en espacio ${result.space.spaceCode}`,
       emailTemplates.checkinStandard(result.user, result.space, {
+        retrievalCode: result.retrievalCode,
         estimatedHours: estimatedHours,
       })
     );
@@ -72,63 +93,63 @@ export async function occupyWithoutReservation(req, res) {
 
     handleSuccess(res, 200, 'Espacio ocupado exitosamente sin reserva', result);
   } catch (error) {
-    console.error('Error en occupyWithoutReservation:', error);
+    console.error('Error en occupyWithoutReservation:', error.message);
     handleErrorClient(res, 400, error.message);
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
-//! LIBERAR ESPACIO
+//! LIBERAR ESPACIO (para retiro normal y con infracción)
 export async function liberateSpaceController(req, res) {
   try {
     const { spaceId } = req.params;
+    const { retrievalCode } = req.body;
 
-    if (!spaceId) {
-      return handleErrorClient(res, 400, 'SpaceId requerido');
+    if (!spaceId || isNaN(parseInt(spaceId))) {
+      return handleErrorClient(res, 400, 'ID de espacio inválido');
+    }
+    if (!retrievalCode) {
+      return handleErrorClient(res, 400, 'El código de retiro es obligatorio');
     }
 
-    const result = await liberateSpace(parseInt(spaceId));
+    const result = await liberateSpace(parseInt(spaceId), retrievalCode);
 
-    await sendEmail(
-      result.user.email,
-      'Retiro Confirmado - Bicicletero UBB',
-      `Retiraste tu bicicleta del espacio ${result.space.spaceCode}`,
-      emailTemplates.checkout(result.user, result.space, result.reservation)
-    );
-    console.log('Correo enviado');
+    let emailHtml;
+    let subject;
 
-    handleSuccess(res, 200, 'Espacio liberado exitosamente', result);
-  } catch (error) {
-    console.error('Error en liberateSpace:', error);
-    handleErrorClient(res, 400, error.message);
-  }
-}
-////////////////////////////////////////////////////////////////////////////////////////////
-//! MARCAR COMO TIEMPO EXCEDIDO
-export async function markAsOverdue(req, res) {
-  try {
-    const { spaceId } = req.params;
-
-    if (!spaceId) {
-      return handleErrorClient(res, 400, 'SpaceId requerido');
-    }
-
-    const result = await markSpaceAsOverdue(parseInt(spaceId));
-
-    await sendEmail(
-      result.user.email,
-      '⚠️ Tiempo Excedido - Bicicletero UBB',
-      `Tu bicicleta ha excedido el tiempo de estacionamiento`,
-      emailTemplates.timeExceeded(
+    if (result.isInfraction) {
+      subject = 'Retiro con Infracción - Bicicletero UBB';
+      emailHtml = emailTemplates.infractionCheckout(
         result.user,
         result.space,
         result.infractionDuration
-      )
-    );
-    console.log('Correo enviado');
+      );
+    } else {
+      subject = 'Retiro Confirmado - Bicicletero UBB';
+      emailHtml = emailTemplates.checkoutStandard(result.user, result.space);
+    }
 
-    handleSuccess(res, 200, 'Espacio marcado como tiempo excedido', result);
+    if (result.user?.email) {
+      await sendEmail(result.user.email, subject, null, emailHtml);
+      console.log(
+        `Correo enviado (${result.isInfraction ? 'Infracción' : 'Estándar'})`
+      );
+    }
+
+    handleSuccess(res, 200, 'Espacio liberado exitosamente', result);
   } catch (error) {
-    console.error('Error en markAsOverdue:', error);
+    console.error('Error en liberateSpaceController:', error.message);
+
+    if (
+      error.message.includes('Error obteniendo') ||
+      error.message.includes('Database')
+    ) {
+      return handleErrorServer(
+        res,
+        500,
+        'Error interno al procesar la liberación'
+      );
+    }
+
     handleErrorClient(res, 400, error.message);
   }
 }

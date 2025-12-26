@@ -8,11 +8,8 @@ import {
 
 const router = Router();
 
-//! OCUPAR ESPACIOS
 router.post('/occupy-with-reservation', occupyWithReservation);
 router.post('/:spaceId/occupy-without-reservation', occupyWithoutReservation);
-
-//! LIBERAR ESPACIOS
 router.patch('/:spaceId/liberate', liberateSpaceController);
 
 export default router;

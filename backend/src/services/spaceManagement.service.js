@@ -1,10 +1,19 @@
 import { AppDataSource } from '../config/configDb.js';
 import { SPACE_STATUS } from '../entities/SpaceEntity.js';
 import { RESERVATION_STATUS } from '../entities/ReservationEntity.js';
+import { LOG_ACTIONS, LOG_FINAL_STATUS } from '../entities/SpaceLogEntity.js';
+import { generateRetrievalCode } from '../helpers/spaceManagementEmail.helper.js';
+import { getActiveSpaceLog } from '../helpers/spaceDetails.helper.js';
+import { formatRut } from '../helpers/rut.helper.js';
+import { IsNull, LessThan } from 'typeorm';
+import { sendEmail } from './email.service.js';
+import { emailTemplates } from '../templates/spaceManagementEmail.template.js';
 
 const spaceRepository = AppDataSource.getRepository('Space');
 const reservationRepository = AppDataSource.getRepository('Reservation');
 const userRepository = AppDataSource.getRepository('User');
+const bicycleRepository = AppDataSource.getRepository('Bicycle');
+const spaceLogRepository = AppDataSource.getRepository('SpaceLog');
 ////////////////////////////////////////////////////////////////////////////////////////////
 //! OCUPAR ESPACIO CON RESERVA (para que guardia pueda marcar como ocupado un espacio reservado)
 export async function occupySpaceWithReservation(reservationCode) {
@@ -12,17 +21,48 @@ export async function occupySpaceWithReservation(reservationCode) {
     //* para buscar reserva por código
     const reservation = await reservationRepository.findOne({
       where: { reservationCode, status: RESERVATION_STATUS.PENDING },
-      relations: ['space', 'space.bikerack', 'user'],
+      relations: ['space', 'space.bikerack', 'user', 'bicycle'],
     });
 
     if (!reservation) {
       throw new Error('Reserva no encontrada o ya utilizada!');
     }
 
+    const actualCheckin = new Date();
+    const estimatedHours = parseInt(reservation.estimatedHours);
+
+    //! CALCULO DE TIEMPOS
+    const estimatedCheckout = new Date(
+      actualCheckin.getTime() + estimatedHours * 60 * 60 * 1000
+    );
+    //! se define el inicio de la infracción (+15 minutos)
+    const infractionStart = new Date(
+      estimatedCheckout.getTime() + 15 * 60 * 1000
+    );
+
+    //! SPACELOG CON INFRACTION START
+    const spaceLog = spaceLogRepository.create({
+      action: LOG_ACTIONS.CHECKIN,
+      actualCheckin,
+      estimatedCheckout,
+      infractionStart,
+      space: reservation.space,
+      user: reservation.user,
+      bicycle: reservation.bicycle,
+      reservation: reservation,
+    });
+
+    await spaceLogRepository.save(spaceLog);
+
     //* para actualizar espacio y reserva
     reservation.space.status = SPACE_STATUS.OCCUPIED;
     reservation.status = RESERVATION_STATUS.ACTIVE;
-    reservation.dateTimeActualArrival = new Date();
+
+    const retrievalCode = generateRetrievalCode();
+    const retrievalCodeExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    reservation.space.currentRetrievalCode = retrievalCode;
+    reservation.space.currentRetrievalCodeExpires = retrievalCodeExpires;
 
     await spaceRepository.save(reservation.space);
     await reservationRepository.save(reservation);
@@ -32,8 +72,12 @@ export async function occupySpaceWithReservation(reservationCode) {
       space: reservation.space,
       reservation,
       user: reservation.user,
+      retrievalCode,
     };
   } catch (error) {
+    if (error.message.includes('Reserva no encontrada')) {
+      throw error;
+    }
     throw new Error(`Error ocupando espacio con reserva: ${error.message}`);
   }
 }
@@ -42,7 +86,8 @@ export async function occupySpaceWithReservation(reservationCode) {
 export async function occupySpaceWithoutReservation(
   spaceId,
   userRut,
-  estimatedHours
+  estimatedHours,
+  bicycleId
 ) {
   try {
     //* para verificar si el espacio está libre
@@ -55,36 +100,93 @@ export async function occupySpaceWithoutReservation(
       throw new Error('Espacio no disponible');
     }
 
-    //* para buscar usuario por rut 
+    //* para normalizar el rut y buscar usuario
+    const formattedRut = formatRut(userRut);
+
     const user = await userRepository.findOne({
-      where: { rut: userRut },
-      relations: ['bicycles'],
+      where: { rut: formattedRut },
+      relations: ['bicycles', 'reservations'],
     });
 
     if (!user) {
-      throw new Error('Usuario no encontrado');
+      throw new Error(`Usuario con RUT ${formattedRut} no encontrado`);
     }
 
-    //* para calcular el momento en que el espacio pasa a estar en infracción (con el tiempo de llegada + el tiempo estimado)
-    const arrivalTime = new Date();
-    const limitTime = new Date(
-      arrivalTime.getTime() + estimatedHours * 60 * 60 * 1000
+    //* solo 1 espacio a la vez por usuario
+    const hasActiveProcess = user.reservations?.some(
+      (res) =>
+        res.status === RESERVATION_STATUS.PENDING ||
+        res.status === RESERVATION_STATUS.ACTIVE
     );
 
-    //* para crear reserva automática AKI EXPLICAR MEJOR
+    if (hasActiveProcess) {
+      throw new Error(
+        'El usuario ya tiene una reserva activa o una bicicleta en un bicletero.'
+      );
+    }
+
+    //* para validar que la bicicleta pertenece al usuario
+    const userBicycleIds = user.bicycles.map((bicycle) => bicycle.id);
+    if (!userBicycleIds.includes(parseInt(bicycleId))) {
+      throw new Error('Bicicleta no pertenece al usuario');
+    }
+
+    //* para obtener la bici seleccionada
+    const bicycle = await bicycleRepository.findOne({
+      where: { id: bicycleId },
+    });
+
+    const actualCheckin = new Date();
+    const hoursInt = parseInt(estimatedHours);
+
+    //! CALCULO DE TIEMPOS
+    const estimatedCheckout = new Date(
+      actualCheckin.getTime() + hoursInt * 60 * 60 * 1000
+    );
+    //! se define el inicio de la infracción (+15 minutos)
+    const infractionStart = new Date(
+      estimatedCheckout.getTime() + 15 * 60 * 1000
+    );
+
+    const reservationCode = `A${Math.floor(1000 + Math.random() * 9000)}`;
+
+    //* se crea una reserva automática
     const reservation = reservationRepository.create({
-      reservationCode: `AUTO-${Date.now()}`,
-      dateTimeReservation: new Date(),
+      reservationCode: reservationCode,
+      dateTimeReservation: actualCheckin,
       estimatedHours: estimatedHours,
+      expirationTime: null,
       status: RESERVATION_STATUS.ACTIVE,
       space: space,
       user: user,
+      bicycle: bicycle,
     });
 
-    //* para actualizar espacio
+    await reservationRepository.save(reservation);
+
+    //! CREAR SPACELOG CON INFRACTION START
+    const spaceLog = spaceLogRepository.create({
+      action: LOG_ACTIONS.CHECKIN,
+      actualCheckin,
+      estimatedCheckout,
+      infractionStart,
+      space: space,
+      user: user,
+      bicycle: bicycle,
+      reservation: reservation,
+    });
+
+    await spaceLogRepository.save(spaceLog);
+
+    //! ACTUALIZAR ESPACIO CON CURRENTLOG
     space.status = SPACE_STATUS.OCCUPIED;
 
-    await reservationRepository.save(reservation);
+    const retrievalCode = generateRetrievalCode();
+    const retrievalCodeExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    space.currentRetrievalCode = retrievalCode;
+    space.currentRetrievalCodeExpires = retrievalCodeExpires;
+
     await spaceRepository.save(space);
 
     return {
@@ -92,78 +194,167 @@ export async function occupySpaceWithoutReservation(
       space,
       reservation,
       user,
-      bicycles: user.bicycles, //* esto devuelve todas las bicicletas del usuario (así el guardia selecciona 1 sola)
+      retrievalCode,
     };
   } catch (error) {
+    const businessErrors = [
+      'Espacio no disponible',
+      'no encontrado',
+      'ya tiene una reserva',
+      'no pertenece al usuario',
+    ];
+
+    if (
+      businessErrors.some((msg) =>
+        error.message.toLowerCase().includes(msg.toLowerCase())
+      )
+    ) {
+      throw error;
+    }
+
     throw new Error(`Error ocupando espacio sin reserva: ${error.message}`);
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
-//! LIBERAR ESPACIO (para cuando usuario retire su bici)
-export async function liberateSpace(spaceId) {
+//! LIBERAR ESPACIO (para retiro normal y con infracción)
+export async function liberateSpace(spaceId, retrievalCode) {
   try {
-    //* para verificar que el espacio esté ocupado
+    //* para verificar que el espacio esté ocupado/en infracción
     const space = await spaceRepository.findOne({
-      where: { id: spaceId, status: SPACE_STATUS.OCCUPIED },
-      relations: ['bikerack'],
+      where: [
+        { id: spaceId, status: SPACE_STATUS.OCCUPIED },
+        { id: spaceId, status: SPACE_STATUS.TIME_EXCEEDED },
+      ],
+      relations: ['bikerack', 'spaceLogs', 'spaceLogs.user'],
     });
 
     if (!space) {
-      throw new Error('Espacio no encontrado o no está ocupado');
+      throw new Error('Espacio no encontrado o no está ocupado/en infracción');
     }
 
-    //* para verificar que existe una reserva ACTIVA para ese espacio (manejo de posibles errores)
+    if (!retrievalCode) throw new Error('Código de retiro requerido');
+    if (space.currentRetrievalCode !== retrievalCode)
+      throw new Error('Código de retiro incorrecto');
+    if (space.currentRetrievalCodeExpires < new Date())
+      throw new Error('Código de retiro expirado');
+
+    const activeLog = getActiveSpaceLog(space.spaceLogs);
+    if (!activeLog)
+      throw new Error('No se encontró registro activo para este espacio');
+
+    //* para verificar que existe una reserva ACTIVA para ese espacio
     const reservation = await reservationRepository.findOne({
       where: { space: { id: spaceId }, status: RESERVATION_STATUS.ACTIVE },
       relations: ['user'],
     });
 
-    //* para actualizar espacio
-    space.status = SPACE_STATUS.FREE;
+    const now = new Date();
+    let totalInfractionMinutes = 0;
+    let isInfraction = false;
 
-    //* actualiza reserva si existe
+    if (
+      activeLog.infractionStart &&
+      now > new Date(activeLog.infractionStart)
+    ) {
+      const infractionMs = now - new Date(activeLog.infractionStart);
+      totalInfractionMinutes = Math.max(
+        Math.floor(infractionMs / (1000 * 60)),
+        0
+      );
+      isInfraction = true;
+    }
+
+    //* actualizar log
+    activeLog.actualCheckout = now;
+    activeLog.action = LOG_ACTIONS.CHECKOUT;
+    activeLog.totalInfractionMinutes = totalInfractionMinutes;
+    activeLog.finalStatus = isInfraction
+      ? LOG_FINAL_STATUS.TIME_EXCEEDED
+      : LOG_FINAL_STATUS.COMPLETED;
+    await spaceLogRepository.save(activeLog);
+
+    //* para actualizar espacio a libre (limpiar el espacio)
+    space.status = SPACE_STATUS.FREE;
+    space.currentRetrievalCode = null;
+    space.currentRetrievalCodeExpires = null;
+    await spaceRepository.save(space);
+
     if (reservation) {
       reservation.status = RESERVATION_STATUS.COMPLETED;
-      reservation.dateTimeActualDeparture = new Date();
       await reservationRepository.save(reservation);
     }
 
-    await spaceRepository.save(space);
-
     return {
       success: true,
+      isInfraction,
+      infractionDuration: totalInfractionMinutes,
       space,
-      reservation: reservation || null,
-      user: reservation?.user || null,
+      user: activeLog.user || reservation?.user,
     };
   } catch (error) {
-    throw new Error(`Error liberando espacio: ${error.message}`);
+    const businessErrors = [
+      'Espacio no encontrado',
+      'Código de retiro incorrecto',
+      'Código de retiro expirado',
+    ];
+    if (businessErrors.some((msg) => error.message.includes(msg))) {
+      throw error;
+    }
+    throw new Error(`Error en el proceso de liberación: ${error.message}`);
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
-//! MARCAR COMO TIEMPO EXCEDIDO
-export async function markSpaceAsOverdue(spaceId) {
+//! VERIFICAR Y ACTUALIZAR ESPACIOS EN INFRACCIÓN (este lo usa el job, no el controller)
+export async function checkTimeExceededSpaces() {
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
   try {
-    const space = await spaceRepository.findOne({
-      where: { id: spaceId, status: SPACE_STATUS.OCCUPIED },
+    const now = new Date();
+
+    const logsInViolation = await queryRunner.manager.find('SpaceLog', {
+      where: {
+        action: LOG_ACTIONS.CHECKIN,
+        actualCheckout: null,
+        finalStatus: IsNull(),
+        infractionStart: LessThan(now),
+      },
+      relations: ['user', 'space', 'space.bikerack'],
     });
 
-    if (!space) {
-      throw new Error('Espacio no encontrado o no está ocupado');
+    for (const log of logsInViolation) {
+      log.finalStatus = LOG_FINAL_STATUS.TIME_EXCEEDED;
+      await queryRunner.manager.save('SpaceLog', log);
+
+      if (log.space) {
+        log.space.status = SPACE_STATUS.TIME_EXCEEDED;
+        await queryRunner.manager.save('Space', log.space);
+      }
+
+      if (log.user?.email) {
+        const emailHtml = emailTemplates.timeExceeded(
+          log.user,
+          log.space,
+          log.infractionStart
+        );
+
+        await sendEmail(
+          log.user.email,
+          'Alerta: Tiempo de uso excedido - UBB',
+          null,
+          emailHtml
+        );
+      }
     }
 
-    space.status = SPACE_STATUS.TIME_EXCEEDED;
-    await spaceRepository.save(space);
-
-    return {
-      success: true,
-      space,
-    };
+    await queryRunner.commitTransaction();
+    return logsInViolation.length;
   } catch (error) {
-    throw new Error(
-      `Error marcando espacio como tiempo excedido: ${error.message}`
-    );
+    await queryRunner.rollbackTransaction();
+    console.error('Error en checkTimeExceededSpaces:', error);
+    return 0;
+  } finally {
+    await queryRunner.release();
   }
 }
-
-

@@ -1,4 +1,4 @@
-//! ARCHIVO TEMPORAL POR QUE AÚN NO IMPLEMENTO EL SISTEMA PARA CREAR RESERVAS
+/*//! ARCHIVO TEMPORAL POR QUE AÚN NO IMPLEMENTO EL SISTEMA PARA CREAR RESERVAS
 'use strict';
 import { AppDataSource } from './configDb.js';
 import {
@@ -84,3 +84,5 @@ export async function createReservations() {
     console.error('Error al crear reservas:', error);
   }
 }
+
+*/

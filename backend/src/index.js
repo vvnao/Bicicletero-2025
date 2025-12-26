@@ -8,7 +8,8 @@ import { createBikeracks } from './config/initBikeracksDb.js';
 import { createSpaces } from './config/initSpacesDb.js';
 import { createDefaultUsers } from './config/defaultUsers.js';
 import { createBicycles } from './config/initBicyclesDb.js';
-import { createReservations } from './config/initReservationsDb.js';
+//import { createReservations } from './config/initReservationsDb.js';
+import { startMonitoringJobs } from './jobs/monitor.job.js';
 import 'dotenv/config';
 
 const app = express();
@@ -31,9 +32,12 @@ connectDB()
     await createSpaces();
     await createDefaultUsers();
     await createBicycles();
-    await createReservations();
+    //await createReservations();
 
-    await createBikeracks();
+    //! Inicia los jobs de monitoreo automático
+    startMonitoringJobs();
+    console.log('Jobs de monitoreo automático iniciados');
+
     // Carga todas las rutas de la aplicación
     routerApi(app);
 
