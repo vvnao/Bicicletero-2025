@@ -142,6 +142,14 @@ const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
             },
+            {
+                path: "home/admin/perfil",
+                element: (
+                    <ProtectedRoute>
+                        <PrivateProfile />
+                    </ProtectedRoute>
+                ),
+            },
         ],
     },
 ]);

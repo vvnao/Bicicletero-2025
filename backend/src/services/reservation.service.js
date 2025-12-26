@@ -1,5 +1,5 @@
+import { In } from 'typeorm';
 import { AppDataSource } from '../config/configDb.js';
-import { handleErrorClient, handleErrorServer, handleSuccess } from '../Handlers/responseHandlers.js';
 import SpaceEntity, { SPACE_STATUS } from '../entities/SpaceEntity.js';
 import ReservationEntity, { RESERVATION_STATUS } from '../entities/ReservationEntity.js';
 import UserEntity from '../entities/UserEntity.js';
@@ -21,18 +21,30 @@ export async function createAutomaticReservation(userId,bikerackId,estimatedHour
         return handleErrorClient(reservation,404,'Usuario no encontrado');
         }
 
-        const userBicycleIds = user.bicycles.map(bicycle => bicycle.id);
-        if (!userBicycleIds.includes(parseInt(bicycleId))) {
-        return handleErrorClient(reservation,403,'Bicicleta no pertenece al usuario');
+        const pendingOrActiveReservation = await reservationRepository.findOne({
+            where: {
+                user: { id: userId },
+                status: In([
+                RESERVATION_STATUS.PENDING,
+                RESERVATION_STATUS.ACTIVE,
+                ]),
+            },
+        });
+
+        if (pendingOrActiveReservation) {
+            throw new Error('El usuario ya tiene una reserva vigente');
         }
 
-        const bicycle = await bicycleRepository.findOne({
-        where: { id: bicycleId },
-        });
+        const userBicycleIds = user.bicycles.map(bicycle => bicycle.id);
+        if (!userBicycleIds.includes(parseInt(bicycleId))) {
+            throw new Error('Bicicleta no pertenece al usuario');
+        }
+
+        const bicycle = await bicycleRepository.findOne({ where:{id:bicycleId} });
 
         const space = await getNextAvailableSpace(bikerackId);
         if (!space) {
-        return handleErrorClient(reservation,409,'No hay espacios disponibles en este bicicletero');
+            throw new Error('No hay espacios disponibles en este bicicletero');
         }
 
         const reservationCode = `RES-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
@@ -64,7 +76,7 @@ export async function createAutomaticReservation(userId,bikerackId,estimatedHour
         return reservationWithRelations;
 
     } catch (error) {
-        return handleErrorClient(res,500,"Error del servidor");
+        throw error;
     }
 }
 

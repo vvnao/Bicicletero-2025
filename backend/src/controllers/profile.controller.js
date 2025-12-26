@@ -49,9 +49,9 @@ export async function updatePrivateProfile(req, res) {
             return handleErrorClient(res, 404, "Usuario no encontrado");
 
         return handleSuccess(res, 200, "Perfil actualizado exitosamente", {
-            id: updatedUser.id,
             email: updatedUser.email,
             contact: updatedUser.contact,
+            photo: updatedUser.photo,
         });
     } catch (error) {
         handleErrorServer(res, 500, "Error al actualizar perfil", error);

@@ -41,6 +41,9 @@ function HomeAdmin() {
     const navigateToReportes = () => {
         navigate("/home/admin/reportes");
     };
+    const navigateToPerfil = () => {
+        navigate("/home/admin/perfil");
+    };
 
     return (
         <div style={{minHeight: '100vh', backgroundColor: '#272e4b', fontFamily: 'Arial, sans-serif', margin: 0, padding: 0}}>
@@ -68,6 +71,11 @@ function HomeAdmin() {
                         onMouseEnter={() => setSidebarHover(true)} 
                         onMouseLeave={() => setSidebarHover(false)}>
                         {/* Sección Bicicletas */}
+                        <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'white', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', padding: '8px 0', whiteSpace: 'nowrap', transition: 'color 0.2s', overflow: 'hidden', textOverflow: 'ellipsis'}} onClick={navigateToPerfil}>
+                            <div style={{minWidth: '50px', height: '50px', backgroundColor: '#484f6b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>🚲</div>
+                            <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}>Perfil</span>
+                        </div>
+
                         <div style={{display: 'flex', alignItems: 'center', gap: '10px', color: 'white', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', padding: '8px 0', whiteSpace: 'nowrap', transition: 'color 0.2s', overflow: 'hidden', textOverflow: 'ellipsis'}} onClick={navigateToBicicletas}>
                             <div style={{minWidth: '50px', height: '50px', backgroundColor: '#484f6b', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0}}>🚲</div>
                             <span style={{opacity: sidebarHover ? 1 : 0, pointerEvents: sidebarHover ? 'auto' : 'none', transition: 'opacity 0.3s ease', marginLeft: '10px'}}>Bicicletas</span>

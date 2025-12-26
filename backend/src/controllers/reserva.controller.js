@@ -40,11 +40,20 @@ export async function createReservation(req, res) {
 
   } catch (error) {
     console.error('Error en createReservation:', error);
-    
-    if (error.message.includes('No hay espacios disponibles')) {
-      return handleErrorClient(res, 409, 'No hay espacios disponibles en este bicicletero');
+
+    if (error.message.includes('reserva vigente')) {
+      return handleErrorClient(res,409,'Ya tienes una reserva activa o pendiente. Cancélala para crear otra.');
     }
-    handleErrorServer(res, 500, 'Error al crear la reserva', error.message);
+    if(error.message.includes('Usuario no encontrado')) {
+      return handleErrorClient(res, 404, error.message);
+    }
+    if(error.message.includes('Bicicleta no pertenece al usuario') ||error.message.includes('Bicicleta no encontrada')){
+      return handleErrorClient(res, 403, error.message);
+    }
+    if(error.message.includes('No hay espacios disponibles')) {
+      return handleErrorClient(res, 409, error.message);
+    }
+    return handleErrorServer(res,500,'Error al crear la reserva',error.message);
   }
 }
 
