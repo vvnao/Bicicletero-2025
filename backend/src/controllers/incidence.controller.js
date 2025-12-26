@@ -2,6 +2,8 @@
 import { AppDataSource } from '../config/configDb.js';
 import Bikerack from '../entities/BikerackEntity.js';
 import SpaceEntity from '../entities/SpaceEntity.js';
+import { formatRut } from '../helpers/rut.helper.js';
+import { isValidChileanRut } from '../validations/user.validation.js';
 
 import {
   createIncidenceReport,
@@ -25,24 +27,33 @@ export async function createIncidenceReportController(req, res) {
     const incidenceData = req.body;
     const reporterId = req.user.id;
 
+    if (req.file) {
+      incidenceData.evidenceUrl = `/uploads/evidence/${req.file.filename}`;
+    }
+
     const incidence = await createIncidenceReport(incidenceData, reporterId);
 
     return handleSuccess(res, 201, 'Incidencia reportada exitosamente', {
       id: incidence.id,
       incidenceType: incidence.incidenceType,
       severity: incidence.severity,
-      bikerackId: incidence.bikerackId,
+      bikerackId: incidence.bikerack.id,
+      spaceId: incidence.space ? incidence.space.id : null,
+      involvedUserId: incidence.involvedUser ? incidence.involvedUser.id : null,
       dateTimeReport: incidence.dateTimeReport,
+      dateTimeIncident: incidence.dateTimeIncident,
       status: incidence.status,
+      evidenceUrl: incidence.evidenceUrl || null,
     });
   } catch (error) {
-    console.error('Error en createIncidenceReportController:', error);
+    console.error('Error en createIncidenceReportController:', error.message);
 
     if (
       error.message.includes('Campos obligatorios') ||
       error.message.includes('no válido') ||
       error.message.includes('no puede ser futura') ||
-      error.message.includes('al menos 10 caracteres')
+      error.message.includes('al menos 10 caracteres') ||
+      error.message.includes('número válido')
     ) {
       return handleErrorClient(res, 400, error.message);
     }
@@ -145,6 +156,70 @@ export async function getMyIncidenceReportsController(req, res) {
       res,
       500,
       'Error al obtener reportes del guardia',
+      error.message
+    );
+  }
+}
+/////////////////////////////////////////////////////////////////////////////
+//! buscar usuario por rut
+export async function searchUserByRutController(req, res) {
+  try {
+    const { rut } = req.query;
+
+    if (!rut || typeof rut !== 'string' || rut.trim().length === 0) {
+      return handleErrorClient(res, 400, 'Debe ingresar un RUT para buscar.');
+    }
+
+    const rutInput = rut.trim();
+
+    const formattedRut = formatRut(rutInput);
+
+    if (!isValidChileanRut(formattedRut)) {
+      return handleErrorClient(
+        res,
+        400,
+        'Formato de RUT inválido. Ejemplos válidos: 12345678-9, 12.345.678-9'
+      );
+    }
+
+    const user = await userRepository.findOne({
+      where: {
+        rut: formattedRut,
+        role: 'user',
+        isActive: true,
+      },
+      select: [
+        'id',
+        'names',
+        'lastName',
+        'rut',
+        'email',
+        'typePerson',
+        'contact',
+        'requestStatus',
+      ],
+    });
+
+    if (!user) {
+      return handleSuccess(res, 200, 'Usuario no encontrado en el sistema', {
+        found: false,
+        rutSearched: formattedRut,
+        message: `El RUT ${formattedRut} no está registrado en el sistema o está inactivo.`,
+      });
+    }
+
+    return handleSuccess(res, 200, 'Usuario encontrado', {
+      found: true,
+      user: {
+        ...user,
+        fullName: `${user.names} ${user.lastName}`,
+      },
+    });
+  } catch (error) {
+    return handleErrorServer(
+      res,
+      500,
+      'Error al buscar usuario',
       error.message
     );
   }

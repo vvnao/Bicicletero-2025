@@ -6,6 +6,10 @@ import {
   getBikerackSpacesController,
   getMyIncidenceReportsController,
 } from '../controllers/incidence.controller.js';
+import {
+  uploadSingleEvidence,
+  handleEvidenceUploadError,
+} from '../middleware/multer.middleware.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/authorize.middleware.js';
 
@@ -13,7 +17,13 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.post('/report', authorize(['guardia']), createIncidenceReportController);
+router.post(
+  '/report',
+  authorize(['guardia']),
+  uploadSingleEvidence,
+  handleEvidenceUploadError, 
+  createIncidenceReportController
+);
 router.get(
   '/options',
   authorize(['guardia']),

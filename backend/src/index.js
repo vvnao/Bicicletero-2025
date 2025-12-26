@@ -11,6 +11,7 @@ import { createBicycles } from './config/initBicyclesDb.js';
 //import { createReservations } from './config/initReservationsDb.js';
 import { startMonitoringJobs } from './jobs/monitor.job.js';
 import 'dotenv/config';
+import path from 'path';
 
 const app = express();
 app.use(
@@ -21,6 +22,10 @@ app.use(
 );
 app.use(express.json());
 app.use(morgan('dev'));
+
+//* para el multer
+app.use('/uploads', express.static(path.join(process.cwd(), 'src/uploads')));
+
 // Ruta principal de bienvenida
 app.get('/', (req, res) => {
   res.send('¡Bienvenido a mi API REST con TypeORM!');

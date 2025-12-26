@@ -9,64 +9,12 @@ import {
 import UserEntity from '../entities/UserEntity.js';
 import BikerackEntity from '../entities/BikerackEntity.js';
 import SpaceEntity from '../entities/SpaceEntity.js';
+import { validateIncidenceData } from '../validations/incidence.validation.js';
 
 const incidenceRepository = AppDataSource.getRepository(IncidenceEntity);
 const userRepository = AppDataSource.getRepository(UserEntity);
 const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
 const spaceRepository = AppDataSource.getRepository(SpaceEntity);
-/////////////////////////////////////////////////////////////////////////////
-//! esta función es para validar los datos de incidencia
-function validateIncidenceData(data) {
-  //* campos obligatorios
-  const requiredFields = [
-    'incidenceType',
-    'bikerackId',
-    'severity',
-    'description',
-    'dateTimeIncident',
-  ];
-
-  const missingFields = requiredFields.filter((field) => !data[field]);
-
-  if (missingFields.length > 0) {
-    throw new Error(
-      `Campos obligatorios faltantes: ${missingFields.join(', ')}`
-    );
-  }
-
-  //* validar que el tipo de incidencia sea válido
-  const validTypes = Object.values(INCIDENCE_TYPES);
-  if (!validTypes.includes(data.incidenceType)) {
-    throw new Error(
-      `Tipo de incidencia no válido. Valores permitidos: ${validTypes.join(
-        ', '
-      )}`
-    );
-  }
-
-  //* validar que la gravedad sea válida
-  const validSeverities = Object.values(SEVERITY_LEVELS);
-  if (!validSeverities.includes(data.severity)) {
-    throw new Error(
-      `Nivel de gravedad no válido. Valores permitidos: ${validSeverities.join(
-        ', '
-      )}`
-    );
-  }
-
-  //* validar que la fecha del incidente no sea futura
-  const incidentDate = new Date(data.dateTimeIncident);
-  if (incidentDate > new Date()) {
-    throw new Error('La fecha del incidente no puede ser futura');
-  }
-
-  //* validar longitud mínima de descripción
-  if (data.description.trim().length < 10) {
-    throw new Error('La descripción debe tener al menos 10 caracteres');
-  }
-
-  return true;
-}
 /////////////////////////////////////////////////////////////////////////////
 //! esta función crea la incidencia
 export async function createIncidenceReport(incidenceData, reporterId) {
@@ -76,18 +24,12 @@ export async function createIncidenceReport(incidenceData, reporterId) {
     const reporter = await userRepository.findOne({
       where: { id: reporterId, role: 'guardia' },
     });
-
-    if (!reporter) {
-      throw new Error('Guardia no encontrado');
-    }
+    if (!reporter) throw new Error('Guardia no encontrado');
 
     const bikerack = await bikerackRepository.findOne({
       where: { id: incidenceData.bikerackId },
     });
-
-    if (!bikerack) {
-      throw new Error('Bicicletero no encontrado');
-    }
+    if (!bikerack) throw new Error('Bicicletero no encontrado');
 
     const incidenceToSave = {
       incidenceType: incidenceData.incidenceType,
@@ -105,27 +47,30 @@ export async function createIncidenceReport(incidenceData, reporterId) {
       const space = await spaceRepository.findOne({
         where: { id: incidenceData.spaceId },
       });
-      if (space) {
-        incidenceToSave.space = space;
-      }
+      if (!space) throw new Error('El espacio seleccionado no existe');
+      incidenceToSave.space = space;
     }
 
     if (incidenceData.involvedUserId) {
       const involvedUser = await userRepository.findOne({
         where: { id: incidenceData.involvedUserId },
       });
-      if (involvedUser) {
-        incidenceToSave.involvedUser = involvedUser;
-      }
+      if (!involvedUser) throw new Error('El usuario involucrado no existe');
+      incidenceToSave.involvedUser = involvedUser;
     }
 
     const incidence = incidenceRepository.create(incidenceToSave);
     const savedIncidence = await incidenceRepository.save(incidence);
 
-    return savedIncidence;
+    return {
+      ...savedIncidence,
+      bikerack: bikerack,
+      space: incidenceToSave.space || null,
+      involvedUser: incidenceToSave.involvedUser || null,
+    };
   } catch (error) {
     console.error('Error en createIncidenceReport:', error.message);
-    throw new Error(`Error al crear incidencia: ${error.message}`);
+    throw error;
   }
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -154,7 +99,7 @@ export async function getIncidencesByGuard(guardId) {
   try {
     return await incidenceRepository.find({
       where: {
-        reporter: { id: guardId }, 
+        reporter: { id: guardId },
       },
       order: { dateTimeReport: 'DESC' },
       relations: ['bikerack', 'involvedUser'],
