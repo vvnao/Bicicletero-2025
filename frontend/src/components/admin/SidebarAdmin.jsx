@@ -1,52 +1,52 @@
 "use strict";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { 
-  FiHome, 
-  FiUsers, 
-  FiFileText, 
-  FiBarChart2,
-  FiCalendar,
-  FiSettings,
-  FiLogOut 
+import {
+    FiHome,
+    FiUsers,
+    FiFileText,
+    FiBarChart2,
+    FiCalendar,
+    FiSettings,
+    FiLogOut
 } from 'react-icons/fi'; // Feather Icons (limpios)
 
-import { 
-  MdDashboard,
-  MdPeople,
-  MdHistory,
-  MdReport,
-  MdSettings 
+import {
+    MdDashboard,
+    MdPeople,
+    MdHistory,
+    MdReport,
+    MdSettings
 } from 'react-icons/md';
 const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
     const [activeItem, setActiveItem] = useState('');
     const [hoveredItem, setHoveredItem] = useState(null);
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const location = useLocation();
-   const mainMenuItems = [
+    const mainMenuItems = [
 
-  { name: 'Dashboard', path: '/home/admin', icon: <FiBarChart2 /> },
-  { name: 'Bicicleteros', path: '/home/admin/bicicletas', icon: <FiHome /> },
-  { name: 'Guardias', path: '/home/admin/guardias', icon: <FiUsers /> },
-  { name: 'Historial', path: '/home/admin/historial', icon: <FiFileText /> },
-  { name: 'Repotes', path: '/home/admin/reportes', icon: <FiCalendar /> },
-];
+        { name: 'Dashboard', path: '/home/admin', icon: <FiBarChart2 /> },
+        { name: 'Bicicleteros', path: '/home/admin/bicicletas', icon: <FiHome /> },
+        { name: 'Guardias', path: '/home/admin/guardias', icon: <FiUsers /> },
+        { name: 'Historial', path: '/home/admin/historial', icon: <FiFileText /> },
+        { name: 'Repotes', path: '/home/admin/reportes', icon: <FiCalendar /> },
+    ];
     // Sincroniza el ítem activo con la ruta actual
     useEffect(() => {
         console.log('Ruta actual:', location.pathname);
-        
+
         let matchedItem = null;
         matchedItem = mainMenuItems.find(item => location.pathname === item.path);
-        
+
         if (!matchedItem) {
-            matchedItem = mainMenuItems.find(item => 
-                location.pathname.startsWith(item.path + '/') || 
+            matchedItem = mainMenuItems.find(item =>
+                location.pathname.startsWith(item.path + '/') ||
                 location.pathname === item.path
             );
         }
-        
+
         console.log('Ítem encontrado:', matchedItem);
-        
+
         if (matchedItem) {
             setActiveItem(matchedItem.name.toLowerCase());
         } else {
@@ -68,7 +68,7 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
     const getMenuItemStyles = (itemName) => {
         const isActive = activeItem === itemName.toLowerCase();
         const isHovered = hoveredItem === itemName.toLowerCase();
-        
+
         let styles = {
             padding: '15px 25px',
             margin: '17px 0',
@@ -93,7 +93,7 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
             styles.position = 'relative';
             styles.zIndex = '1';
         }
-        
+
         // Estilo PARA HOVER (solo si no está activo)
         else if (isHovered) {
             styles.backgroundColor = '#272e4b7a';
@@ -107,7 +107,7 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
     };
 
     return (
-        <div 
+        <div
             style={{
                 width: sidebarHover ? '240px' : '80px',
                 height: '100vh',
@@ -147,7 +147,7 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                         transition: 'opacity 0.1s ease',
                         whiteSpace: 'nowrap'
                     }}>
-                        Panel de <br/>
+                        Panel de <br />
                         Control
                     </span>
                 </div>
@@ -161,15 +161,15 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                             onMouseEnter={() => setHoveredItem(item.name.toLowerCase())}
                             onMouseLeave={() => setHoveredItem(null)}
                         >
-                            <span style={{ 
-                                fontSize: '22px', 
+                            <span style={{
+                                fontSize: '22px',
                                 minWidth: '28px',
                                 display: 'flex',
                                 justifyContent: 'center'
                             }}>
                                 {item.icon}
                             </span>
-                            <span style={{ 
+                            <span style={{
                                 opacity: sidebarHover ? 1 : 0,
                                 transition: 'opacity 0.3s ease',
                                 whiteSpace: 'nowrap',
@@ -218,16 +218,16 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                         e.currentTarget.style.borderLeft = 'none';
                     }}
                 >
-                    <span style={{ 
-                        fontSize: '22px', 
+                    <span style={{
+                        fontSize: '22px',
                         minWidth: '28px',
                         display: 'flex',
                         justifyContent: 'center',
                         color: '#ff6b6b'
                     }}>
-                        -  
+                        -
                     </span>
-                    <span style={{ 
+                    <span style={{
                         opacity: sidebarHover ? 1 : 0,
                         transition: 'opacity 0.3s ease',
                         whiteSpace: 'nowrap',

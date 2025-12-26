@@ -2,53 +2,53 @@ import jwt from "jsonwebtoken";
 import { handleErrorClient } from "../Handlers/responseHandlers.js";
 
 export function authMiddleware(req, res, next) {
-  const authHeader = req.headers["authorization"];
+    const authHeader = req.headers["authorization"];
 
-  if (!authHeader) {
-    return handleErrorClient(res, 401, "Acceso denegado. No se proporcionó token.");
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  if (!token) {
-    return handleErrorClient(res, 401, "Acceso denegado. Token malformado.");
-  }
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Normalizar la estructura del usuario
-    req.user = {
-      // Intentar obtener el ID de diferentes maneras
-      id: payload.id || payload.userId || payload.sub || payload.user?.id,
-      
-      // Intentar obtener el rol
-      role: payload.role || payload.user?.role,
-      
-      // Intentar obtener el email
-      email: payload.email || payload.user?.email,
-      
-      // Mantener el payload completo por si acaso
-      _raw: payload
-    };
-    
-    console.log(' Usuario normalizado:', {
-      id: req.user.id,
-      role: req.user.role,
-      email: req.user.email
-    });
-    
-    // Verificar que al menos tengamos un ID
-    if (!req.user.id) {
-      console.error(' JWT no contiene ID:', payload);
-      return handleErrorClient(res, 401, "Token no contiene información de usuario válida.");
+    if (!authHeader) {
+        return handleErrorClient(res, 401, "Acceso denegado. No se proporcionó token.");
     }
-    
-    next();
-  } catch (error) {
-    console.error('X Error verificando token:', error.message);
-    return handleErrorClient(res, 401, "Token inválido o expirado.", error.message);
-  }
+
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+        return handleErrorClient(res, 401, "Acceso denegado. Token malformado.");
+    }
+
+    try {
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Normalizar la estructura del usuario
+        req.user = {
+            // Intentar obtener el ID de diferentes maneras
+            id: payload.id || payload.userId || payload.sub || payload.user?.id,
+
+            // Intentar obtener el rol
+            role: payload.role || payload.user?.role,
+
+            // Intentar obtener el email
+            email: payload.email || payload.user?.email,
+
+            // Mantener el payload completo por si acaso
+            _raw: payload
+        };
+
+        console.log(' Usuario normalizado:', {
+            id: req.user.id,
+            role: req.user.role,
+            email: req.user.email
+        });
+
+        // Verificar que al menos tengamos un ID
+        if (!req.user.id) {
+            console.error(' JWT no contiene ID:', payload);
+            return handleErrorClient(res, 401, "Token no contiene información de usuario válida.");
+        }
+
+        next();
+    } catch (error) {
+        console.error('X Error verificando token:', error.message);
+        return handleErrorClient(res, 401, "Token inválido o expirado.", error.message);
+    }
 }
 /**
  * Obtener User Agent
@@ -115,17 +115,17 @@ export const isOwnerOrAdmin = (paramName = 'id') => {
             const resourceId = parseInt(req.params[paramName]);
             const userId = req.user.id;
             const userRole = req.user.role;
-            
+
             // Si es admin o el propietario del recurso
             if (userRole === 'admin' || userId === resourceId) {
                 return next();
             }
-            
+
             return res.status(403).json({
                 success: false,
                 message: "No tienes permisos para acceder a este recurso"
             });
-            
+
         } catch (error) {
             console.error('Error en middleware isOwnerOrAdmin:', error);
             return res.status(500).json({

@@ -20,6 +20,8 @@ import ReportesAdmin from "./pages/admin/ReportesAdmin";
 import PrivateProfile from "@pages/PrivateProfile";
 import BicycleProfile from "@pages/BicycleProfile";
 import Bicycles from "./pages/Bicycles";
+import UserReviewHistory from "@pages/UserReviewHistory";
+import PendingUserRequests from '@pages/guardia/PendingUserRequests';
 import "./styles/Styles.css";
 
 const router = createBrowserRouter([
@@ -93,12 +95,12 @@ const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
             },
-            
+
             {
                 path: "/home/user/bicycles",
                 element: (
                     <ProtectedRoute>
-                        <BicycleProfile/>
+                        <BicycleProfile />
                     </ProtectedRoute>
                 )
             },
@@ -106,7 +108,7 @@ const router = createBrowserRouter([
                 path: "/home/user/AddBicycles",
                 element: (
                     <ProtectedRoute>
-                        <Bicycles/>
+                        <Bicycles />
                     </ProtectedRoute>
                 )
             },
@@ -143,7 +145,28 @@ const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
             },
+
+
         ],
+    },
+
+    {
+        path: "home/guardia/pending-requests",
+        element: (
+            <ProtectedRoute>
+                <PendingUserRequests />
+            </ProtectedRoute>
+        ),
+    },
+
+    // REVIEWS (COMPARTIDO ADMIN + GUARDIA)
+    {
+        path: "home/reviews/history",
+        element: (
+            <ProtectedRoute>
+                <UserReviewHistory />
+            </ProtectedRoute>
+        ),
     },
 ]);
 
