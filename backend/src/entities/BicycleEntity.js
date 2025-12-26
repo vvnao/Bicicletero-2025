@@ -61,8 +61,6 @@ export const BicycleEntity = new EntitySchema({
             eager: true,
             inverseSide: 'bicycles',
         }
-
-
     },
 });
 
