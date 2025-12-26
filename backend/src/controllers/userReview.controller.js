@@ -2,7 +2,10 @@ import {
     getPendingUsers,
     approveUser,
     rejectUser,
-    getReviewHistory 
+    getReviewHistory,
+    deleteReview,
+    updateUserStatusFromReview,
+    getFilteredReviewHistory
 } from "../services/userReview.service.js";
 import { handleSuccess, handleErrorClient } from "../Handlers/responseHandlers.js";
 
@@ -48,6 +51,42 @@ export const UserReview = {
         try {
             const history = await getReviewHistory();
             return handleSuccess(res, 200, "Historial de revisiones", history);
+        } catch (error) {
+            return handleErrorClient(res, 400, error.message);
+        }
+    },
+
+    async delete(req, res) {
+        try {
+            const { id } = req.params;
+            const result = await deleteReview(id);
+            return handleSuccess(res, 200, result.message);
+        } catch (error) {
+            return handleErrorClient(res, 400, error.message);
+        }
+    },
+
+    async updateStatus(req, res) {
+        try {
+            const { id } = req.params;
+            const { newStatus, comment } = req.body;
+
+            if (!["aprobado", "rechazado", "pendiente"].includes(newStatus)) {
+                return handleErrorClient(res, 400, "Estado inválido");
+            }
+
+            const result = await updateUserStatusFromReview(id, newStatus, comment, req.user.sub);
+            return handleSuccess(res, 200, "Estado actualizado", result);
+        } catch (error) {
+            return handleErrorClient(res, 400, error.message);
+        }
+    },
+
+    async filterByStatus(req, res) {
+        try {
+            const { action } = req.query;
+            const history = await getFilteredReviewHistory(action);
+            return handleSuccess(res, 200, "Historial filtrado", history);
         } catch (error) {
             return handleErrorClient(res, 400, error.message);
         }

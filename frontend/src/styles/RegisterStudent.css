@@ -1,112 +1,59 @@
-.register-container {
-  max-width: 500px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Nunito:wght@300;400;600;700&display=swap');
+
+.file-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #cadbfe;
+  padding: 12px 18px;
+  border-radius: 14px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0d1928;
+  cursor: pointer;
+  width: fit-content;
+  transition: 0.3s ease;
+  margin-top: 8px;
 }
 
-.register-title {
-  color: #1f2937;
-  font-size: 1.5rem;
+.file-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(163, 193, 255, 0.15);
+}
+
+.file-btn input {
+  display: none;
+}
+
+.file-name {
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: 1rem;
+  color: #cadbfe;
+  margin-top: 6px;
   text-align: center;
 }
 
-.back-button {
-  color: #3b82f6;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.875rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+
+@media (max-width: 1024px) {
+  .file-btn {
+    font-size: 15px;
+    padding: 10px 14px;
+  }
+
+  .file-name {
+    font-size: 14px;
+  }
 }
 
-.back-button:hover {
-  color: #2563eb;
-}
+@media (max-width: 768px) {
+  .file-btn {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
 
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #374151;
-  font-weight: 500;
-  font-size: 0.875rem;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.file-input {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px dashed #d1d5db;
-  border-radius: 6px;
-  background: #f9fafb;
-}
-
-.file-input:hover {
-  border-color: #3b82f6;
-  background: #f0f9ff;
-}
-
-.section-title {
-  color: #1f2937;
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 1.5rem 0 1rem 0;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.submit-button {
-  width: 100%;
-  background: #3b82f6;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.submit-button:hover {
-  background: #2563eb;
-}
-
-.submit-button:active {
-  transform: translateY(1px);
-}
-
-.optional-badge {
-  background: #f3f4f6;
-  color: #6b7280;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  margin-left: 0.5rem;
+  .file-name {
+    font-size: 12px;
+  }
 }

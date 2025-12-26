@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import '../styles/RegisterSelector.css';
+import { ArrowLeft } from "lucide-react";
 
 export default function RegisterSelector() {
   const navigate = useNavigate();
@@ -40,12 +41,12 @@ export default function RegisterSelector() {
         </div>
       </div>
 
-      <button
+      <div
         onClick={() => navigate('/auth/login')}
-        className='register-selector-back-button'
+        className='back-button'
       >
-        ← Volver al inicio de sesión
-      </button>
+        <ArrowLeft size={24} color="white" /> 
+      </div>
     </div>
   );
 }
