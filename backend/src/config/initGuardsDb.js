@@ -12,11 +12,11 @@ export async function createDefaultGuards() {
 
     const count = await guardRepository.count();
     if (count > 0) {
-      console.log('⚠️  Ya existen guardias en la base de datos');
+      console.log('- Ya existen guardias en la base de datos');
       return;
     }
 
-    console.log('🛡️  Creando 5 guardias para horario Lunes-Sábado...');
+    console.log('- Creando 5 guardias para horario Lunes-Sábado...');
 
     const usersToCreate = [
       {
@@ -172,12 +172,12 @@ export async function createDefaultGuards() {
         guardNumber: guardNumber++
       });
       await guardRepository.save(guard);
-      console.log(`✅ Guardia #${guard.guardNumber} creado: ${createdUsers[guardNumber-1002].names}`);
+      console.log(`- Guardia #${guard.guardNumber} creado: ${createdUsers[guardNumber-1002].names}`);
     }
 
-    console.log('🎉 5 Guardias creados para horario Lunes-Sábado!');
+    console.log('- 5 Guardias creados para horario Lunes-Sábado!');
 
   } catch (error) {
-    console.error('❌ Error al crear guardias por defecto:', error);
+    console.error('X Error al crear guardias por defecto:', error);
   }
 }
