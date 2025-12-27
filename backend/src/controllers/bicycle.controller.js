@@ -12,7 +12,7 @@ export async function createBicycle(req, res) {
             const mensaje = error.details[0].message;
             return handleErrorClient(res, 400, mensaje);
         }
-        const userId = req.user?.sub;
+        const userId = req.user?.id;
         if (!userId) {
             return handleErrorClient(res, 401, "Usuario no autenticado");
         }

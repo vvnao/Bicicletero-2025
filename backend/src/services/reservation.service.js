@@ -1,7 +1,10 @@
-import { In } from 'typeorm';
 import { AppDataSource } from '../config/configDb.js';
+import { sendEmail } from './email.service.js';
+import { emailTemplates } from '../templates/reservationEmail.template.js';
+import { LessThan } from 'typeorm';
 import SpaceEntity, { SPACE_STATUS } from '../entities/SpaceEntity.js';
-import ReservationEntity, { RESERVATION_STATUS } from '../entities/ReservationEntity.js';
+import ReservationEntity, {RESERVATION_STATUS} from '../entities/ReservationEntity.js';
+
 import UserEntity from '../entities/UserEntity.js';
 import BicycleEntity from '../entities/BicycleEntity.js';
 
@@ -10,122 +13,172 @@ const spaceRepository = AppDataSource.getRepository(SpaceEntity);
 const userRepository = AppDataSource.getRepository(UserEntity);
 const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 
-export async function createAutomaticReservation(userId,bikerackId,estimatedHours,bicycleId) {
+export async function getUserBicycles(userId) {
     try {
         const user = await userRepository.findOne({
-        where: { id: userId },
-        relations: ['bicycles'],
+            where: { id: userId },
+            relations: ['bicycles'],
         });
-        
         if (!user) {
-        return handleErrorClient(reservation,404,'Usuario no encontrado');
+            const error = new Error('Usuario no encontrado');
+            error.statusCode = 404; 
+            throw error;
         }
 
-        const pendingOrActiveReservation = await reservationRepository.findOne({
-            where: {
-                user: { id: userId },
-                status: In([
-                RESERVATION_STATUS.PENDING,
-                RESERVATION_STATUS.ACTIVE,
-                ]),
-            },
+        return user.bicycles.map((bicycle) => ({
+            id: bicycle.id,
+            brand: bicycle.brand,
+            model: bicycle.model,
+            color: bicycle.color,
+            photo: bicycle.photo,
+            serialNumber: bicycle.serialNumber,
+        }));
+
+    } catch (error) {
+        if (error.statusCode) throw error;
+        throw new Error(`Error interno al obtener bicicletas: ${error.message}`);
+    }
+}
+
+export async function createAutomaticReservation(userId, bikerackId, estimatedHours, bicycleId) {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+        const user = await queryRunner.manager.findOne('User', {
+            where: { id: userId },
+            relations: ['bicycles', 'reservations'],
         });
 
-        if (pendingOrActiveReservation) {
-            throw new Error('El usuario ya tiene una reserva vigente');
+        if (!user) throw new Error('Usuario no encontrado');
+
+        const hasActiveProcess = user.reservations?.some(
+            (res) => res.status === RESERVATION_STATUS.PENDING || res.status === RESERVATION_STATUS.ACTIVE
+        );
+        if (hasActiveProcess) {
+            throw new Error('El usuario ya tiene una reserva activa o una bicicleta en el sistema.');
         }
 
-        const userBicycleIds = user.bicycles.map(bicycle => bicycle.id);
-        if (!userBicycleIds.includes(parseInt(bicycleId))) {
+        const bicycle = user.bicycles.find(b => b.id === bicycleId);
+        if (!bicycle) {
             throw new Error('Bicicleta no pertenece al usuario');
         }
 
-        const bicycle = await bicycleRepository.findOne({ where:{id:bicycleId} });
-
-        const space = await getNextAvailableSpace(bikerackId);
+        const space = await getNextAvailableSpace(bikerackId, queryRunner);
         if (!space) {
             throw new Error('No hay espacios disponibles en este bicicletero');
         }
 
-        const reservationCode = `RES-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+        const nowUTC = new Date();
+        const expirationTimeUTC = new Date(nowUTC.getTime() + 30 * 60 * 1000);
+        const reservationCode = `R${Math.floor(1000 + Math.random() * 9000)}`;
 
-        const expirationTime = new Date(Date.now() + 30 * 60 * 1000);
-
-        const reservation = reservationRepository.create({
+        const reservation = queryRunner.manager.create(ReservationEntity, {
             reservationCode,
             estimatedHours,
-            expirationTime,
+            expirationTime: expirationTimeUTC,
             status: RESERVATION_STATUS.PENDING,
             space: space,
             user: user,
             bicycle: bicycle,
         });
 
-        space.status = SPACE_STATUS.RESERVED;
+        await queryRunner.manager.save(ReservationEntity, reservation);
 
-        await spaceRepository.save(space);
-        await reservationRepository.save(reservation);
+        await queryRunner.commitTransaction();
 
-        console.log(`Reserva ${reservationCode} creada para espacio ${space.spaceCode}`);
-
-        const reservationWithRelations = await reservationRepository.findOne({
-        where: { id: reservation.id },
-        relations: ['user', 'space', 'space.bikerack', 'bicycle'],
+        const result = await reservationRepository.findOne({
+            where: { id: reservation.id },
+            relations: ['user', 'space', 'space.bikerack', 'bicycle'],
         });
 
-        return reservationWithRelations;
+        result.expirationTimeChile = expirationTimeUTC.toLocaleString('es-CL', {
+            timeZone: 'America/Santiago',
+            hour: '2-digit', minute: '2-digit', hour12: false,
+        });
+
+        return result;
 
     } catch (error) {
-        throw error;
+        await queryRunner.rollbackTransaction();
+        throw error; 
+    } finally {
+        //libera queryRunner
+        await queryRunner.release();
     }
 }
+export async function getNextAvailableSpace(bikerackId, queryRunner) {
+    const manager = queryRunner ? queryRunner.manager : AppDataSource.manager;
 
-export async function getNextAvailableSpace(bikerackId) {
-    try {
-        const spaces = await spaceRepository.find({
+    const space = await manager.findOne(SpaceEntity, {
         where: {
-            bikerack: { id: bikerackId },
-            status: SPACE_STATUS.FREE,
+        bikerack: { id: bikerackId },
+        status: SPACE_STATUS.FREE,
         },
         order: { position: 'ASC' },
-        });
+        //* el LOCK PESIMISTA bloquea la fila hasta que termine la transacción
+        lock: { mode: 'pessimistic_write' },
+    });
 
-        return spaces[0]; 
-    } catch (error) {
-        return handleErrorClient(res,500,"Error del servidor");
-    }
+    if (!space) return null;
+
+    space.status = SPACE_STATUS.RESERVED;
+    await manager.save(SpaceEntity, space);
+
+    console.log(`[LOCK] Espacio ${space.spaceCode} bloqueado para nuevo trámite`);
+    return space;
 }
 
 export async function cancelReservation(reservationId, userId) {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-        const reservation = await reservationRepository.findOne({
-        where: { id: reservationId },
-        relations: ['space', 'user', 'bicycle'],
+        const reservation = await queryRunner.manager.findOne(ReservationEntity, {
+            where: { id: reservationId },
+            relations: ['space', 'user'],
         });
 
         if (!reservation) {
-        return handleErrorClient(res,404,'Reserva no encontrada');
+            throw new Error('Reserva no encontrada');
         }
+
         if (reservation.user.id !== userId) {
-        return handleErrorClient(res,401,'No autorizado para cancelar esta reserva');
+            throw new Error('No autorizado para cancelar esta reserva');
         }
+
         if (reservation.status !== RESERVATION_STATUS.PENDING) {
-        return handleErrorClient(res,400,'Solo se pueden cancelar reservas pendientes');
+            throw new Error('Solo se pueden cancelar reservas en estado pendiente');
         }
 
-        reservation.space.status = SPACE_STATUS.FREE;
         reservation.status = RESERVATION_STATUS.CANCELED;
+        reservation.space.status = SPACE_STATUS.FREE;
 
-        await spaceRepository.save(reservation.space);
-        await reservationRepository.save(reservation);
+        await queryRunner.manager.save(SpaceEntity, reservation.space);
+        await queryRunner.manager.save(ReservationEntity, reservation);
 
-        return {reservation,space: reservation.space,user: reservation.user,};
+        await queryRunner.commitTransaction();
+
+        return {
+            reservation,
+            space: reservation.space,
+            user: reservation.user,
+        };
+
     } catch (error) {
-        return handleErrorClient(res,500,"Error del servidor");
+        await queryRunner.rollbackTransaction();
+        
+        const businessErrors = ['no encontrada', 'autorizado', 'pendiente'];
+        if (businessErrors.some(msg => error.message.toLowerCase().includes(msg))) {
+            throw error;
+        }
+        throw error; 
+    } finally {
+        await queryRunner.release();
     }
 }
-
-//! OBTENER RESERVAS DE UN USUARIO
 export async function getUserReservations(userId) {
     try {
         const reservations = await reservationRepository.find({
@@ -150,6 +203,79 @@ export async function getUserReservations(userId) {
         createdAt: reservation.created_at,
         }));
     } catch (error) {
-        return handleErrorClient(res,500,"Error del servidor");
+        throw new Error(`Error obteniendo historial de reservas: ${error.message}`);
+    }
+}
+//con transaccion 
+export async function expireOldReservations() {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+        const now = new Date();
+        let expiredCount = 0;
+
+        const reservationsToLock = await queryRunner.manager.find('Reservation', {
+        where: {
+            status: RESERVATION_STATUS.PENDING,
+            expirationTime: LessThan(now),
+        },
+        select: ['id'],
+        lock: { mode: 'pessimistic_write' },
+        });
+
+        if (reservationsToLock.length === 0) {
+        await queryRunner.rollbackTransaction();
+        return 0;
+        }
+
+        for (const resShort of reservationsToLock) {
+        const reservation = await queryRunner.manager.findOne('Reservation', {
+            where: { id: resShort.id },
+            relations: ['space', 'user', 'bicycle'],
+        });
+
+        if (!reservation) continue;
+
+        reservation.status = RESERVATION_STATUS.EXPIRED;
+        await queryRunner.manager.save('Reservation', reservation);
+
+        if (
+            reservation.space &&
+            reservation.space.status === SPACE_STATUS.RESERVED
+        ) {
+            reservation.space.status = SPACE_STATUS.FREE;
+            await queryRunner.manager.save('Space', reservation.space);
+        }
+
+        if (reservation.user?.email) {
+            const emailHtml = emailTemplates.reservationExpired(
+            reservation.user,
+            reservation
+            );
+
+            await sendEmail(
+            reservation.user.email,
+            'Reserva Expirada - Bicicletero UBB',
+            null,
+            emailHtml
+            );
+        }
+
+        console.log(
+            `--> Reserva ${reservation.reservationCode} expirada y espacio ${reservation.space?.spaceCode} liberado.`
+        );
+        expiredCount++;
+        }
+
+        await queryRunner.commitTransaction();
+        return expiredCount;
+    } catch (error) {
+        await queryRunner.rollbackTransaction();
+        console.error('Error en expireOldReservations:', error.message);
+        return 0;
+    } finally {
+        await queryRunner.release();
     }
 }
