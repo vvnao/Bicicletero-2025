@@ -6,13 +6,19 @@ import path from 'path';
 import { AppDataSource, connectDB } from './config/configDb.js';
 import { routerApi } from './routes/index.routes.js';
 import cors from 'cors';
-
-// ✅ SOLO ESTA IMPORTACIÓN
-import { forceResetAndCreate } from './config/initCompleteSystem.js';
+import { createBikeracks } from './config/initBikeracksDb.js';
+import { createSpaces } from './config/initSpacesDb.js';
+import { createDefaultUsers } from './config/defaultUsers.js';
+import { createBicycles } from './config/initBicyclesDb.js';
+import { createReservations } from './config/initReservationsDb.js';
+import { createDefaultGuards } from './config/initGuardsDb.js';
+import { createDefaultGuardAssignments } from './config/initGuardAssignmentsDb.js';
 
 import 'dotenv/config';
 console.log('=== CONFIGURACIÓN DE ENV ===');
 console.log(' JWT_SECRET:', process.env.JWT_SECRET ? 'PRESENTE' : 'AUSENTE');
+console.log(' JWT_SECRET valor:', process.env.JWT_SECRET);
+console.log(' Longitud:', process.env.JWT_SECRET?.length);
 
 const app = express();
 app.use(
@@ -31,7 +37,6 @@ app.use(
 app.get('/', (req, res) => {
   res.send('¡Bienvenido a mi API REST con TypeORM!');
 });
-
 // Inicializa la conexión a la base de datos
 connectDB()
   .then(async () => {
@@ -45,11 +50,10 @@ connectDB()
     // Inicia servidor
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-      console.log(`🎉 Servidor en: http://localhost:${PORT}`);
-      console.log('==========================================');
+      console.log(`Servidor iniciado en http://localhost:${PORT}`);
     });
   })
   .catch((error) => {
-    console.log('❌ Error al conectar con la base de datos:', error);
+    console.log('Error al conectar con la base de datos:', error);
     process.exit(1);
   });
