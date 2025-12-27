@@ -1,4 +1,4 @@
-// routes/guardAssignment.routes.js - SIMPLIFICADO
+// routes/guardAssignment.routes.js 
 import express from 'express';
 import { GuardAssignmentController } from '../controllers/guardAssignment.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
@@ -17,5 +17,8 @@ router.get('/', authorize(['admin', 'guardia']), (req, res) => controller.getAll
 
 // Ruta por ID de asignación
 router.get('/:id', authorize(['admin', 'guardia']), (req, res) => controller.getAssignmentById(req, res));
+
+
+router.delete('/:id', authorize(['admin']), (req, res) => controller.deleteAssignment(req, res));
 
 export default router;

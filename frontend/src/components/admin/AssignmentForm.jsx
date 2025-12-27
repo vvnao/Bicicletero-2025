@@ -273,61 +273,88 @@ const AssignmentForm = ({
     }
 };
 
-    const updateAssignment = async (assignmentId, assignmentData, token) => {
-        try {
-            const response = await fetch(`http://localhost:3000/api/guard-assignments/${assignmentId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(assignmentData)
-            });
-            
-            return await response.json();
-        } catch (error) {
-            console.error('Error en updateAssignment:', error);
-            return { 
-                success: false, 
-                message: error.message || 'Error de conexión'
-            };
-        }
-    };
-
-    const handleDelete = async () => {
-        showConfirmMessage(
-            '🗑️ Eliminar asignación',
-            '¿Estás seguro de eliminar esta asignación? Esta acción no se puede deshacer.',
-            async () => {
-                try {
-                    const response = await fetch(`http://localhost:3000/api/guard-assignments/${assignmentToEdit.id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        showAlertMessage('success', '✅ Asignación eliminada', 'La asignación ha sido eliminada exitosamente');
-                        setTimeout(() => {
-                            onCancel();
-                            if (onAssignmentUpdated) {
-                                onAssignmentUpdated();
-                            }
-                        }, 1500);
-                    } else {
-                        showAlertMessage('error', '❌ Error al eliminar', data.message || 'No se pudo eliminar la asignación');
-                    }
-                } catch (err) {
-                    console.error('Error deleting assignment:', err);
-                    showAlertMessage('error', '❌ Error del sistema', 'Error al eliminar la asignación');
-                }
+  const updateAssignment = async (assignmentId, assignmentData, token) => {
+    try {
+        const response = await fetch(`http://localhost:3000/api/guard-assignments/${assignmentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
-            'danger'
-        );
-    };
+            body: JSON.stringify(assignmentData)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error en updateAssignment:', error);
+        return { 
+            success: false, 
+            message: error.message || 'Error de conexión'
+        };
+    }
+};
+    const handleDelete = async () => {
+    showConfirmMessage(
+        '🗑️ Eliminar asignación',
+        '¿Estás seguro de eliminar esta asignación? Esta acción no se puede deshacer.',
+        async () => {
+            try {
+                console.log('🗑️ Intentando eliminar asignación ID:', assignmentToEdit.id);
+                
+                // Opción 1: Usando tu apiService (si lo tienes configurado)
+                // const response = await apiService.deleteAssignment(assignmentToEdit.id, token);
+                
+                // Opción 2: Usando fetch directamente
+                const response = await fetch(`http://localhost:3000/api/guard-assignments/${assignmentToEdit.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Verificar si la respuesta fue exitosa
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(`HTTP ${response.status}: ${errorData.message || 'Error desconocido'}`);
+                }
+                
+                // Intentar parsear la respuesta
+                const data = await response.json().catch(() => {
+                    // Si no hay JSON en la respuesta, crear un objeto éxito
+                    return { success: true, message: 'Asignación eliminada' };
+                });
+                
+                console.log('✅ Respuesta del servidor:', data);
+                
+                if (data.success) {
+                    showAlertMessage('success', '✅ Asignación eliminada', 
+                        'La asignación ha sido eliminada exitosamente');
+                    
+                    // Cerrar el modal y actualizar
+                    setTimeout(() => {
+                        onCancel();
+                        if (onAssignmentUpdated) {
+                            onAssignmentUpdated();
+                        }
+                    }, 1500);
+                } else {
+                    showAlertMessage('error', '❌ Error al eliminar', 
+                        data.message || 'No se pudo eliminar la asignación');
+                }
+            } catch (err) {
+                console.error('❌ Error completo al eliminar:', err);
+                showAlertMessage('error', '❌ Error del sistema', 
+                    `Error: ${err.message || 'No se pudo eliminar la asignación'}`);
+            }
+        },
+        'danger'
+    );
+};
 
     // Estilos CSS en línea
     const styles = {

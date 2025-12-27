@@ -6,19 +6,16 @@ import guardServiceInstance from "./guard.service.js"; // ← Importar la instan
 
 
 export async function loginUser(email, password) {
-  // Buscar usuario por email
   const user = await findUserByEmail(email);
   if (!user) {
     throw new Error("Credenciales incorrectas");
   }
 
-  // Comparar contraseña
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     throw new Error("Credenciales incorrectas");
   }
 
-  // Bloquear acceso si el usuario no está aprobado
   if (user.role === "user" && user.requestStatus !== "aprobado") {
     throw new Error("Tu registro aún no ha sido aprobado por un guardia.");
   }
@@ -63,7 +60,6 @@ export async function loginUser(email, password) {
   // Generar token JWT
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5d" });
 
-  // Eliminar contraseña antes de devolver
   delete user.password;
 
   // Agregar guardId a la respuesta del usuario

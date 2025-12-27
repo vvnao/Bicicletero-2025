@@ -11,7 +11,7 @@ import RegisterStudent from "./pages/RegisterStudent";
 import RegisterAcademic from "./pages/RegisterAcademic";
 import RegisterAssistant from "./pages/RegisterAssistant";
 import HomeAdmin from "./pages/admin/HomeAdmin";
-import HomeGuardia from "@pages/HomeGuardia";
+import HomeGuardia from "@pages/guardia/HomeGuardia";
 import HomeUser from "@pages/HomeUser";
 import BicicletasAdmin from "./pages/admin/BicicletasAdmin";
 import GuardiasAdmin from "./pages/admin/GuardiasAdmin";
@@ -20,6 +20,14 @@ import ReportesAdmin from "./pages/admin/ReportesAdmin";
 import PrivateProfile from "@pages/PrivateProfile";
 import BicycleProfile from "@pages/BicycleProfile";
 import Bicycles from "./pages/Bicycles";
+import UserReviewHistory from "@pages/UserReviewHistory";
+import PendingUserRequests from '@pages/guardia/PendingUserRequests';
+import Monitoring from "@pages/guardia/Monitoring";
+import IncidentReports from "@pages/guardia/IncidentReports";
+import LayoutAdmin from "@components/admin/LayoutAdmin";
+import LayoutGuardia from "@components/guardia/LayoutGuardia";
+import GuardiaReviewWrapper from "@components/guardia/GuardiaReviewWrapper.jsx";
+
 import "./styles/Styles.css";
 
 const router = createBrowserRouter([
@@ -93,11 +101,12 @@ const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
             },
+
             {
                 path: "/home/user/bicycles",
                 element: (
                     <ProtectedRoute>
-                        <BicycleProfile/>
+                        <BicycleProfile />
                     </ProtectedRoute>
                 )
             },
@@ -105,7 +114,7 @@ const router = createBrowserRouter([
                 path: "/home/user/AddBicycles",
                 element: (
                     <ProtectedRoute>
-                        <Bicycles/>
+                        <Bicycles />
                     </ProtectedRoute>
                 )
             },
@@ -142,7 +151,65 @@ const router = createBrowserRouter([
                     </ProtectedRoute>
                 ),
             },
+
+
         ],
+    },
+
+    {
+        path: "home/guardia/monitoring",
+        element: (
+            <ProtectedRoute>
+                <LayoutGuardia>
+                    <Monitoring />
+                </LayoutGuardia>
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "home/guardia/incident-reports",
+        element: (
+            <ProtectedRoute>
+                <LayoutGuardia>
+                    <IncidentReports />
+                </LayoutGuardia>
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "home/guardia/pending-requests",
+        element: (
+            <ProtectedRoute>
+                <LayoutGuardia>
+                    <PendingUserRequests />
+                </LayoutGuardia>
+            </ProtectedRoute>
+        ),
+    },
+
+    {
+        path: "home/admin/reviews-history",
+        element: (
+            <ProtectedRoute>
+                <LayoutAdmin>
+                    <UserReviewHistory />
+                </LayoutAdmin>
+            </ProtectedRoute>
+        ),
+    },
+
+
+    {
+        path: "home/guardia/reviews-history",
+        element: (
+            <ProtectedRoute>
+                <LayoutGuardia>
+                    <GuardiaReviewWrapper>
+                        <UserReviewHistory />
+                    </GuardiaReviewWrapper>
+                </LayoutGuardia>
+            </ProtectedRoute>
+        ),
     },
 ]);
 

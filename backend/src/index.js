@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import morgan from 'morgan';
+import path from 'path';
 import { AppDataSource, connectDB } from './config/configDb.js';
 import { routerApi } from './routes/index.routes.js';
 import cors from 'cors';
@@ -23,7 +24,6 @@ app.use(
 app.use(express.json());
 app.use(morgan('dev'));
 
-//* para el multer
 app.use('/uploads', express.static(path.join(process.cwd(), 'src/uploads')));
 
 // Ruta principal de bienvenida
@@ -38,6 +38,8 @@ connectDB()
     await createDefaultUsers();
     await createBicycles();
     //await createReservations();
+    await createDefaultGuards();
+    await createDefaultGuardAssignments();
 
     //! Inicia los jobs de monitoreo automático
     startMonitoringJobs();

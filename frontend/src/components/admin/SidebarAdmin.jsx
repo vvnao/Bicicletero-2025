@@ -1,192 +1,257 @@
 "use strict";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+
+import {
+    FiBarChart2,
+    FiHome,
+    FiShield,
+    FiArchive,
+    FiFileText,
+    FiLogOut
+} from 'react-icons/fi';
 
 const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
-    const [activeItem, setActiveItem] = useState('dashboard');
-  const navigate = useNavigate(); 
+    const [activeItem, setActiveItem] = useState('');
+    const [hoveredItem, setHoveredItem] = useState(null);
+    const navigate = useNavigate();
+    const location = useLocation();
+
     const mainMenuItems = [
-        { name: 'Dashboard', path: '/admin/home', icon: '📊' },
-        { name: 'Bicicleteros', path: '/home/admin/bicicletas', icon: '🚲' },
-        { name: 'Guardias', path: '/home/admin/guardias', icon: '👮' },
-        { name: 'Historial', path: '/home/admin/historial', icon: '📁' },
-        { name: 'Repotes', path: '/home/admin/reportes', icon: '💬' },
-        
-        
+        {
+            name: 'Dashboard',
+            path: '/home/admin',
+            icon: FiBarChart2
+        },
+        {
+            name: 'Bicicleteros',
+            path: '/home/admin/bicicletas',
+            icon: FiHome
+        },
+        {
+            name: 'Guardias',
+            path: '/home/admin/guardias',
+            icon: FiShield
+        },
+        {
+            name: 'Historial',
+            path: '/home/admin/historial',
+            icon: FiArchive
+        },
+        {
+            name: 'Reportes',
+            path: '/home/admin/reportes',
+            icon: FiFileText
+        },
     ];
 
+    useEffect(() => {
+        let matchedItem = mainMenuItems.find(item => location.pathname === item.path);
+
+        if (!matchedItem) {
+            matchedItem = mainMenuItems.find(item =>
+                location.pathname.startsWith(item.path + '/') ||
+                location.pathname === item.path
+            );
+        }
+
+        if (matchedItem) {
+            setActiveItem(matchedItem.name.toLowerCase());
+        } else {
+            setActiveItem('');
+        }
+    }, [location.pathname]);
+
     const handleNavigation = (path, name) => {
-    setActiveItem(name.toLowerCase());
-     console.log(`Navegando a: ${path}`);
+        setActiveItem(name.toLowerCase());
         navigate(path);
-   
-};
+    };
 
     const handleLogout = () => {
-        console.log('Cerrando sesión...');
-          navigate("/auth/login", { replace: true });
+        // Considera limpiar tokens/localStorage aquí
+        localStorage.removeItem('authToken'); // si usas tokens
+        navigate("/auth/login", { replace: true });
+    };
+
+    const getMenuItemStyles = (itemName) => {
+        const isActive = activeItem === itemName.toLowerCase();
+        const isHovered = hoveredItem === itemName.toLowerCase();
+
+        let styles = {
+            padding: '14px 18px',
+            paddingTop: '14px',
+            margin: '19px 15px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            cursor: 'pointer',
+            color: '#ffffff',
+            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            backgroundColor: 'transparent',
+            borderRadius: '12px 0 0 12px',
+            position: 'relative',
+            width: 'calc(100% - 30px)',
+        };
+
+        if (isActive) {
+            styles.backgroundColor = '#252e4b';
+            styles.borderLeft = '4px solid #4a90e2';
+            styles.boxShadow = '2px 0 12px rgba(0, 0, 0, 0.15)';
+            styles.color = '#ffffff';
+            styles.width = 'calc(100% - 15px)';
+            styles.marginLeft = '15px';
+            styles.marginRight = '0';
+        }
+
+        if (isHovered && !isActive) {
+            styles.backgroundColor = '#19213f2d';
+            styles.borderRadius = '12px 8px 8px 12px'; // Reducir el radio del lado derecho
+            styles.marginRight = '0px'; // Reducir margen derecho
+            styles.width = 'calc(100% - 23px)'; // Ajustar ancho para compensar
+        }
+
+        return styles;
     };
 
     return (
-        <div 
+        <div
             style={{
+
                 width: sidebarHover ? '240px' : '80px',
                 height: '100vh',
-                backgroundColor: '#323955',
+                backgroundColor: '#323954',
                 position: 'fixed',
                 left: 0,
                 top: 0,
-                transition: 'width 0.3s ease',
+                transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 overflow: 'hidden',
                 zIndex: 1000,
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                borderTopRightRadius: '50px', // Solo esquina superior derecha redondeada
-                borderBottomRightRadius: '0', // Esquina inferior derecha sin redondear
-                borderTopLeftRadius: '0', // Esquina superior izquierda sin redondear
-                borderBottomLeftRadius: '0' // Esquina inferior izquierda sin redondear
+                borderTopRightRadius: '20px',
+                borderBottomRightRadius: '20px'
+                // boxShadow: '3px 0 20px rgba(0, 0, 0, 0.15)',
             }}
             onMouseEnter={() => setSidebarHover(true)}
             onMouseLeave={() => setSidebarHover(false)}
         >
-            {/* Sección superior */}
             <div>
-                {/* Título "Smart" */}
                 <div style={{
-                    padding: '40px',
-                    paddingTop: '80px',
+                    padding: '30px 20px',
+                    paddingTop: '50px',
                     display: 'flex',
+
                     alignItems: 'center',
                     justifyContent: sidebarHover ? 'flex-start' : 'center',
-                    borderBottom: '1px solid rgba(255,255,255,0.1)',
-                    marginBottom: '10px'
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                    marginBottom: '30px'
                 }}>
-                    <span style={{
-                        fontSize: '24px',
-                        fontWeight: 'bold',
+                    <div style={{
+                        fontSize: '20px',
+                        fontWeight: '600',
                         color: '#ffffff',
-                        opacity: sidebarHover ? 1: 0,
-                        transition: 'opacity 0.1s ease',
-                        whiteSpace: 'nowrap'
+                        opacity: sidebarHover ? 1 : 0,
+                        transition: 'opacity 0.2s ease',
+                        whiteSpace: 'nowrap',
+                        lineHeight: '1.4'
                     }}>
-                        Panel de <br/>
-                        Control
-                    </span>
+                        <div style={{ color: '#4a90e2', fontSize: '22px' }}>Panel</div>
+                        <div>de Control</div>
+                    </div>
                 </div>
 
-                {/* Menú principal */}
-                <div style={{ padding: '10px 0' }}>
-                    {mainMenuItems.map((item, index) => (
-                        <div
-                            key={index}
-                            style={{
-                                padding: '15px 25px',
-                                margin: '7px 0',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '15px',
-                                cursor: 'pointer',
-                                color: '#ffffff',
-                                transition: 'all 0.3s ease',
-                                backgroundColor: activeItem === item.name.toLowerCase() ? '#272e4b' : 'transparent',
-                              
-                            }}
-                            onClick={() => handleNavigation(item.path, item.name)}
-                            onMouseOver={(e) => {
-                                e.currentTarget.style.backgroundColor = '#272e4b';
-                                e.currentTarget.style.margin = '5px 20px';
-                                e.currentTarget.style.padding = '15px 30px';
-                                e.currentTarget.style.borderRadius = '70px 0 0 50px';
-                                e.currentTarget.style.width = 'calc(100% + 40px)';
-                                
-                            }}
-                            onMouseOut={(e) => {
-                                e.currentTarget.style.backgroundColor = activeItem === item.name.toLowerCase() ? '#272e4b' : 'transparent';
-                                e.currentTarget.style.margin = '5px 0';
-                                e.currentTarget.style.padding = '15px 20px';
-                                e.currentTarget.style.borderRadius = '0';
-                                e.currentTarget.style.width = '100%';
-                                e.currentTarget.style.borderLeft = activeItem === item.name.toLowerCase() ? '3px solid #272e4b' : 'none';
-                            }}
-                        >
-                            <span style={{ 
-                                fontSize: '22px', 
-                                minWidth: '28px',
-                                display: 'flex',
-                                justifyContent: 'center'
-                            }}>
-                                {item.icon}
-                            </span>
-                            <span style={{ 
-                                opacity: sidebarHover ? 1 : 0,
-                                transition: 'opacity 0.3s ease',
-                                whiteSpace: 'nowrap',
-                                fontSize: '16px',
-                                fontWeight: '500'
-                            }}>
-                                {item.name}
-                            </span>
-                        </div>
-                    ))}
+                <div style={{ padding: '0' }}>
+                    {mainMenuItems.map((item, index) => {
+                        const IconComponent = item.icon;
+                        const isActive = activeItem === item.name.toLowerCase();
+                        const isHovered = hoveredItem === item.name.toLowerCase();
+
+                        return (
+                            <div
+                                key={index}
+                                style={getMenuItemStyles(item.name)}
+                                onClick={() => handleNavigation(item.path, item.name)}
+                                onMouseEnter={() => setHoveredItem(item.name.toLowerCase())}
+                                onMouseLeave={() => setHoveredItem(null)}
+                            >
+                                <div style={{
+                                    minWidth: '24px',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    color: isActive ? '#4a90e2' :
+                                        isHovered ? '#ffffff' : '#a0a7c2',
+                                    transition: 'color 0.2s ease',
+                                    position: 'relative',
+                                    zIndex: '2',
+                                }}>
+                                    <IconComponent size={23} />
+                                </div>
+                                <div style={{
+                                    opacity: sidebarHover ? 1 : 0,
+                                    transition: 'opacity 0.2s ease',
+                                    whiteSpace: 'nowrap',
+                                    fontSize: '15px',
+                                    fontWeight: '500',
+                                    letterSpacing: '0.3px',
+                                    color: isActive ? '#ffffff' :
+                                        isHovered ? '#ffffff' : '#d1d5e7',
+                                    position: 'relative',
+                                    zIndex: '2'
+                                }}>
+                                    {item.name}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 
-            {/* Sección inferior - Logout */}
             <div style={{
-                borderTop: '1px solid rgba(255,255,255,0.1)',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
                 padding: '20px 0',
                 marginTop: 'auto'
             }}>
                 <div
                     style={{
-                        padding: '15px 20px',
-                        margin: '5px 0',
+                        padding: '14px 20px',
+                        margin: '10px 15px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '15px',
+                        gap: '16px',
                         cursor: 'pointer',
-                        color: '#ffffff',
-                        transition: 'all 0.3s ease',
-                        position: 'relative'
+                        transition: 'all 0.25s ease',
+                        borderRadius: '12px',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
                     }}
                     onClick={handleLogout}
-                    onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = '#202d5fff';
-                        e.currentTarget.style.margin = '5px -20px';
-                        e.currentTarget.style.padding = '15px 35px';
-                        e.currentTarget.style.borderRadius = '50px 0 0 50px';
-                        e.currentTarget.style.width = 'calc(100% + 40px)';
-                        e.currentTarget.style.borderLeft = '5px solid #ff6b6b';
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 107, 107, 0.2)';
                     }}
-                    onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.margin = '5px 0';
-                        e.currentTarget.style.padding = '15px 20px';
-                        e.currentTarget.style.borderRadius = '0';
-                        e.currentTarget.style.width = '100%';
-                        e.currentTarget.style.borderLeft = 'none';
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(255, 107, 107, 0.1)';
                     }}
                 >
-                    <span style={{ 
-                        fontSize: '22px', 
-                        minWidth: '28px',
+                    <div style={{
+                        minWidth: '24px',
                         display: 'flex',
                         justifyContent: 'center',
+                        alignItems: 'center',
                         color: '#ff6b6b'
                     }}>
-                      -  
-                    </span>
-                    <span style={{ 
+                        <FiLogOut size={18} />
+                    </div>
+                    <div style={{
                         opacity: sidebarHover ? 1 : 0,
-                        transition: 'opacity 0.3s ease',
+                        transition: 'opacity 0.2s ease',
                         whiteSpace: 'nowrap',
-                        fontSize: '16px',
+                        fontSize: '15px',
                         fontWeight: '500',
                         color: '#ff6b6b'
                     }}>
                         Cerrar Sesión
-                    </span>
+                    </div>
                 </div>
             </div>
         </div>
