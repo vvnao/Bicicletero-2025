@@ -2,11 +2,12 @@
 import { useState, useEffect } from "react";
 import LayoutAdmin from "../../components/admin/LayoutAdmin";
 import { useNavigate } from "react-router-dom";
+import bikerackService from "../../services/bikerack.service";
+import { getAuthToken, getUserData, isAdminOrGuard } from '../../helpers/authHelper';
 
 function BicicletasAdmin() {
     const navigate = useNavigate();
     
-    // Estados para los datos
     const [bicicleteros, setBicicleteros] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -17,107 +18,163 @@ function BicicletasAdmin() {
         'NORTE': { colorContenedor: '#3B82F6', colorSombra: '#1D4ED8' },
         'SUR': { colorContenedor: '#10B981', colorSombra: '#047857' },
         'ESTE': { colorContenedor: '#fade77', colorSombra: '#c7b162' },
-        'OESTE': { colorContenedor: '#EF4444', colorSombra: '#DC2626' }
+        'OESTE': { colorContenedor: '#EF4444', colorSombra: '#DC2626' },
+        'CENTRAL': { colorContenedor: '#8B5CF6', colorSombra: '#7C3AED' }
     };
 
-    // Datos mock para desarrollo
+    // Datos mock SOLO si falla el backend
     const datosMockBicicleteros = [
         {
             id: 1,
-            nombre: 'NORTE',
-            capacidad: 40,
-            ocupacion: 25,
-            espaciosDisponibles: 15,
-            porcentajeOcupacion: 63,
-            estado: 'Activo',
+            name: 'CENTRAL',
+            capacity: 40,
+            occupied: 25,
+            free: 15,
+            occupationPercentage: 63,
+            status: 'Activo',
+            colorContenedor: '#8B5CF6',
+            colorSombra: '#7C3AED'
+        },
+        {
+            id: 2,
+            name: 'NORTE',
+            capacity: 40,
+            occupied: 18,
+            free: 22,
+            occupationPercentage: 45,
+            status: 'Activo',
             colorContenedor: '#3B82F6',
             colorSombra: '#1D4ED8'
         },
         {
-            id: 2,
-            nombre: 'SUR',
-            capacidad: 40,
-            ocupacion: 18,
-            espaciosDisponibles: 22,
-            porcentajeOcupacion: 45,
-            estado: 'Activo',
+            id: 3,
+            name: 'SUR',
+            capacity: 40,
+            occupied: 35,
+            free: 5,
+            occupationPercentage: 88,
+            status: 'Casi Lleno',
             colorContenedor: '#10B981',
             colorSombra: '#047857'
         },
         {
-            id: 3,
-            nombre: 'ESTE',
-            capacidad: 40,
-            ocupacion: 35,
-            espaciosDisponibles: 5,
-            porcentajeOcupacion: 88,
-            estado: 'Casi Lleno',
+            id: 4,
+            name: 'ESTE',
+            capacity: 40,
+            occupied: 10,
+            free: 30,
+            occupationPercentage: 25,
+            status: 'Activo',
             colorContenedor: '#fade77',
             colorSombra: '#c7b162'
-        },
-        {
-            id: 4,
-            nombre: 'OESTE',
-            capacidad: 40,
-            ocupacion: 10,
-            espaciosDisponibles: 30,
-            porcentajeOcupacion: 25,
-            estado: 'Activo',
-            colorContenedor: '#EF4444',
-            colorSombra: '#DC2626'
         }
     ];
 
-   useEffect(() => {
-    console.log(' [BICICLETAS ADMIN] Componente montado');
-    
-    // Verificar sesión
-    const token = localStorage.getItem('authToken');
-    
-    // Primero intentar obtener datos reales si hay token real
-    if (token && token !== 'simulated-token-for-development') {
-        fetchBackendData();
-    } else {
-        // Solo usar datos mock si no hay token real
-        console.log(' Usando datos mock para desarrollo');
-        setBicicleteros(datosMockBicicleteros);
-        setBicicleteroSeleccionado(datosMockBicicleteros[0]);
-        setLoading(false);
-    }
-}, [navigate]);
+    // Función para extraer datos del backend (maneja diferentes formatos)
+    const extraerDatosBackend = (datosReales) => {
+        if (Array.isArray(datosReales)) {
+            return datosReales;
+        } 
+        if (datosReales?.data && Array.isArray(datosReales.data)) {
+            return datosReales.data;
+        }
+        if (datosReales?.success && Array.isArray(datosReales.data)) {
+            return datosReales.data;
+        }
+        throw new Error('Estructura de datos inesperada');
+    };
 
-// Modificar fetchBackendData para manejar el loading
-const fetchBackendData = async () => {
-    try {
-        setLoading(true);
-        const token = localStorage.getItem('authToken');
-        
-        const response = await fetch('http://localhost:3000/api/bikeracks', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+    // Formatear datos con colores
+    const formatearBicicleteros = (datos) => {
+  return datos.map(bicicletero => {
+    const nombre = bicicletero.name || bicicletero.nombre || 'CENTRAL';
+    const nombreUpper = nombre.toUpperCase();
+    const colores = coloresPorNombre[nombreUpper] || coloresPorNombre['CENTRAL'];
+    
+    // Usa occupied (reservas activas) en lugar de usedCapacity
+    const ocupado = bicicletero.occupied || bicicletero.usedCapacity || 0;
+    const capacidad = bicicletero.capacity || bicicletero.capacidad || 40;
+    const libre = bicicletero.free || bicicletero.availableCapacity || capacidad;
+    const porcentaje = bicicletero.occupationPercentage || 
+                      bicicletero.porcentajeOcupacion || 
+                      (capacidad > 0 ? Math.round((ocupado / capacidad) * 100) : 0);
+    
+    return {
+      id: bicicletero.id,
+      name: nombre,
+      nombre: nombre,
+      capacidad: capacidad,
+      occupied: ocupado, // ← Reservas activas
+      free: libre,
+      occupationPercentage: porcentaje,
+      status: bicicletero.status || bicicletero.estado || 'Activo',
+      colorContenedor: colores.colorContenedor,
+      colorSombra: colores.colorSombra,
+      espaciosDisponibles: libre
+    };
+  });
+};
+
+    // Cargar datos del backend
+    const cargarDatosBackend = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            console.log('🔄 Intentando cargar datos del backend...');
+            
+            // El servicio DEBE manejar el token internamente
+            const datosReales = await bikerackService.getAll();
+            
+            const datosProcesados = extraerDatosBackend(datosReales);
+            const bicicleterosFormateados = formatearBicicleteros(datosProcesados);
+            
+            setBicicleteros(bicicleterosFormateados);
+            
+            if (bicicleterosFormateados.length > 0) {
+                setBicicleteroSeleccionado(bicicleterosFormateados[0]);
             }
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            // ... procesar datos ...
+            
             setLoading(false);
-        } else {
-            // Si falla el backend, usar datos mock
-            console.log('⚠️ Falló conexión al backend, usando datos mock');
+            
+        } catch (error) {
+            console.error('❌ Error al cargar del backend:', error);
+            
+            // Usar datos mock como fallback
+            console.log('🔄 Usando datos de demostración');
+            setError(`No se pudo conectar al servidor: ${error.message}`);
             setBicicleteros(datosMockBicicleteros);
             setBicicleteroSeleccionado(datosMockBicicleteros[0]);
             setLoading(false);
         }
-    } catch (error) {
-        console.log('⚠️ Error de conexión:', error.message);
-        setBicicleteros(datosMockBicicleteros);
-        setBicicleteroSeleccionado(datosMockBicicleteros[0]);
-        setLoading(false);
-    }
-};
+    };
+
+    useEffect(() => {
+        console.log('🚀 BicicletasAdmin montado');
+        
+        const token = getAuthToken();
+        const user = getUserData();
+        
+        console.log('🔐 Token:', token ? '✅ Presente' : '❌ Ausente');
+        console.log('👤 Usuario:', user);
+        
+        if (!token || !user) {
+            console.log('❌ No autenticado - Redirigiendo a login');
+            navigate('/auth/login');
+            return;
+        }
+        
+        if (!isAdminOrGuard()) {
+            alert('Acceso restringido a administradores y guardias');
+            navigate('/');
+            return;
+        }
+        
+        console.log('✅ Usuario autorizado, cargando datos...');
+        cargarDatosBackend();
+        
+    }, [navigate]);
+
     // Manejar selección de bicicletero
     const handleSeleccionarBicicletero = (bicicletero) => {
         setBicicleteroSeleccionado(bicicletero);
@@ -125,24 +182,7 @@ const fetchBackendData = async () => {
 
     // Manejar recarga de datos
     const handleRecargar = () => {
-        setLoading(true);
-        
-        // Simular carga
-        setTimeout(() => {
-            setBicicleteros(datosMockBicicleteros);
-            setBicicleteroSeleccionado(datosMockBicicleteros[0]);
-            setLoading(false);
-            
-            // También intentar conectar al backend
-            fetchBackendData();
-        }, 500);
-    };
-
-    // Manejar edición
-    const handleEditar = () => {
-        if (!bicicleteroSeleccionado) return;
-        
-        alert(`Funcionalidad de edición para: ${bicicleteroSeleccionado.nombre}\n\nEsta funcionalidad está en desarrollo.`);
+        cargarDatosBackend();
     };
 
     // Renderizar estados de carga
@@ -172,24 +212,34 @@ const fetchBackendData = async () => {
                         color: '#6B7280',
                         marginBottom: '10px'
                     }}>
-                        Cargando bicicleteros...
+                        Conectando con el servidor...
                     </div>
                     <div style={{ 
                         fontSize: '0.9rem', 
                         color: '#9CA3AF'
                     }}>
-                        Obteniendo información
+                        Obteniendo datos en tiempo real
                     </div>
                 </div>
             </LayoutAdmin>
         );
     }
 
+    // Determinar color de estado
+    const getEstadoColor = (estado) => {
+        switch(estado) {
+            case 'Lleno': return '#DC2626';
+            case 'Casi Lleno': return '#F59E0B';
+            case 'Activo': return '#10B981';
+            default: return '#6B7280';
+        }
+    };
+
     return (
         <LayoutAdmin>
             <div style={{ padding: '20px' }}>
                 
-                {/* Encabezado con título y botón de recargar */}
+                {/* Encabezado */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -198,14 +248,21 @@ const fetchBackendData = async () => {
                     flexWrap: 'wrap',
                     gap: '15px'
                 }}>
-                    <h1 style={{
-                        fontSize: '1.8rem',
-                        fontWeight: 'bold',
-                        color: '#333',
-                        margin: 0
-                    }}>
-                        BICICLETEROS
-                    </h1>
+                    <div>
+                        <h1 style={{
+                            fontSize: '1.8rem',
+                            fontWeight: 'bold',
+                            color: '#333',
+                            margin: 0
+                        }}>
+                            {error ? 'DATOS DE DEMOSTRACIÓN' : 'BICICLETEROS EN TIEMPO REAL'}
+                        </h1>
+                        {error && (
+                            <p style={{ margin: '5px 0 0 0', color: '#F59E0B', fontSize: '0.9rem' }}>
+                                {error}
+                            </p>
+                        )}
+                    </div>
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <button 
                             onClick={handleRecargar}
@@ -220,8 +277,11 @@ const fetchBackendData = async () => {
                                 fontWeight: '500',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '6px'
+                                gap: '6px',
+                                transition: 'all 0.2s'
                             }}
+                            onMouseOver={(e) => e.target.style.backgroundColor = '#E5E7EB'}
+                            onMouseOut={(e) => e.target.style.backgroundColor = '#F3F4F6'}
                         >
                             <span>↻</span> Actualizar
                         </button>
@@ -239,7 +299,7 @@ const fetchBackendData = async () => {
                     </div>
                 </div>
                 
-                {/* Contenedor en línea horizontal 4x1 */}
+                {/* Contenedor de bicicleteros */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'center',
@@ -249,8 +309,7 @@ const fetchBackendData = async () => {
                     flexWrap: 'wrap'
                 }}>
                     {bicicleteros.map((bicicletero) => {
-                        const isActive = bicicleteroSeleccionado && 
-                                        bicicleteroSeleccionado.id === bicicletero.id;
+                        const isActive = bicicleteroSeleccionado?.id === bicicletero.id;
                         
                         return (
                             <div 
@@ -266,14 +325,12 @@ const fetchBackendData = async () => {
                                 onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
                                 onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                             >
-                                {/* Contenedor principal */}
                                 <div style={{
                                     position: 'relative',
                                     width: '160px',
                                     height: '160px',
                                     marginBottom: '15px'
                                 }}>
-                                    {/* Sombra sólida detrás */}
                                     <div style={{
                                         position: 'absolute',
                                         top: '6px',
@@ -284,7 +341,6 @@ const fetchBackendData = async () => {
                                         borderRadius: '15px'
                                     }}></div>
                                     
-                                    {/* Contenedor de color */}
                                     <div style={{
                                         position: 'relative',
                                         width: '100%',
@@ -300,7 +356,6 @@ const fetchBackendData = async () => {
                                         boxShadow: isActive ? '0 0 0 2px #333, 0 10px 20px rgba(0,0,0,0.1)' : '0 4px 12px rgba(0,0,0,0.1)',
                                         transition: 'all 0.3s ease'
                                     }}>
-                                        {/* Ícono */}
                                         <div style={{
                                             fontSize: '2.5rem',
                                             fontWeight: 'bold',
@@ -310,7 +365,6 @@ const fetchBackendData = async () => {
                                             🚲
                                         </div>
                                         
-                                        {/* Porcentaje de ocupación */}
                                         <div style={{
                                             fontSize: '0.9rem',
                                             color: 'white',
@@ -319,12 +373,11 @@ const fetchBackendData = async () => {
                                             borderRadius: '10px',
                                             fontWeight: '600'
                                         }}>
-                                            {bicicletero.porcentajeOcupacion}%
+                                            {bicicletero.occupationPercentage}%
                                         </div>
                                     </div>
                                 </div>
                                 
-                                {/* Nombre y estadísticas */}
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{
                                         fontSize: '1.3rem',
@@ -333,7 +386,7 @@ const fetchBackendData = async () => {
                                         textTransform: 'uppercase',
                                         marginBottom: '5px'
                                     }}>
-                                        {bicicletero.nombre}
+                                        {bicicletero.name}
                                     </div>
                                     <div style={{
                                         fontSize: '0.9rem',
@@ -342,13 +395,12 @@ const fetchBackendData = async () => {
                                         flexDirection: 'column',
                                         gap: '2px'
                                     }}>
-                                        <div>{bicicletero.ocupacion}/{bicicletero.capacidad}</div>
+                                        <div>{bicicletero.occupied}/{bicicletero.capacidad}</div>
                                         <div style={{
                                             fontSize: '0.8rem',
-                                            color: bicicletero.estado === 'Lleno' ? '#DC2626' : 
-                                                   bicicletero.estado === 'Casi Lleno' ? '#F59E0B' : '#10B981'
+                                            color: getEstadoColor(bicicletero.status)
                                         }}>
-                                            {bicicletero.estado}
+                                            {bicicletero.status}
                                         </div>
                                     </div>
                                 </div>
@@ -357,7 +409,7 @@ const fetchBackendData = async () => {
                     })}
                 </div>
 
-                {/* Mostrar tabla solo si hay un bicicletero seleccionado */}
+                {/* Tabla de detalles */}
                 {bicicleteroSeleccionado && (
                     <div style={{
                         backgroundColor: 'white',
@@ -367,7 +419,6 @@ const fetchBackendData = async () => {
                         marginTop: '20px',
                         animation: 'fadeIn 0.3s ease'
                     }}>
-                        {/* Encabezado de tabla */}
                         <div style={{
                             padding: '18px 24px',
                             backgroundColor: bicicleteroSeleccionado.colorContenedor,
@@ -391,9 +442,7 @@ const fetchBackendData = async () => {
                                 }}>
                                     🚲
                                 </span>
-                                <span>
-                                    Bicicletero {bicicleteroSeleccionado.id} - {bicicleteroSeleccionado.nombre}
-                                </span>
+                                Bicicletero {bicicleteroSeleccionado.id} - {bicicleteroSeleccionado.name}
                             </h2>
                             <div style={{
                                 fontSize: '0.9rem',
@@ -406,254 +455,76 @@ const fetchBackendData = async () => {
                             </div>
                         </div>
                         
-                        {/* Tabla */}
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{
-                                width: '100%',
-                                borderCollapse: 'collapse'
+                        <div style={{ padding: '20px' }}>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                                gap: '20px',
+                                marginBottom: '20px'
                             }}>
-                                <thead>
-                                    <tr style={{
-                                        backgroundColor: '#f8f9fa'
-                                    }}>
-                                        <th style={{
-                                            padding: '14px 16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#495057',
-                                            borderBottom: '2px solid #dee2e6'
-                                        }}>
-                                            ID
-                                        </th>
-                                        <th style={{
-                                            padding: '14px 16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#495057',
-                                            borderBottom: '2px solid #dee2e6'
-                                        }}>
-                                            Ubicación
-                                        </th>
-                                        <th style={{
-                                            padding: '14px 16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#495057',
-                                            borderBottom: '2px solid #dee2e6'
-                                        }}>
-                                            Capacidad
-                                        </th>
-                                        <th style={{
-                                            padding: '14px 16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#495057',
-                                            borderBottom: '2px solid #dee2e6'
-                                        }}>
-                                            Ocupación
-                                        </th>
-                                        <th style={{
-                                            padding: '14px 16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#495057',
-                                            borderBottom: '2px solid #dee2e6'
-                                        }}>
-                                            Estado
-                                        </th>
-                                        <th style={{
-                                            padding: '14px 16px',
-                                            textAlign: 'left',
-                                            fontWeight: '600',
-                                            color: '#495057',
-                                            borderBottom: '2px solid #dee2e6'
-                                        }}>
-                                            Acciones
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr style={{
-                                        backgroundColor: bicicleteroSeleccionado.id % 2 === 0 ? '#f9fafb' : 'white'
-                                    }}>
-                                        <td style={{ 
-                                            padding: '14px 16px',
-                                            verticalAlign: 'middle'
-                                        }}>
-                                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                <div style={{
-                                                    width: '36px',
-                                                    height: '36px',
-                                                    backgroundColor: bicicleteroSeleccionado.colorContenedor,
-                                                    borderRadius: '6px',
-                                                    display: 'flex',
-                                                    justifyContent: 'center',
-                                                    alignItems: 'center',
-                                                    marginRight: '12px',
-                                                    fontWeight: 'bold',
-                                                    color: 'white',
-                                                    fontSize: '0.9rem'
-                                                }}>
-                                                    {bicicleteroSeleccionado.id}
-                                                </div>
-                                                <div style={{
-                                                    fontWeight: '600',
-                                                    color: '#212529'
-                                                }}>
-                                                    #{bicicleteroSeleccionado.id}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td style={{ 
-                                            padding: '14px 16px', 
-                                            color: '#495057',
-                                            fontWeight: '500',
-                                            verticalAlign: 'middle'
-                                        }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <div style={{
-                                                    width: '12px',
-                                                    height: '12px',
-                                                    backgroundColor: bicicleteroSeleccionado.colorContenedor,
-                                                    borderRadius: '50%'
-                                                }}></div>
-                                                {bicicleteroSeleccionado.nombre}
-                                            </div>
-                                        </td>
-                                        <td style={{ 
-                                            padding: '14px 16px', 
-                                            color: '#495057',
-                                            fontWeight: '600',
-                                            verticalAlign: 'middle'
-                                        }}>
-                                            {bicicleteroSeleccionado.capacidad} espacios
-                                        </td>
-                                        <td style={{ 
-                                            padding: '14px 16px', 
-                                            color: '#495057',
-                                            fontWeight: '600',
-                                            verticalAlign: 'middle'
-                                        }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <div>{bicicleteroSeleccionado.ocupacion} bicicletas</div>
-                                                <div style={{
-                                                    width: '100px',
-                                                    height: '6px',
-                                                    backgroundColor: '#E5E7EB',
-                                                    borderRadius: '3px',
-                                                    overflow: 'hidden'
-                                                }}>
-                                                    <div style={{
-                                                        width: `${bicicleteroSeleccionado.porcentajeOcupacion}%`,
-                                                        height: '100%',
-                                                        backgroundColor: bicicleteroSeleccionado.colorContenedor,
-                                                        transition: 'width 0.5s ease'
-                                                    }}></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td style={{ 
-                                            padding: '14px 16px',
-                                            verticalAlign: 'middle'
-                                        }}>
-                                            <span style={{
-                                                display: 'inline-block',
-                                                padding: '6px 14px',
-                                                borderRadius: '20px',
-                                                fontSize: '0.85rem',
-                                                fontWeight: '600',
-                                                backgroundColor: bicicleteroSeleccionado.estado === 'Activo' 
-                                                    ? '#D1FAE5' 
-                                                    : bicicleteroSeleccionado.estado === 'Lleno'
-                                                    ? '#FEE2E2'
-                                                    : bicicleteroSeleccionado.estado === 'Casi Lleno'
-                                                    ? '#FEF3C7'
-                                                    : '#E0E7FF',
-                                                color: bicicleteroSeleccionado.estado === 'Activo' 
-                                                    ? '#065F46' 
-                                                    : bicicleteroSeleccionado.estado === 'Lleno'
-                                                    ? '#991B1B'
-                                                    : bicicleteroSeleccionado.estado === 'Casi Lleno'
-                                                    ? '#92400E'
-                                                    : '#3730A3',
-                                                border: `1px solid ${
-                                                    bicicleteroSeleccionado.estado === 'Activo' 
-                                                    ? '#A7F3D0' 
-                                                    : bicicleteroSeleccionado.estado === 'Lleno'
-                                                    ? '#FECACA'
-                                                    : bicicleteroSeleccionado.estado === 'Casi Lleno'
-                                                    ? '#FDE68A'
-                                                    : '#C7D2FE'
-                                                }`
-                                            }}>
-                                                {bicicleteroSeleccionado.estado}
-                                            </span>
-                                        </td>
-                                        <td style={{ 
-                                            padding: '14px 16px',
-                                            verticalAlign: 'middle'
-                                        }}>
-                                            <button 
-                                                style={{
-                                                    padding: '8px 18px',
-                                                    backgroundColor: bicicleteroSeleccionado.colorContenedor,
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '6px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '0.9rem',
-                                                    fontWeight: '500',
-                                                    transition: 'all 0.2s',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '6px'
-                                                }}
-                                                onClick={handleEditar}
-                                                onMouseOver={(e) => {
-                                                    e.target.style.backgroundColor = bicicleteroSeleccionado.colorSombra;
-                                                    e.target.style.transform = 'translateY(-2px)';
-                                                }}
-                                                onMouseOut={(e) => {
-                                                    e.target.style.backgroundColor = bicicleteroSeleccionado.colorContenedor;
-                                                    e.target.style.transform = 'translateY(0)';
-                                                }}
-                                            >
-                                                <span>✏️</span> Editar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        {/* Pie de tabla con estadísticas */}
-                        <div style={{
-                            padding: '16px 24px',
-                            backgroundColor: '#f8f9fa',
-                            borderTop: '1px solid #dee2e6',
-                            fontSize: '0.9rem',
-                            color: '#6c757d',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            flexWrap: 'wrap',
-                            gap: '10px'
-                        }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div>
-                                    <strong>Ocupación:</strong> {bicicleteroSeleccionado.ocupacion}/{bicicleteroSeleccionado.capacidad} bicicletas ({bicicleteroSeleccionado.porcentajeOcupacion}%)
+                                <div style={{
+                                    backgroundColor: '#F9FAFB',
+                                    padding: '15px',
+                                    borderRadius: '8px',
+                                    borderLeft: `4px solid ${bicicleteroSeleccionado.colorContenedor}`
+                                }}>
+                                    <div style={{ fontSize: '0.9rem', color: '#6B7280' }}>Capacidad Total</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>
+                                        {bicicleteroSeleccionado.capacidad} espacios
+                                    </div>
                                 </div>
-                                <div>
-                                    <strong>Disponibilidad:</strong> {bicicleteroSeleccionado.espaciosDisponibles} espacios libres
+                                
+                                <div style={{
+                                    backgroundColor: '#F9FAFB',
+                                    padding: '15px',
+                                    borderRadius: '8px',
+                                    borderLeft: `4px solid ${bicicleteroSeleccionado.colorContenedor}`
+                                }}>
+                                    <div style={{ fontSize: '0.9rem', color: '#6B7280' }}>Espacios Ocupados</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#DC2626' }}>
+                                        {bicicleteroSeleccionado.occupied} bicicletas
+                                    </div>
+                                </div>
+                                
+                                <div style={{
+                                    backgroundColor: '#F9FAFB',
+                                    padding: '15px',
+                                    borderRadius: '8px',
+                                    borderLeft: `4px solid ${bicicleteroSeleccionado.colorContenedor}`
+                                }}>
+                                    <div style={{ fontSize: '0.9rem', color: '#6B7280' }}>Espacios Libres</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10B981' }}>
+                                        {bicicleteroSeleccionado.free} espacios
+                                    </div>
+                                </div>
+                                
+                                <div style={{
+                                    backgroundColor: '#F9FAFB',
+                                    padding: '15px',
+                                    borderRadius: '8px',
+                                    borderLeft: `4px solid ${bicicleteroSeleccionado.colorContenedor}`
+                                }}>
+                                    <div style={{ fontSize: '0.9rem', color: '#6B7280' }}>Porcentaje Ocupación</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#8B5CF6' }}>
+                                        {bicicleteroSeleccionado.occupationPercentage}%
+                                    </div>
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                                <div>
-                                    <strong>Última actualización:</strong> {new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>
-                                    Seleccionado de {bicicleteros.length} bicicleteros
-                                </div>
+                            
+                            <div style={{
+                                width: '100%',
+                                height: '8px',
+                                backgroundColor: '#E5E7EB',
+                                borderRadius: '4px',
+                                overflow: 'hidden',
+                                marginTop: '10px'
+                            }}>
+                                <div style={{
+                                    width: `${bicicleteroSeleccionado.occupationPercentage}%`,
+                                    height: '100%',
+                                    backgroundColor: bicicleteroSeleccionado.colorContenedor,
+                                    transition: 'width 0.5s ease'
+                                }}></div>
                             </div>
                         </div>
                     </div>

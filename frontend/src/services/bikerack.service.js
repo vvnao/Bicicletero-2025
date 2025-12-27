@@ -1,5 +1,5 @@
-// services/bikerack.service.js - Versión corregida
 import axios from 'axios';
+import Cookies from 'js-cookie'; // Añade esta importación
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
@@ -7,7 +7,7 @@ const API_BASE_URL = 'http://localhost:3000/api';
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 15000,
-    withCredentials: true, // Para cookies
+    withCredentials: true,
     headers: {
         'Content-Type': 'application/json'
     }
@@ -16,10 +16,16 @@ const apiClient = axios.create({
 // Interceptor para agregar token JWT si existe
 apiClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('authToken');
+        // Obtener token de COOKIES usando js-cookie
+        const token = Cookies.get('jwt-auth');
+        
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log(' Token JWT agregado a la solicitud:', config.url);
+            console.log('✅ Token JWT agregado a la solicitud:', config.url);
+            console.log('🔐 Token (primeros 50 chars):', token.substring(0, 50) + '...');
+        } else {
+            console.log('⚠️ No se encontró token JWT en cookies');
+            console.log('🍪 Todas las cookies:', document.cookie);
         }
         return config;
     },
@@ -31,24 +37,24 @@ apiClient.interceptors.request.use(
 // Interceptor para manejar respuestas
 apiClient.interceptors.response.use(
     (response) => {
-        console.log(' Respuesta recibida:', {
+        console.log('✅ Respuesta recibida:', {
             url: response.config.url,
-            status: response.status,
-            data: response.data
+            status: response.status
         });
         return response;
     },
     (error) => {
-        console.error(' Error en respuesta:', {
+        console.error('❌ Error en respuesta:', {
             url: error.config?.url,
             status: error.response?.status,
-            message: error.message,
-            data: error.response?.data
+            message: error.message
         });
 
         // Manejar error 401 (no autorizado)
         if (error.response?.status === 401) {
-            console.log('🔒 Sesión expirada - Redirigiendo a login');
+            console.log('🔒 Sesión expirada - Limpiando y redirigiendo');
+            Cookies.remove('jwt-auth');
+            sessionStorage.removeItem('usuario');
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             window.location.href = '/auth/login';
@@ -61,35 +67,43 @@ apiClient.interceptors.response.use(
 const bikerackService = {
     async getAll() {
         try {
-            console.log(' [DEBUG] Llamando a GET /api/bikeracks');
-            console.log(' [DEBUG] Token en localStorage:', localStorage.getItem('authToken'));
+            console.log('📡 Llamando a GET /api/bikeracks');
+            
+            // Verificar cookies antes de hacer la petición
+            console.log('🍪 Cookie jwt-auth presente:', Cookies.get('jwt-auth') ? '✅ Sí' : '❌ No');
+            console.log('🍪 Todas las cookies:', document.cookie);
             
             const response = await apiClient.get('/bikeracks');
             
-            console.log(' [DEBUG] Respuesta HTTP:', response.status);
-            console.log(' [DEBUG] Respuesta completa:', response);
+            console.log('📊 Status de respuesta:', response.status);
             
-            // DEBUG: Verificar estructura
-            console.log(' [DEBUG] response.data:', response.data);
-            console.log(' [DEBUG] Tipo de response.data:', typeof response.data);
+            // Extraer datos independientemente del formato
+            let datos = response.data;
             
-            if (Array.isArray(response.data)) {
-                console.log(' response.data es array');
-                return response.data;
-            } else if (response.data?.data && Array.isArray(response.data.data)) {
-                console.log(' response.data.data es array');
-                return response.data.data;
-            } else {
-                console.warn(' Estructura inesperada, devolviendo array vacío');
-                return [];
+            // Si los datos vienen dentro de un objeto con propiedad 'data'
+            if (datos && typeof datos === 'object' && datos.data && Array.isArray(datos.data)) {
+                console.log('✅ Datos encontrados en response.data.data');
+                return datos.data;
             }
+            
+            // Si es array directo
+            if (Array.isArray(datos)) {
+                console.log('✅ Datos son array directo');
+                return datos;
+            }
+            
+            // Si tiene otro formato, devolver como está
+            console.log('⚠️ Formato inesperado, devolviendo response.data completo');
+            return datos;
+            
         } catch (error) {
-            console.error(' [DEBUG] Error en getAll:', error);
-            console.error(' [DEBUG] Error details:', {
-                message: error.message,
-                response: error.response?.data,
-                status: error.response?.status
-            });
+            console.error('❌ Error en getAll:', error);
+            
+            // Si es error 401, ya el interceptor maneja la redirección
+            if (error.response?.status === 401) {
+                throw new Error('No autorizado. Redirigiendo a login...');
+            }
+            
             throw error;
         }
     },
@@ -98,12 +112,6 @@ const bikerackService = {
         try {
             console.log(`📡 Solicitando bicicletero ${id}...`);
             const response = await apiClient.get(`/bikeracks/${id}`);
-            
-            if (response.data?.success && response.data.data) {
-                return response.data.data;
-            } else if (response.data?.data) {
-                return response.data.data;
-            }
             return response.data;
         } catch (error) {
             console.error('Error obteniendo bicicletero:', error);
