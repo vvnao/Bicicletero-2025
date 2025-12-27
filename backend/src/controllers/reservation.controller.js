@@ -71,7 +71,6 @@ export async function createReservation(req, res) {
     await sendEmail(
       reservation.user.email,
       'Reserva Confirmada - Bicicletero UBB',
-      `Tu reserva está confirmada para el espacio ${reservation.space.spaceCode}`,
       emailTemplates.reservationConfirmation(reservation.user, reservation)
     );
 
@@ -111,14 +110,11 @@ export async function cancelReservationController(req, res) {
       return handleErrorClient(res, 400, 'ID de reserva requerido');
     }
 
-    console.log(`Cancelando reserva ID: ${reservationId}`);
-
     const result = await cancelReservation(parseInt(reservationId), userId);
 
     await sendEmail(
       result.user.email,
       'Reserva Cancelada - Bicicletero UBB',
-      'Tu reserva ha sido cancelada',
       emailTemplates.reservationCancellation(result.user, result.reservation)
     );
 
@@ -148,8 +144,6 @@ export async function getUserReservationsController(req, res) {
     if (!userId || isNaN(parseInt(userId))) {
       return handleErrorClient(res, 400, 'ID de usuario inválido');
     }
-
-    console.log(`Obteniendo reservas del usuario ID: ${userId}`);
 
     const reservations = await getUserReservations(parseInt(userId));
 

@@ -1,7 +1,8 @@
 import { AppDataSource } from '../config/configDb.js';
 import { formatSpaceData } from '../helpers/spaceDetails.helper.js';
+import { SpaceEntity } from '../entities/SpaceEntity.js';
 
-const spaceRepository = AppDataSource.getRepository('Space');
+const spaceRepository = AppDataSource.getRepository(SpaceEntity);
 
 export async function getSpaceDetailsService(spaceId) {
   try {
@@ -19,14 +20,16 @@ export async function getSpaceDetailsService(spaceId) {
     });
 
     if (!space) {
+      console.log(`Espacio ${spaceId} no encontrado`);
       throw new Error('Espacio no encontrado');
     }
 
     return formatSpaceData(space);
   } catch (error) {
-    if (error.message === 'Espacio no encontrado') {
-      throw error;
-    }
-    throw new Error(`Error obteniendo detalles del espacio: ${error.message}`);
+    console.error(
+      `Error en getSpaceDetailsService para espacio ${spaceId}:`,
+      error.message
+    );
+    throw error;
   }
 }
