@@ -1,59 +1,60 @@
 "use strict";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { 
-  FiBarChart2,
-  FiHome, 
-  FiShield,
-  FiArchive,
-  FiFileText,
-  FiLogOut
+
+import {
+    FiBarChart2,
+    FiHome,
+    FiShield,
+    FiArchive,
+    FiFileText,
+    FiLogOut
 } from 'react-icons/fi';
 
 const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
     const [activeItem, setActiveItem] = useState('');
     const [hoveredItem, setHoveredItem] = useState(null);
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const location = useLocation();
-    
+
     const mainMenuItems = [
-        { 
-            name: 'Dashboard', 
-            path: '/home/admin', 
-            icon: FiBarChart2 
+        {
+            name: 'Dashboard',
+            path: '/home/admin',
+            icon: FiBarChart2
         },
-        { 
-            name: 'Bicicleteros', 
-            path: '/home/admin/bicicletas', 
-            icon: FiHome 
+        {
+            name: 'Bicicleteros',
+            path: '/home/admin/bicicletas',
+            icon: FiHome
         },
-        { 
-            name: 'Guardias', 
-            path: '/home/admin/guardias', 
-            icon: FiShield 
+        {
+            name: 'Guardias',
+            path: '/home/admin/guardias',
+            icon: FiShield
         },
-        { 
-            name: 'Historial', 
-            path: '/home/admin/historial', 
-            icon: FiArchive 
+        {
+            name: 'Historial',
+            path: '/home/admin/historial',
+            icon: FiArchive
         },
-        { 
-            name: 'Reportes', 
-            path: '/home/admin/reportes', 
-            icon: FiFileText 
+        {
+            name: 'Reportes',
+            path: '/home/admin/reportes',
+            icon: FiFileText
         },
     ];
 
     useEffect(() => {
         let matchedItem = mainMenuItems.find(item => location.pathname === item.path);
-        
+
         if (!matchedItem) {
-            matchedItem = mainMenuItems.find(item => 
-                location.pathname.startsWith(item.path + '/') || 
+            matchedItem = mainMenuItems.find(item =>
+                location.pathname.startsWith(item.path + '/') ||
                 location.pathname === item.path
             );
         }
-        
+
         if (matchedItem) {
             setActiveItem(matchedItem.name.toLowerCase());
         } else {
@@ -122,9 +123,9 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
 };
 
     return (
-        <div 
+        <div
             style={{
-                
+
                 width: sidebarHover ? '240px' : '80px',
                 height: '100vh',
                 backgroundColor: '#323954',
@@ -139,7 +140,7 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                 justifyContent: 'space-between',
                 borderTopRightRadius: '20px',
                 borderBottomRightRadius: '20px'
-               // boxShadow: '3px 0 20px rgba(0, 0, 0, 0.15)',
+                // boxShadow: '3px 0 20px rgba(0, 0, 0, 0.15)',
             }}
             onMouseEnter={() => setSidebarHover(true)}
             onMouseLeave={() => setSidebarHover(false)}
@@ -149,7 +150,7 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                     padding: '30px 20px',
                     paddingTop: '50px',
                     display: 'flex',
-                    
+
                     alignItems: 'center',
                     justifyContent: sidebarHover ? 'flex-start' : 'center',
                     borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
@@ -171,10 +172,10 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
 
                 <div style={{ padding: '0' }}>
                     {mainMenuItems.map((item, index) => {
-                        const IconComponent = item.icon; 
+                        const IconComponent = item.icon;
                         const isActive = activeItem === item.name.toLowerCase();
                         const isHovered = hoveredItem === item.name.toLowerCase();
-                        
+
                         return (
                             <div
                                 key={index}
@@ -183,27 +184,27 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                                 onMouseEnter={() => setHoveredItem(item.name.toLowerCase())}
                                 onMouseLeave={() => setHoveredItem(null)}
                             >
-                                <div style={{ 
+                                <div style={{
                                     minWidth: '24px',
                                     display: 'flex',
                                     justifyContent: 'center',
                                     alignItems: 'center',
-                                    color: isActive ? '#4a90e2' : 
-                                           isHovered ? '#ffffff' : '#a0a7c2',
+                                    color: isActive ? '#4a90e2' :
+                                        isHovered ? '#ffffff' : '#a0a7c2',
                                     transition: 'color 0.2s ease',
                                     position: 'relative',
                                     zIndex: '2',
                                 }}>
                                     <IconComponent size={23} />
                                 </div>
-                                <div style={{ 
+                                <div style={{
                                     opacity: sidebarHover ? 1 : 0,
                                     transition: 'opacity 0.2s ease',
                                     whiteSpace: 'nowrap',
                                     fontSize: '15px',
                                     fontWeight: '500',
                                     letterSpacing: '0.3px',
-                                    color: isActive ? '#ffffff' : 
+                                    color: isActive ? '#ffffff' :
                                         isHovered ? '#ffffff' : '#d1d5e7',
                                     position: 'relative',
                                     zIndex: '2'
@@ -244,7 +245,7 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                         e.currentTarget.style.backgroundColor = 'rgba(255, 107, 107, 0.1)';
                     }}
                 >
-                    <div style={{ 
+                    <div style={{
                         minWidth: '24px',
                         display: 'flex',
                         justifyContent: 'center',
@@ -253,7 +254,7 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                     }}>
                         <FiLogOut size={18} />
                     </div>
-                    <div style={{ 
+                    <div style={{
                         opacity: sidebarHover ? 1 : 0,
                         transition: 'opacity 0.2s ease',
                         whiteSpace: 'nowrap',

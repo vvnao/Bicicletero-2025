@@ -1,28 +1,61 @@
 import { SPACE_STATUS } from '../entities/SpaceEntity.js';
+import { LOG_ACTIONS } from '../entities/SpaceLogEntity.js';
+import { RESERVATION_STATUS } from '../entities/ReservationEntity.js';
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//! OBTENER EL LOG ACTIVO (checkin sin checkout)
+export function getActiveSpaceLog(spaceLogs, spaceStatus) {
+  if (!spaceLogs || spaceLogs.length === 0) return null;
 
-//! FORMATEAR DATOS DEL ESPACIO SGN ESTADO
+  if (spaceStatus === SPACE_STATUS.RESERVED) {
+    const checkinLogs = spaceLogs.filter(
+      (log) => log.action === LOG_ACTIONS.CHECKIN && !log.actualCheckout
+    );
+    return checkinLogs.length > 0
+      ? checkinLogs.sort(
+          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        )[0]
+      : null;
+  }
+
+  const activeLogs = spaceLogs.filter(
+    (log) => log.actualCheckin && !log.actualCheckout
+  );
+
+  return activeLogs.length > 0
+    ? activeLogs.sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
+      )[0]
+    : null;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//! FORMATEAR DATOS DEL ESPACIO SEGÚN ESTADO
 export function formatSpaceData(space) {
+  const activeLog = getActiveSpaceLog(space.spaceLogs, space.status);
+
   const baseData = {
     id: space.id,
     spaceCode: space.spaceCode,
     status: space.status,
     bikerackName: space.bikerack?.name || 'Bicicletero',
+    currentLog: activeLog,
   };
 
   switch (space.status) {
     case SPACE_STATUS.OCCUPIED:
       return {
         ...baseData,
-        user: formatUserData(space.currentLog?.user),
-        bicycle: formatBicycleData(space.currentLog?.bicycle),
-        arrivalTime: space.currentLog?.actualCheckin || null,
-        estimatedDeparture: space.currentLog?.estimatedCheckout || null,
-        hasInfraction: checkIfHasInfraction(space.currentLog),
+        user: formatUserData(activeLog?.user),
+        bicycle: formatBicycleData(activeLog?.bicycle),
+        arrivalTime: activeLog?.actualCheckin || null,
+        estimatedDeparture: activeLog?.estimatedCheckout || null,
+        hasInfraction: checkIfHasInfraction(activeLog),
       };
 
     case SPACE_STATUS.RESERVED:
       const activeReservation = space.reservations?.find(
-        (res) => res.status === 'Pendiente' || res.status === 'Activa'
+        (res) =>
+          res.status === RESERVATION_STATUS.PENDING ||
+          res.status === RESERVATION_STATUS.ACTIVE
       );
       return {
         ...baseData,
@@ -33,14 +66,26 @@ export function formatSpaceData(space) {
       };
 
     case SPACE_STATUS.TIME_EXCEEDED:
+      //* se calcula la duración del tiempo en infracción para que el guardia vea el tiempo real
+      const now = new Date();
+      const diffMs = activeLog?.infractionStart
+        ? now - new Date(activeLog.infractionStart)
+        : 0;
+      const currentInfractionMinutes = Math.max(
+        Math.floor(diffMs / (1000 * 60)),
+        0
+      );
+
       return {
         ...baseData,
-        user: formatUserData(space.currentLog?.user),
-        bicycle: formatBicycleData(space.currentLog?.bicycle),
-        arrivalTime: space.currentLog?.actualCheckin || null,
-        estimatedDeparture: space.currentLog?.estimatedCheckout || null,
-        infractionDuration: space.currentLog?.infractionDuration || 0,
-        infractionStart: space.currentLog?.infractionStart || null,
+        user: formatUserData(activeLog?.user),
+        bicycle: formatBicycleData(activeLog?.bicycle),
+        arrivalTime: activeLog?.actualCheckin || null,
+        estimatedDeparture: activeLog?.estimatedCheckout || null,
+        //* se envía el cálculo (no se guarda en la bd)
+        infractionDuration: currentInfractionMinutes,
+        infractionStart: activeLog?.infractionStart || null,
+        totalInfractionMinutes: activeLog?.totalInfractionMinutes || 0,
       };
 
     case SPACE_STATUS.FREE:
@@ -49,7 +94,7 @@ export function formatSpaceData(space) {
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
-//! FORMATEAR DATOS DE USUARIO 
+//! FORMATEAR DATOS DE USUARIO
 export function formatUserData(user) {
   if (!user) return null;
 
@@ -80,5 +125,5 @@ export function formatBicycleData(bicycle) {
 //! para verificar si tiene infracción
 export function checkIfHasInfraction(spaceLog) {
   if (!spaceLog) return false;
-  return spaceLog.infractionDuration > 0 || spaceLog.infractionStart !== null;
+  return spaceLog.infractionStart !== null;
 }

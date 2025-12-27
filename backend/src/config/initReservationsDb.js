@@ -1,4 +1,4 @@
-// src/config/initReservationsDb.js - VERSIÓN CON HISTORIAL
+/*//! ARCHIVO TEMPORAL POR QUE AÚN NO IMPLEMENTO EL SISTEMA PARA CREAR RESERVAS
 'use strict';
 import { AppDataSource } from './configDb.js';
 import { ReservationEntity } from '../entities/ReservationEntity.js';
@@ -110,10 +110,4 @@ async function createHistoryEvent(user, space, reservation) {
   }
 }
 
-await createHistoryEvent({
-  historyType: 'tipo_de_evento',
-  description: 'Descripción del evento',
-  details: { /* datos adicionales */ },
-  userId: usuario.id,
-  // ... otros IDs según corresponda
-});
+*/

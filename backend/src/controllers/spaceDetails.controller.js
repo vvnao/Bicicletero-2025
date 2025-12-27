@@ -24,22 +24,16 @@ export async function getSpaceDetails(req, res) {
       spaceData
     );
   } catch (error) {
-    console.error('Error en getSpaceDetails:', error);
+    console.error('Error en getSpaceDetails:', error.message);
 
-    if (error.message.includes('no encontrado')) {
-      return handleErrorClient(
-        res,
-        404,
-        'Espacio no encontrado',
-        error.message
-      );
+    if (error.message === 'Espacio no encontrado') {
+      return handleErrorClient(res, 404, 'El espacio solicitado no existe');
     }
 
     handleErrorServer(
       res,
       500,
-      'Error al obtener datos del espacio',
-      error.message
+      'Error interno al procesar los detalles del espacio'
     );
   }
 }

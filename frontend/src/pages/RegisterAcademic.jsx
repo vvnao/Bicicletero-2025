@@ -49,6 +49,11 @@ export default function RegisterAcademic() {
         Object.entries(formData).forEach(([k, v]) => {
             if (v !== undefined && v !== null && v !== '') form.append(k, v);
         });
+
+        if (bicycle.brand || bicycle.model || bicycle.color) {
+            form.append('bicycle', JSON.stringify(bicycle));
+        }
+
         if (photo) form.append('photo', photo);
         try {
             const res = await register(form);

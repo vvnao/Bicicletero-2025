@@ -1,7 +1,7 @@
 'use strict';
 import { EntitySchema } from 'typeorm';
 
-const SPACE_STATUS = {
+export const SPACE_STATUS = {
   FREE: 'Libre',
   RESERVED: 'Reservado',
   OCCUPIED: 'Ocupado',
@@ -34,6 +34,17 @@ export const SpaceEntity = new EntitySchema({
       type: 'int',
       nullable: false,
     },
+    currentRetrievalCode: {
+      //! Código de retiro (llega al email del usuario), para liberar la bicicleta
+      type: 'varchar',
+      length: 10,
+      nullable: true,
+    },
+    currentRetrievalCodeExpires: {
+      //! Fecha y hora de expiración del código de retiro (el código expira en 24 hrs)
+      type: 'timestamp',
+      nullable: true,
+    },
     created_at: {
       type: 'timestamp',
       createDate: true,
@@ -65,16 +76,7 @@ export const SpaceEntity = new EntitySchema({
       target: 'Incidence',
       inverseSide: 'space',
     },
-    currentLog: {
-      //! Solo el log activo (si el espacio está en uso)
-      type: 'one-to-one',
-      target: 'SpaceLog',
-      inverseSide: 'space',
-      nullable: true,
-      joinColumn: true,
-    },
     spaceLogs: {
-      //! Para el historial completo de todos los usos del espacio
       type: 'one-to-many',
       target: 'SpaceLog',
       inverseSide: 'space',
@@ -82,5 +84,4 @@ export const SpaceEntity = new EntitySchema({
   },
 });
 
-export { SPACE_STATUS };
 export default SpaceEntity;

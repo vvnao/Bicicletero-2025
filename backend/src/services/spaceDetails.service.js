@@ -9,9 +9,9 @@ export async function getSpaceDetailsService(spaceId) {
       where: { id: spaceId },
       relations: [
         'bikerack',
-        'currentLog',
-        'currentLog.user',
-        'currentLog.bicycle',
+        'spaceLogs',
+        'spaceLogs.user',
+        'spaceLogs.bicycle',
         'reservations',
         'reservations.user',
         'reservations.bicycle',
@@ -22,10 +22,11 @@ export async function getSpaceDetailsService(spaceId) {
       throw new Error('Espacio no encontrado');
     }
 
-    const spaceData = formatSpaceData(space);
-
-    return spaceData;
+    return formatSpaceData(space);
   } catch (error) {
+    if (error.message === 'Espacio no encontrado') {
+      throw error;
+    }
     throw new Error(`Error obteniendo detalles del espacio: ${error.message}`);
   }
 }
