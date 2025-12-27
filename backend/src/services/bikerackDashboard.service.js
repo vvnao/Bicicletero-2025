@@ -33,7 +33,7 @@ export async function getBikeracksSummary() {
           (space) => space.status === SPACE_STATUS.TIME_EXCEEDED
         ).length;
 
-        const totalInUse = occupiedSpaces + overdueSpaces;
+        const totalInUse = occupiedSpaces + overdueSpaces + reservedSpaces;
 
         //! para calcular la última actualización, lo usaré en el panel de monitoreo
         const lastUpdate = calculateLastUpdate(spaces);
