@@ -12,7 +12,6 @@ import {
 } from '../Handlers/responseHandlers.js';
 import { sendEmail } from '../services/email.service.js';
 import { emailTemplates } from '../templates/reservationEmail.template.js';
-
 export async function getUserBicyclesForReservation(req, res) {
     try {
         const userId = req.user?.id;
@@ -67,7 +66,6 @@ export async function createReservation(req, res) {
       estimatedHours: reservation.estimatedHours,
       expirationTime: reservation.expirationTime,
     });
-
   } catch (error) {
     console.error('Error en createReservation:', error.message);
 

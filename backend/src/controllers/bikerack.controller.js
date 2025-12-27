@@ -1,9 +1,8 @@
-import { AppDataSource } from "../config/configDb.js";
-import { UserEntity } from "../entities/UserEntity.js";
-import { BicycleEntity } from "../entities/BicycleEntity.js";
-import Bikerack from "../entities/BikerackEntity.js";
-import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
-import { createHistoryRecord } from "../services/history.service.js";
+import { AppDataSource } from '../config/configDb.js';
+import { UserEntity } from '../entities/UserEntity.js';
+import { BicycleEntity } from '../entities/BicycleEntity.js';
+import Bikerack from '../entities/BikerackEntity.js';
+import { GuardAssignmentEntity } from '../entities/GuardAssignmentEntity.js';
 import {
   getBikeracksSummary,
   getBikerackDetail,
@@ -15,15 +14,14 @@ import {
 } from '../Handlers/responseHandlers.js';
 
 const bikerackRepository = AppDataSource.getRepository(Bikerack);
-const userRepository = AppDataSource.getRepository(UserEntity);
 const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
-const guardAssignmentRepository = AppDataSource.getRepository(GuardAssignmentEntity);
+const guardAssignmentRepository = AppDataSource.getRepository(
+  GuardAssignmentEntity
+);
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //! PARA EL PANEL DE MONITOREO
 export async function getDashboard(req, res) {
   try {
-    console.log('Obteniendo dashboard...');
-
     const bikeracksSummary = await getBikeracksSummary();
 
     handleSuccess(
@@ -41,15 +39,18 @@ export async function getDashboard(req, res) {
 //! PARA LA VISTA DETALLADA DE CADA BICICLETERO
 export async function getBikerackSpaces(req, res) {
   try {
-    const { id } = req.params;
+    const { bikerackId } = req.params;
 
-    if (!id || isNaN(parseInt(id))) {
-      return handleErrorClient(res, 400, 'ID de bicicletero inválido');
+    if (!bikerackId || isNaN(parseInt(bikerackId))) {
+      return handleErrorClient(
+        res,
+        400,
+        'ID de bicicletero inválido. Debe ser un número.'
+      );
     }
 
-    console.log(`Obteniendo espacios del bicicletero ID: ${id}...`);
-
-    const bikerackDetail = await getBikerackDetail(parseInt(id));
+    const bikerackIdNum = parseInt(bikerackId);
+    const bikerackDetail = await getBikerackDetail(bikerackIdNum);
 
     handleSuccess(
       res,
@@ -58,41 +59,81 @@ export async function getBikerackSpaces(req, res) {
       bikerackDetail
     );
   } catch (error) {
-    console.error('Error en getBikerackSpaces:', error);
+    console.error(
+      `[BikerackDetail Error] ID ${req.params.bikerackId}:`,
+      error.message
+    );
 
     if (error.message.includes('no encontrado')) {
-      return handleErrorClient(
-        res,
-        404,
-        'Bicicletero no encontrado',
-        error.message
-      );
+      return handleErrorClient(res, 404, 'El bicicletero solicitado no existe');
     }
 
     handleErrorServer(
       res,
       500,
-      'Error al obtener los espacios del bicicletero',
-      error.message
+      'Error interno al obtener el detalle del bicicletero'
     );
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
+//* esto es de say
+export async function assignGuardController(req, res) {
+  try {
+    const { bikerackId, guardId } = req.params;
+    const result = await assignGuard(parseInt(bikerackId), parseInt(guardId));
+    return handleSuccess(res, 200, 'Guardia asignado correctamente', result);
+  } catch (error) {
+    return handleErrorClient(res, 400, error.message);
+  }
+}
+
+export async function storeBicycleController(req, res) {
+  try {
+    const { bikerackId, bicycleId } = req.params;
+    const result = await storeBicycle(
+      parseInt(bikerackId),
+      parseInt(bicycleId)
+    );
+    return handleSuccess(
+      res,
+      200,
+      'Bicicleta almacenada en el bicicletero',
+      result
+    );
+  } catch (error) {
+    return handleErrorClient(res, 400, error.message);
+  }
+}
+
+export async function removeBicycleController(req, res) {
+  try {
+    const { bicycleId } = req.params;
+    const result = await removeBicycle(parseInt(bicycleId));
+    return handleSuccess(
+      res,
+      200,
+      'Bicicleta retirada del bicicletero',
+      result
+    );
+  } catch (error) {
+    return handleErrorClient(res, 400, error.message);
+  }
+}
 
 export async function getBikerackGuards(req, res) {
   try {
     const { bikerackId } = req.params;
-    
+
     // Lógica para obtener guardias asignados
     const assignments = await guardAssignmentRepository.find({
-      where: { 
+      where: {
         bikerack: { id: bikerackId },
-        status: "activo" 
+        status: 'activo',
       },
-      relations: ["guard", "guard.user"]
+      relations: ['guard', 'guard.user'],
     });
-    
-    const guards = assignments.map(assignment => ({
+
+    const guards = assignments.map((assignment) => ({
       id: assignment.guard.id,
       userId: assignment.guard.userId,
       name: `${assignment.guard.names} ${assignment.guard.lastName}`,
@@ -100,18 +141,18 @@ export async function getBikerackGuards(req, res) {
       phone: assignment.guard.phone,
       isAvailable: assignment.guard.isAvailable,
       assignmentId: assignment.id,
-      assignedAt: assignment.created_at
+      assignedAt: assignment.created_at,
     }));
-    
+
     return res.status(200).json({
       success: true,
-      data: guards
+      data: guards,
     });
   } catch (error) {
     console.error('Error en getBikerackGuards:', error);
     return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 }
@@ -120,34 +161,36 @@ export async function getBikerackGuards(req, res) {
 export async function listBikeracksWithGuards(req, res) {
   try {
     const racks = await bikerackRepository.find({
-      relations: ["guardAssignments", "guardAssignments.guard"]
+      relations: ['guardAssignments', 'guardAssignments.guard'],
     });
-    
-    const racksWithGuards = racks.map(rack => {
-      const activeGuards = rack.guardAssignments.filter(a => a.status === "activo");
-      
+
+    const racksWithGuards = racks.map((rack) => {
+      const activeGuards = rack.guardAssignments.filter(
+        (a) => a.status === 'activo'
+      );
+
       return {
         id: rack.id,
         name: rack.name,
         capacity: rack.capacity,
         activeGuardsCount: activeGuards.length,
-        guards: activeGuards.map(assignment => ({
+        guards: activeGuards.map((assignment) => ({
           id: assignment.guard.id,
           name: `${assignment.guard.names} ${assignment.guard.lastName}`,
-          phone: assignment.guard.phone
-        }))
+          phone: assignment.guard.phone,
+        })),
       };
     });
-    
+
     return res.status(200).json({
       success: true,
-      data: racksWithGuards
+      data: racksWithGuards,
     });
   } catch (error) {
     console.error('Error en listBikeracksWithGuards:', error);
     return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
   }
 }
@@ -155,23 +198,23 @@ export async function listBikeracksWithGuards(req, res) {
 export async function listBikeracks(req, res) {
   try {
     const racks = await bikerackRepository.find({
-      relations: ["spaces"] // Cargar espacios si los necesitas
+      relations: ['spaces'], // Cargar espacios si los necesitas
     });
 
     // Agregar información de ocupación a cada bicicletero
     const racksWithOccupancy = await Promise.all(
       racks.map(async (rack) => {
-        const used = await bicycleRepository.count({ 
-          where: { bikerack: { id: rack.id } } 
+        const used = await bicycleRepository.count({
+          where: { bikerack: { id: rack.id } },
         });
-        
+
         // Cargar guardias asignados
         const activeAssignments = await guardAssignmentRepository.find({
           where: {
             bikerack: { id: rack.id },
-            status: "activo"
+            status: 'activo',
           },
-          relations: ["guard"]
+          relations: ['guard'],
         });
 
         return {
@@ -181,18 +224,23 @@ export async function listBikeracks(req, res) {
           usedCapacity: used,
           availableCapacity: rack.capacity - used,
           occupancyRate: ((used / rack.capacity) * 100).toFixed(2) + '%',
-          activeGuards: activeAssignments.map(assignment => ({
+          activeGuards: activeAssignments.map((assignment) => ({
             id: assignment.guard.id,
             name: `${assignment.guard.names} ${assignment.guard.lastName}`,
-            email: assignment.guard.email
+            email: assignment.guard.email,
           })),
           createdAt: rack.created_at,
-          updatedAt: rack.updated_at
+          updatedAt: rack.updated_at,
         };
       })
     );
 
-    return handleSuccess(res, 200, "Bicicleteros obtenidos", racksWithOccupancy);
+    return handleSuccess(
+      res,
+      200,
+      'Bicicleteros obtenidos',
+      racksWithOccupancy
+    );
   } catch (error) {
     console.error('Error en listBikeracks:', error);
     return handleErrorServer(res, 500, error.message);
@@ -205,43 +253,42 @@ async function assignGuardInternal(bikerackId, guardId) {
   const bikerackRepo = AppDataSource.getRepository(Bikerack);
   const assignmentRepo = AppDataSource.getRepository(GuardAssignmentEntity);
 
-
   const guard = await guardRepo.findOneBy({ id: guardId });
-  if (!guard) throw new Error("El guardia no existe");
+  if (!guard) throw new Error('El guardia no existe');
 
   // Verificar que el bicicletero existe
   const bikerack = await bikerackRepo.findOneBy({ id: bikerackId });
-  if (!bikerack) throw new Error("El bicicletero no existe");
+  if (!bikerack) throw new Error('El bicicletero no existe');
 
   // Verificar que no haya asignación activa
   const existing = await assignmentRepo.findOneBy({
     guard: { id: guardId },
     bikerack: { id: bikerackId },
-    status: "activo"
+    status: 'activo',
   });
-  if (existing) throw new Error("El guardia ya tiene asignación activa en este bicicletero");
-
+  if (existing)
+    throw new Error(
+      'El guardia ya tiene asignación activa en este bicicletero'
+    );
 
   const newAssignment = assignmentRepo.create({
-    guard: { id: guardId },  
-    bikerack: { id: bikerackId }, 
-    status: "activo"
+    guard: { id: guardId },
+    bikerack: { id: bikerackId },
+    status: 'activo',
   });
 
   await assignmentRepo.save(newAssignment);
-  
 
   const assignmentWithRelations = await assignmentRepo.findOne({
     where: { id: newAssignment.id },
-    relations: ["guard", "bikerack"]
+    relations: ['guard', 'bikerack'],
   });
 
-  return { 
-    message: "Guardia asignado correctamente", 
-    assignment: assignmentWithRelations 
+  return {
+    message: 'Guardia asignado correctamente',
+    assignment: assignmentWithRelations,
   };
 }
-
 
 //* GUARDAR BICICLETA EN BICICLETERO
 export async function storeBicycleInBikerack(req, res) {
@@ -249,7 +296,11 @@ export async function storeBicycleInBikerack(req, res) {
     const { bikerackId, bicycleId, userId } = req.body;
 
     if (!bikerackId || !bicycleId || !userId) {
-      return handleErrorClient(res, 400, 'Se requieren bikerackId, bicycleId y userId');
+      return handleErrorClient(
+        res,
+        400,
+        'Se requieren bikerackId, bicycleId y userId'
+      );
     }
 
     const result = await storeBicycleInternal(bikerackId, bicycleId, userId);
@@ -279,7 +330,12 @@ export async function removeBicycleFromBikerack(req, res) {
 export async function generateWeeklyReport(req, res) {
   try {
     const report = await generateWeeklyReportData();
-    return handleSuccess(res, 200, 'Reporte semanal generado exitosamente', report);
+    return handleSuccess(
+      res,
+      200,
+      'Reporte semanal generado exitosamente',
+      report
+    );
   } catch (error) {
     return handleErrorServer(res, 500, error.message);
   }
@@ -287,13 +343,13 @@ export async function generateWeeklyReport(req, res) {
 
 //* LISTAR TODOS LOS BICICLETEROS CON OCUPACIÓN
 async function getBikeracksData() {
-  const racks = await bikerackRepository.find({ 
-    relations: ["guardAssignments", "guardAssignments.guard", "spaces"] 
+  const racks = await bikerackRepository.find({
+    relations: ['guardAssignments', 'guardAssignments.guard', 'spaces'],
   });
 
   for (const rack of racks) {
-    const used = await bicycleRepository.count({ 
-      where: { bikerack: { id: rack.id } } 
+    const used = await bicycleRepository.count({
+      where: { bikerack: { id: rack.id } },
     });
     rack.usedCapacity = used;
     rack.availableCapacity = rack.capacity - used;
@@ -301,6 +357,3 @@ async function getBikeracksData() {
 
   return racks;
 }
-
-
-

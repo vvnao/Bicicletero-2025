@@ -8,7 +8,7 @@ import {
 
 const bikerackRepository = AppDataSource.getRepository('Bikerack');
 
-  //! DASHBOARD 4 BICICLETEROS
+//! DASHBOARD 4 BICICLETEROS
 export async function getBikeracksSummary() {
   try {
     const bikeracks = await bikerackRepository.find({
@@ -33,7 +33,7 @@ export async function getBikeracksSummary() {
           (space) => space.status === SPACE_STATUS.TIME_EXCEEDED
         ).length;
 
-        const totalInUse = occupiedSpaces + overdueSpaces;
+        const totalInUse = occupiedSpaces + overdueSpaces + reservedSpaces;
 
         //! para calcular la última actualización, lo usaré en el panel de monitoreo
         const lastUpdate = calculateLastUpdate(spaces);
@@ -102,9 +102,13 @@ export async function getBikerackDetail(bikerackId) {
       spaces: sortedSpaces.map((space) => ({
         id: space.id,
         spaceCode: space.spaceCode,
+        status: space.status,
       })),
     };
   } catch (error) {
+    if (error.message === 'Bicicletero no encontrado') {
+      throw error;
+    }
     throw new Error(`Error al obtener detalles bicicletero: ${error.message}`);
   }
 }

@@ -55,6 +55,10 @@ export default function RegisterStudent() {
       if (v !== undefined && v !== null && v !== '') form.append(k, v);
     });
 
+    if (bicycle.brand || bicycle.model || bicycle.color) {
+      form.append('bicycle', JSON.stringify(bicycle));
+    }
+
     if (tnePhoto) form.append('tnePhoto', tnePhoto);
     if (photo) form.append('photo', photo);
 

@@ -1,5 +1,5 @@
-import jwt from "jsonwebtoken";
-import { handleErrorClient } from "../Handlers/responseHandlers.js";
+import jwt from 'jsonwebtoken';
+import { handleErrorClient } from '../Handlers/responseHandlers.js';
 
 export function authMiddleware(req, res, next) {
     const authHeader = req.headers["authorization"];
@@ -54,59 +54,59 @@ export function authMiddleware(req, res, next) {
  * Obtener User Agent
  */
 export function getUserAgent(req) {
-    return req.headers['user-agent'] || 'Desconocido';
+  return req.headers['user-agent'] || 'Desconocido';
 }
 
 /**
  * Extraer info del request para historial
  */
 export function getRequestInfo(req) {
-    return {
-        ipAddress: getClientIp(req),
-        userAgent: getUserAgent(req),
-        userId: req.user?.id,
-        userRole: req.user?.role
-    };
+  return {
+    ipAddress: getClientIp(req),
+    userAgent: getUserAgent(req),
+    userId: req.user?.id,
+    userRole: req.user?.role,
+  };
 }
 
 /**
  * Middleware: Check if user is an Admin
  */
 export const isAdmin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
-        return next();
-    }
-    return res.status(403).json({
-        success: false,
-        message: "Access denied. Admin role required."
-    });
+  if (req.user && req.user.role === 'admin') {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: 'Access denied. Admin role required.',
+  });
 };
 
 /**
  * Middleware: Check if user is a Guard
  */
 export const isGuard = (req, res, next) => {
-    // Adjust the role name if your system uses a different term (e.g., 'guardia', 'guard')
-    if (req.user && req.user.role === 'guardia') {
-        return next();
-    }
-    return res.status(403).json({
-        success: false,
-        message: "Access denied. Guard role required."
-    });
+  // Adjust the role name if your system uses a different term (e.g., 'guardia', 'guard')
+  if (req.user && req.user.role === 'guardia') {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: 'Access denied. Guard role required.',
+  });
 };
 
 /**
  * Middleware: Check if user is Admin OR Guard
  */
 export const isAdminOrGuard = (req, res, next) => {
-    if (req.user && (req.user.role === 'admin' || req.user.role === 'guardia')) {
-        return next();
-    }
-    return res.status(403).json({
-        success: false,
-        message: "Access denied. Admin or Guard role required."
-    });
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'guardia')) {
+    return next();
+  }
+  return res.status(403).json({
+    success: false,
+    message: 'Access denied. Admin or Guard role required.',
+  });
 };
 // middleware/ownerOrAdmin.middleware.js - NUEVO ARCHIVO
 export const isOwnerOrAdmin = (paramName = 'id') => {
@@ -115,17 +115,17 @@ export const isOwnerOrAdmin = (paramName = 'id') => {
             const resourceId = parseInt(req.params[paramName]);
             const userId = req.user.id;
             const userRole = req.user.role;
-            
+
             // Si es admin o el propietario del recurso
             if (userRole === 'admin' || userId === resourceId) {
                 return next();
             }
-            
+
             return res.status(403).json({
                 success: false,
                 message: "No tienes permisos para acceder a este recurso"
             });
-            
+
         } catch (error) {
             console.error('Error en middleware isOwnerOrAdmin:', error);
             return res.status(500).json({

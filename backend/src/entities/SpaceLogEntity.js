@@ -3,13 +3,14 @@
 
 import { EntitySchema } from 'typeorm';
 
-const LOG_ACTIONS = {
+export const LOG_ACTIONS = {
   CHECKIN: 'checkin',
   CHECKOUT: 'checkout',
-  RESERVATION_CREATED: 'reservation_created',
-  RESERVATION_ACTIVATED: 'reservation_activated',
-  MANUAL_UPDATE: 'manual_update',
-  INFRACTION: 'infraction',
+};
+
+export const LOG_FINAL_STATUS = {
+  COMPLETED: 'Completado',
+  TIME_EXCEEDED: 'Tiempo excedido',
 };
 
 export const SpaceLog = new EntitySchema({
@@ -42,14 +43,20 @@ export const SpaceLog = new EntitySchema({
       nullable: true,
     },
     infractionStart: {
-      //! Cuando estimatedCheckout es superado
+      //! Cuando empieza la infracción, esto es: el estimatedCheckout + 15 minutos (15 minutos por el periodo de gracia)
       type: 'timestamp',
       nullable: true,
     },
-    infractionDuration: {
-      //! Duración de la infracción en minutos
+    totalInfractionMinutes: {
+      //! Total en minutos de lo que duró la infracción
       type: 'int',
-      nullable: true,
+      default: 0,
+    },
+    finalStatus: {
+      //! Estado final del espacio al liberar: COMPLETED (salida normal) o TIME_EXCEEDED (salida con tiempo excedido)
+      type: 'varchar',
+      length: 20,
+      nullable: true, //* es null mientras la bici está en el bicicletero
     },
     created_at: {
       type: 'timestamp',
@@ -80,7 +87,7 @@ export const SpaceLog = new EntitySchema({
       type: 'many-to-one',
       target: 'Bicycle',
       inverseSide: 'spaceLogs',
-      nullable: false,
+      nullable: true,
       joinColumn: {
         name: 'bicycleId',
       },
@@ -97,5 +104,4 @@ export const SpaceLog = new EntitySchema({
   },
 });
 
-export { LOG_ACTIONS };
 export default SpaceLog;

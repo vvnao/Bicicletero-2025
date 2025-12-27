@@ -56,7 +56,7 @@ export const UserEntity = new EntitySchema({
     },
     //Para desactivar un perfil pero no borrarlo de la base de datos
     isActive: {
-      type: "boolean",
+      type: 'boolean',
       default: true,
       nullable: false,
     },
@@ -116,16 +116,28 @@ export const UserEntity = new EntitySchema({
     },
     // Relacion con UserReview
     reviews: {
-      target: "UserReview",
-      type: "one-to-many",
-      inverseSide: "user",
+      target: 'UserReview',
+      type: 'one-to-many',
+      inverseSide: 'user',
       cascade: true,
     },
     // Relacion con UserReview como guardia
     guardReviews: {
-      target: "UserReview",
-      type: "one-to-many",
-      inverseSide: "guard",
+      target: 'UserReview',
+      type: 'one-to-many',
+      inverseSide: 'guard',
+    },
+    //* incidencias reportadas por guardia
+    reportedIncidences: {
+      type: 'one-to-many',
+      target: 'Incidence',
+      inverseSide: 'reporter',
+    },
+    //* usuario involucrado en la incidencia (opcional)
+    involvedIncidences: {
+      type: 'one-to-many',
+      target: 'Incidence',
+      inverseSide: 'involvedUser',
     },
   },
 });

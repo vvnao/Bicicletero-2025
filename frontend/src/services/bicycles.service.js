@@ -8,7 +8,7 @@ export async function createBicycle(formValues){
             headers: { Authorization: `Bearer ${token}`}
         });
         return response.data;
-    }catch(error){
+    } catch (error) {
         return error.response?.data || { message: 'Error al crear bicicleta' };
     }
 }
@@ -30,7 +30,20 @@ export async function getAllBicycles(){
             headers: {authorization: `Bearer ${token}`}
         })
         return response.data;
-    }catch(error){
-        return error.response?.data||{message:'Error al obtener todos los usuarios'}
+    } catch (error) {
+        return error.response?.data || { message: 'Error al obtener todos los usuarios' }
     }
 }
+
+export async function getBicyclesByUserId(id) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`/bicycles/user/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        return error.response?.data || { message: 'Error al obtener bicicleta del usuario' };
+    }
+}
+

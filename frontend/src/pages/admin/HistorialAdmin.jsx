@@ -1,37 +1,72 @@
 "use strict";
-import { useState } from 'react';
+import { useState } from "react";
 import LayoutAdmin from "../../components/admin/LayoutAdmin";
+import UserReviewHistory from "../UserReviewHistory";
+
+import {
+    Bike,
+    Users,
+    Shield,
+    ClipboardList,
+} from "lucide-react";
 
 function HistorialAdmin() {
-    const [activeHistory, setActiveHistory] = useState('bicicletas');
+    const [activeHistory, setActiveHistory] = useState("bicicletas");
+
+    const tabStyle = (key) => ({
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "10px 20px",
+        backgroundColor: activeHistory === key ? "#272e4b" : "#f3f4f6",
+        color: activeHistory === key ? "white" : "#374151",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontWeight: 700,
+        fontFamily: "Nunito",
+    });
+
+    const contentBox = {
+        padding: "20px",
+        backgroundColor: "white",
+        borderRadius: "12px",
+        fontFamily: "Nunito",
+    };
 
     const renderHistoryContent = () => {
-        switch(activeHistory) {
-            case 'bicicletas':
+        switch (activeHistory) {
+            case "bicicletas":
                 return (
-                    <div style={{padding: '20px', backgroundColor: 'white', borderRadius: '10px'}}>
+                    <div style={contentBox}>
                         <h2>Historial de Bicicletas</h2>
-                        <p>Consultar un historial de ingresos y salidas por fecha, usuario o bicicleta.</p>
-                        {/* tabla/listado del historial de bicicletas (me falta)*/}
+                        <p>Ingresos y salidas por fecha, usuario o bicicleta.</p>
                     </div>
                 );
-            case 'usuarios':
+
+            case "usuarios":
                 return (
-                    <div style={{padding: '20px', backgroundColor: 'white', borderRadius: '10px'}}>
+                    <div style={contentBox}>
                         <h2>Historial de Usuarios</h2>
-                        <p>Registro de solicitudes de registro y cambios de estado</p>
-                        {/* la tabla/listado del historial de usuarios (me falta) */}
+                        <p>Solicitudes y cambios de estado.</p>
                     </div>
                 );
-            case 'sistema':
+
+            case "sistema":
                 return (
-                    <div style={{padding: '20px', backgroundColor: 'white', borderRadius: '10px'}}>
-                        <h2>Historial de los guardias</h2>
-                        <p>Podrá asignar guardias a cada bicicletero según corresponda. Esta funcionalidad estará disponible en una sección donde el administrador podrá visualizar<br/>
-                            los bicicleteros registrados y seleccionar los guardias encargados de cada uno. El administrador podrá modificar o actualizar las asignaciones cuando sea necesario.</p>
-                        {/* la tabla/listado del historial de los guardias(me falta) */}
+                    <div style={contentBox}>
+                        <h2>Historial de Guardias</h2>
+                        <p>Asignación y gestión de guardias por bicicletero.</p>
                     </div>
                 );
+
+            case "requests":
+                return (
+                    <div style={contentBox}>
+                        <UserReviewHistory />
+                    </div>
+                );
+
             default:
                 return null;
         }
@@ -39,61 +74,26 @@ function HistorialAdmin() {
 
     return (
         <LayoutAdmin>
-            <div style={{padding: '20px'}}>
-                {/* Pestañas de navegación */}
-                <div style={{
-                    display: 'flex',
-                    gap: '10px',
-                    marginBottom: '20px',
-                    flexWrap: 'wrap'
-                }}>
-                    <button
-                        style={{
-                            padding: '10px 20px',
-                            backgroundColor: activeHistory === 'bicicletas' ? '#272e4b' : '#f3f4f6',
-                            color: activeHistory === 'bicicletas' ? 'white' : '#374151',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                        }}
-                        onClick={() => setActiveHistory('bicicletas')}
-                    >
-                        🚲 Bicicletas
+            <div style={{ padding: "20px" }}>
+                {/* Tabs */}
+                <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
+                    <button style={tabStyle("bicicletas")} onClick={() => setActiveHistory("bicicletas")}>
+                        <Bike size={18} /> Bicicletas
                     </button>
-                    
-                    <button
-                        style={{
-                            padding: '10px 20px',
-                            backgroundColor: activeHistory === 'usuarios' ? '#272e4b' : '#f3f4f6',
-                            color: activeHistory === 'usuarios' ? 'white' : '#374151',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                        }}
-                        onClick={() => setActiveHistory('usuarios')}
-                    >
-                        👥 Usuarios
+
+                    <button style={tabStyle("usuarios")} onClick={() => setActiveHistory("usuarios")}>
+                        <Users size={18} /> Usuarios
                     </button>
-                    
-                    <button
-                        style={{
-                            padding: '10px 20px',
-                            backgroundColor: activeHistory === 'sistema' ? '#272e4b' : '#f3f4f6',
-                            color: activeHistory === 'sistema' ? 'white' : '#374151',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold'
-                        }}
-                        onClick={() => setActiveHistory('sistema')}
-                    >
-                        🛡️ Guardias
+
+                    <button style={tabStyle("sistema")} onClick={() => setActiveHistory("sistema")}>
+                        <Shield size={18} /> Guardias
+                    </button>
+
+                    <button style={tabStyle("requests")} onClick={() => setActiveHistory("requests")}>
+                        <ClipboardList size={18} /> Solicitudes
                     </button>
                 </div>
-                
-                {/* Contenido del historial */}
+
                 {renderHistoryContent()}
             </div>
         </LayoutAdmin>

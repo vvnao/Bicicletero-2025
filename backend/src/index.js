@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import morgan from 'morgan';
+import path from 'path';
 import { AppDataSource, connectDB } from './config/configDb.js';
 import { routerApi } from './routes/index.routes.js';
 import cors from 'cors';
@@ -8,10 +9,10 @@ import { createBikeracks } from './config/initBikeracksDb.js';
 import { createSpaces } from './config/initSpacesDb.js';
 import { createDefaultUsers } from './config/defaultUsers.js';
 import { createBicycles } from './config/initBicyclesDb.js';
-import { createReservations } from './config/initReservationsDb.js';
-import { createDefaultGuards } from './config/initGuardsDb.js';
-import { createDefaultGuardAssignments } from './config/initGuardAssignmentsDb.js';
-
+//import { createDefaultGuards } from './config/defaultGuards.js';
+//import { createReservations } from './config/initReservationsDb.js';
+//import { createDefaultGuardAssignments } from './config/defaultGuardAssignments.js';
+import { startMonitoringJobs } from './jobs/monitor.job.js';
 import 'dotenv/config';
 
 const app = express();
@@ -25,6 +26,9 @@ console.log('EMAIL_USER:', process.env.EMAIL_USER);
 console.log('EMAIL_PASS:', process.env.EMAIL_PASS);
 app.use(express.json());
 app.use(morgan('dev'));
+
+app.use('/uploads', express.static(path.join(process.cwd(), 'src/uploads')));
+
 // Ruta principal de bienvenida
 app.get('/', (req, res) => {
   res.send('¡Bienvenido a mi API REST con TypeORM!');
@@ -36,9 +40,14 @@ connectDB()
     await createSpaces();
     await createDefaultUsers();
     await createBicycles();
-    await createDefaultGuards(); 
-    await createDefaultGuardAssignments(); 
-    await createReservations();
+    //await createReservations();
+    //await createDefaultGuards();
+    //await createDefaultGuardAssignments();
+
+    //! Inicia los jobs de monitoreo automático
+    startMonitoringJobs();
+    console.log('Jobs de monitoreo automático iniciados');
+
     // Carga todas las rutas de la aplicación
     routerApi(app);
 

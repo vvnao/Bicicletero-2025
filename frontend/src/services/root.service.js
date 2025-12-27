@@ -24,4 +24,19 @@ instance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+instance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const backendMessage =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      'Error inesperado del servidor';
+
+    return Promise.reject({
+      status: error.response?.status,
+      message: backendMessage,
+    });
+  }
+);
+
 export default instance;
