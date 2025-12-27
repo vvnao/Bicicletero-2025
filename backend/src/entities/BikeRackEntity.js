@@ -6,84 +6,52 @@ export const BikerackEntity = new EntitySchema({
     tableName: 'bikeracks',
     columns: {
         id: {
-        primary: true,
-        type: 'int',
-        generated: 'increment',
+            primary: true,
+            type: 'int',
+            generated: 'increment',
         },
         name: {
-        type: 'varchar',
-        length: 255,
-        nullable: false,
+            type: 'varchar',
+            length: 255,
+            nullable: false,
         },
         capacity: {
-        type: 'int',
-        nullable: false,
+            type: 'int',
+            nullable: false,
         },
         created_at: {
-        type: 'timestamp',
-        createDate: true,
-        default: () => 'CURRENT_TIMESTAMP',
+            type: 'timestamp',
+            createDate: true,
+            default: () => 'CURRENT_TIMESTAMP',
         },
         updated_at: {
-        type: 'timestamp',
-        updateDate: true,
-        default: () => 'CURRENT_TIMESTAMP',
+            type: 'timestamp',
+            updateDate: true,
+            default: () => 'CURRENT_TIMESTAMP',
         },
     },
     relations: {
-        guardAssignments: {
-        target: 'GuardAssignment',
-        type: 'one-to-many',
-        inverseSide: 'bikerack',
-        },
         spaces: {
-        type: 'one-to-many',
-        target: 'Space',
-        inverseSide: 'bikerack',
-        },
-        incidences: {
-        type: 'one-to-many',
-        target: 'Incidence',
-        inverseSide: 'bikerack',
-        },
-    },
-    capacity: {
-      type: 'int',
-      nullable: false,
-    },
-    created_at: {
-      type: 'timestamp',
-      createDate: true,
-      default: () => 'CURRENT_TIMESTAMP',
-    },
-    updated_at: {
-      type: 'timestamp',
-      updateDate: true,
-      default: () => 'CURRENT_TIMESTAMP',
-    },
-  
-  relations: {
-    guardAssignments: {
-      target: 'GuardAssignment',
-      type: 'one-to-many',
-      inverseSide: 'bikerack',
-    },
-    spaces: {
-      type: 'one-to-many',
-      target: 'Space',
-      inverseSide: 'bikerack',
-    },
-    guards: {
-            target: 'Guard',
             type: 'one-to-many',
+            target: 'Space',
             inverseSide: 'bikerack',
         },
-    incidences: {
-      type: 'one-to-many',
-      target: 'Incidence',
-      inverseSide: 'bikerack',
+        incidences: {
+            type: 'one-to-many',
+            target: 'Incidence',
+            inverseSide: 'bikerack',
+        },
+        guardAssignments: {
+            type: 'one-to-many',
+            target: 'GuardAssignment',
+            inverseSide: 'bikerack',
+        },
+        reports: {
+            type: 'one-to-many',
+            target: 'Report',
+            inverseSide: 'bikerack',
+        },
     },
-  },
 });
 
 export default BikerackEntity;

@@ -3,21 +3,34 @@
 
 import { AppDataSource } from "../config/configDb.js";
 import { HistoryEntity } from "../entities/HistoryEntity.js";
-
-// Definir HISTORY_TYPES
+// services/history.service.js
 const HISTORY_TYPES = {
+    // Tipos de usuario
     USER_CHECKIN: 'user_checkin',
     USER_CHECKOUT: 'user_checkout',
     USER_REGISTRATION_REQUEST: 'user_registration_request',
     USER_STATUS_CHANGE: 'user_status_change',
+    
+    // Tipos de guardia - AGREGAR ESTOS
+    GUARD_CREATED: 'guard_created',
+    GUARD_UPDATED: 'guard_updated',
+    GUARD_DEACTIVATED: 'guard_deactivated',
+    GUARD_ACTIVATED: 'guard_activated',
     GUARD_ASSIGNMENT: 'guard_assignment',
     GUARD_SHIFT_START: 'guard_shift_start',
     GUARD_SHIFT_END: 'guard_shift_end',
+    GUARD_AVAILABILITY_CHANGE: 'guard_availability_change',
+    
+    // Tipos de reserva
     RESERVATION_CREATE: 'reservation_create',
     RESERVATION_CANCEL: 'reservation_cancel',
     RESERVATION_ACTIVATE: 'reservation_activate',
     RESERVATION_COMPLETE: 'reservation_complete',
+    
+    // Tipos de bicicleta
     BICYCLE_REGISTRATION: 'bicycle_registration',
+    
+    // Otros tipos
     INFRACTION: 'infraction',
     SYSTEM_NOTIFICATION: 'system_notification',
     ADMIN_ACTION: 'admin_action'
@@ -400,12 +413,55 @@ async getGeneralHistoryTable(filters = {}) {
     /**
      * Obtener historial específico de bicicletero
      */
-    async getBikerackHistory(bikerackId, filters = {}) {
-        return this.getHistory({
-            ...filters,
-            bikerackId
-        });
+
+async getBikerackHistory(bikerackId, filters = {}) {
+    try {
+        const { page = 1, limit = 50, startDate, endDate, historyType } = filters;
+        const offset = (page - 1) * limit;
+        
+        const queryBuilder = this.historyRepository
+            .createQueryBuilder('history')
+            .leftJoinAndSelect('history.user', 'user')
+            .leftJoinAndSelect('history.bicycle', 'bicycle')
+            .leftJoinAndSelect('history.bikerack', 'bikerack')
+            .leftJoinAndSelect('history.space', 'space')
+            .where('history.bikerack IS NOT NULL'); // Solo eventos que tengan bicicletero
+        
+        if (bikerackId) {
+            queryBuilder.andWhere('history.bikerackId = :bikerackId', { bikerackId });
+        }
+        
+        if (startDate && endDate) {
+            queryBuilder.andWhere('history.timestamp BETWEEN :startDate AND :endDate', {
+                startDate,
+                endDate: new Date(endDate + 'T23:59:59.999Z')
+            });
+        }
+        
+        if (historyType) {
+            queryBuilder.andWhere('history.historyType = :historyType', { historyType });
+        }
+        
+        queryBuilder
+            .orderBy('history.timestamp', 'DESC')
+            .skip(offset)
+            .take(limit);
+        
+        const [items, total] = await queryBuilder.getManyAndCount();
+        
+        return {
+            items,
+            pagination: {
+                total,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    } catch (error) {
+        throw new Error(`Error al obtener historial de bicicletero: ${error.message}`);
     }
+}
 
     /**
      * Obtener estadísticas del historial

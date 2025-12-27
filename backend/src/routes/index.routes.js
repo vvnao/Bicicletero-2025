@@ -38,7 +38,5 @@ export function routerApi(app) {
   router.use("/space-details", spaceDetailsRoutes);
   router.use("/user-request-history", userRequestHistoryRoutes);
 
-  router.use('/spaces', spaceManagementRoutes); 
-  router.use('/reservations', reservationRoutes);
-  router.use('/space-details', spaceDetailsRoutes);
+
 }

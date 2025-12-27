@@ -43,38 +43,7 @@ export class HistoryController {
     }
 
 
-    /**
-     * Obtener historial completo con filtros
-     */
-    async getHistory(req, res) {
-        try {
-            if (!['admin', 'guardia'].includes(req.user.role)) {
-                return handleErrorClient(res, 403, 'No tiene permisos para ver el historial');
-            }
-
-            const filters = {
-                startDate: req.query.startDate,
-                endDate: req.query.endDate,
-                historyType: req.query.historyType,
-                userId: req.query.userId ? parseInt(req.query.userId) : undefined,
-                guardId: req.query.guardId ? parseInt(req.query.guardId) : undefined,
-                bicycleId: req.query.bicycleId ? parseInt(req.query.bicycleId) : undefined,
-                bikerackId: req.query.bikerackId ? parseInt(req.query.bikerackId) : undefined,
-                reservationId: req.query.reservationId ? parseInt(req.query.reservationId) : undefined,
-                assignmentId: req.query.assignmentId ? parseInt(req.query.assignmentId) : undefined,
-                search: req.query.search,
-                page: req.query.page ? parseInt(req.query.page) : 1,
-                limit: req.query.limit ? parseInt(req.query.limit) : 50
-            };
-
-            const result = await this.historyService.getHistory(filters);
-            return handleSuccess(res, 200, 'Historial obtenido exitosamente', result);
-        } catch (error) {
-            console.error('Error en getHistory:', error);
-            return handleErrorServer(res, 500, 'Error al obtener historial', error.message);
-        }
-    }
-
+ 
    /**
      * Obtener TODOS los registros del historial (sin filtros)
      */
@@ -261,11 +230,12 @@ export class HistoryController {
                 limit: req.query.limit ? parseInt(req.query.limit) : 50,
                 search: req.query.search,
                 startDate: req.query.startDate,
-                endDate: req.query.endDate
+                endDate: req.query.endDate,
+                historyType: req.query.historyType // Permitir filtrar por tipo
             };
 
-            // Obtener historial sin filtro específico de bicicletero
-            const result = await this.historyService.getHistory(filters);
+            // Obtener historial específico de bicicleteros
+            const result = await this.historyService.getBikerackHistory(null, filters);
             return handleSuccess(res, 200, 'Historial general de bicicleteros obtenido', result);
         } catch (error) {
             console.error('Error en getAllBikerackHistory:', error);
@@ -276,10 +246,16 @@ export class HistoryController {
     /**
      * Historial de bicicletero específico
      */
-    async getSpecificBikerackHistory(req, res) {
+     async getSpecificBikerackHistory(req, res) {
         try {
             const { bikerackId } = req.params;
-            const filters = req.query;
+            const filters = {
+                page: req.query.page ? parseInt(req.query.page) : 1,
+                limit: req.query.limit ? parseInt(req.query.limit) : 50,
+                startDate: req.query.startDate,
+                endDate: req.query.endDate,
+                search: req.query.search
+            };
 
             if (!['admin', 'guardia'].includes(req.user.role)) {
                 return handleErrorClient(res, 403, 'No tiene permisos');

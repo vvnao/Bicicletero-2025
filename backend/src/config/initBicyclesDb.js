@@ -3,6 +3,7 @@
 import { AppDataSource } from './configDb.js';
 import { BicycleEntity } from '../entities/BicycleEntity.js';
 import { UserEntity } from '../entities/UserEntity.js';
+import { createHistoryEvent } from '../helpers/historyHelper.js';
 
 export async function createBicycles() {
   try {
@@ -52,3 +53,12 @@ export async function createBicycles() {
     console.error('Error creando bicicletas:', error);
   }
 }
+
+await createHistoryEvent({
+  historyType: 'bicycle_registered', 
+  description: `🚲 ${user.names} registró bicicleta ${bicycle.brand}`,
+  details: { brand: bicycle.brand, serial: bicycle.serialNumber },
+  userId: user.id,
+  bicycleId: bicycle.id,
+  timestamp: new Date()
+});
