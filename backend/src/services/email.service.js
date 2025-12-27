@@ -47,7 +47,6 @@ export const sendEmail = async (to, subject, html) => {
             html,
             attachments,
         };
-
         await transporter.sendMail(mailOptions);
         console.log('Correo enviado correctamente a:', to);
         console.log(
