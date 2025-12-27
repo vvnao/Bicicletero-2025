@@ -579,7 +579,7 @@ export class GuardAssignmentController {
             });
             
         } catch (error) {
-            console.error('❌ Error en deleteAssignmentAlt:', error);
+            console.error(' Error en deleteAssignmentAlt:', error);
             return res.status(500).json({
                 success: false,
                 message: 'Error al eliminar la asignación',

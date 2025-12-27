@@ -69,7 +69,7 @@ function BicicletasAdmin() {
     ];
 
    useEffect(() => {
-    console.log('🚀 [BICICLETAS ADMIN] Componente montado');
+    console.log(' [BICICLETAS ADMIN] Componente montado');
     
     // Verificar sesión
     const token = localStorage.getItem('authToken');
