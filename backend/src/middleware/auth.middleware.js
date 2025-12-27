@@ -16,34 +16,34 @@ export function authMiddleware(req, res, next) {
 
     try {
         const payload = jwt.verify(token, process.env.JWT_SECRET);
-
+        
         // Normalizar la estructura del usuario
         req.user = {
-            // Intentar obtener el ID de diferentes maneras
-            id: payload.id || payload.userId || payload.sub || payload.user?.id,
-
-            // Intentar obtener el rol
-            role: payload.role || payload.user?.role,
-
-            // Intentar obtener el email
-            email: payload.email || payload.user?.email,
-
-            // Mantener el payload completo por si acaso
-            _raw: payload
+        // Intentar obtener el ID de diferentes maneras
+        id: payload.id || payload.userId || payload.sub || payload.user?.id,
+        
+        // Intentar obtener el rol
+        role: payload.role || payload.user?.role,
+        
+        // Intentar obtener el email
+        email: payload.email || payload.user?.email,
+        
+        // Mantener el payload completo por si acaso
+        _raw: payload
         };
-
+        
         console.log(' Usuario normalizado:', {
-            id: req.user.id,
-            role: req.user.role,
-            email: req.user.email
+        id: req.user.id,
+        role: req.user.role,
+        email: req.user.email
         });
-
+        
         // Verificar que al menos tengamos un ID
         if (!req.user.id) {
-            console.error(' JWT no contiene ID:', payload);
-            return handleErrorClient(res, 401, "Token no contiene información de usuario válida.");
+        console.error(' JWT no contiene ID:', payload);
+        return handleErrorClient(res, 401, "Token no contiene información de usuario válida.");
         }
-
+        
         next();
     } catch (error) {
         console.error('X Error verificando token:', error.message);

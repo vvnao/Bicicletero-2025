@@ -11,7 +11,6 @@ export async function getPrivateProfileService(userId) {
 
     return user; 
 }
-
 export async function getProfilesService(role) {
     const userRepository = AppDataSource.getRepository(UserEntity);
 
@@ -38,14 +37,12 @@ export async function updatePrivateProfileService(userId, data) {
     const user = await userRepository.findOne({ where: { id: userId } });
     if (!user) return null;
 
-    const { contact, password } = data;
+    const { contact, email, tnePhoto, personalPhoto} = data;
 
     if (contact) user.contact = contact;
-
-    if (password) {
-        const hashed = await bcrypt.hash(password, 10);
-        user.password = hashed;
-    }
+    if (email) user.email = email;
+    if (tnePhoto) user.tnePhoto = tnePhoto; 
+    if (personalPhoto) user.personalPhoto = personalPhoto;
 
     await userRepository.save(user);
     return user;

@@ -1,10 +1,11 @@
 import axios from './root.service.js';
+import cookies from 'js-cookie';
 
-export async function createBicycle(formValues) {
-    try {
-        const token = localStorage.getItem('token');
-        const response = await axios.post('/bicycles', formValues, {
-            headers: { Authorization: `Bearer ${token}` }
+export async function createBicycle(formValues){
+    try{
+        const token = cookies.get('jwt-auth');
+        const response = await axios.post('/bicycles', formValues,{
+            headers: { Authorization: `Bearer ${token}`}
         });
         return response.data;
     } catch (error) {
@@ -13,7 +14,7 @@ export async function createBicycle(formValues) {
 }
 export async function getBicycles() {
     try {
-        const token = localStorage.getItem('token');
+        const token = cookies.get('jwt-auth');
         const response = await axios.get('/bicycles', {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -22,11 +23,11 @@ export async function getBicycles() {
         return error.response?.data || { message: 'Error al obtener bicicletas' };
     }
 }
-export async function getAllBicycles() {
-    try {
-        const token = localStorage.setItem('token');
-        const response = await axios.get('/bicycles/all', {
-            headers: { authorization: `Bearer ${token}` }
+export async function getAllBicycles(){
+    try{
+        const token = cookies.get('jwt-auth');
+        const response = await axios.get('/bicycles/all',{
+            headers: {authorization: `Bearer ${token}`}
         })
         return response.data;
     } catch (error) {
@@ -45,4 +46,3 @@ export async function getBicyclesByUserId(id) {
         return error.response?.data || { message: 'Error al obtener bicicleta del usuario' };
     }
 }
-

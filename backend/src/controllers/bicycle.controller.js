@@ -12,7 +12,7 @@ export async function createBicycle(req, res) {
             const mensaje = error.details[0].message;
             return handleErrorClient(res, 400, mensaje);
         }
-        const userId = req.user?.sub;
+        const userId = req.user?.id;
         if (!userId) {
             return handleErrorClient(res, 401, "Usuario no autenticado");
         }
@@ -24,8 +24,8 @@ export async function createBicycle(req, res) {
 }
 export async function getBicycles(req, res) {
     try {
-        const userId = req.user.sub;
-
+        const userId = req.user.id;
+        
         const bicycles = await getBicyclesServices(userId);
 
         if (!bicycles || bicycles.length === 0) {
@@ -51,7 +51,7 @@ export async function getAllBicycles(req, res) {
 }
 export async function deleteBicycles(req, res) {
     try {
-        const userId = req.user.sub;
+        const userId = req.user.id;
         const { id } = req.body;
 
         const bicycle = await deleteBicyclesServices(userId, id);
@@ -66,7 +66,7 @@ export async function deleteBicycles(req, res) {
 }
 export async function updateBicycles(req, res) {
     try {
-        const userId = req.user.sub;
+        const userId = req.user.id;
         const data = req.body;
 
         const updatedBike = await updateBicyclesServices(userId, data);

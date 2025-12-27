@@ -39,7 +39,7 @@ export const logout = () => {
     try {
         sessionStorage.removeItem('user');
         cookies.remove('jwt-auth');
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
     } catch (error) {
         console.error('Error al cerrar sesión:', error);
     }

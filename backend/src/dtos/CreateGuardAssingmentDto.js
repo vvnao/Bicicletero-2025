@@ -10,8 +10,6 @@ export class CreateGuardAssignmentDto {
         this.workDays = data.workDays;
         this.maxHoursPerWeek = data.maxHoursPerWeek || 40;
     }
-
-
     validate() {
         const errors = [];
         
@@ -45,10 +43,8 @@ export class CreateGuardAssignmentDto {
                 }
             });
         }
-        
         return errors;
     }
-
     toEntity() {
         return {
             guard: { id: this.guardId },

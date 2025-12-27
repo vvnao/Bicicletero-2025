@@ -5,11 +5,11 @@ import { emailConfig } from '../config/configEnv.js';
 export const sendEmail = async (to, subject, html) => {
     try {
         const transporter = nodemailer.createTransport({
-            service: emailConfig.service,
-            auth: {
-                user: emailConfig.user,
-                pass: emailConfig.pass,
-            },
+        service: emailConfig.service,
+        auth: {
+            user: emailConfig.user,
+            pass: emailConfig.pass,
+        },
         });
 
         const attachments = [];
@@ -47,7 +47,6 @@ export const sendEmail = async (to, subject, html) => {
             html,
             attachments,
         };
-
         await transporter.sendMail(mailOptions);
         console.log('Correo enviado correctamente a:', to);
         console.log(

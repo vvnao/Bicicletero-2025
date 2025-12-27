@@ -8,11 +8,11 @@ export function getClientIp(req) {
     try {
         // Diferentes métodos para obtener la IP
         const ip = req.ip || 
-                  req.headers['x-forwarded-for']?.split(',')[0] || 
-                  req.connection?.remoteAddress || 
-                  req.socket?.remoteAddress || 
-                  req.connection?.socket?.remoteAddress ||
-                  '127.0.0.1';
+                req.headers['x-forwarded-for']?.split(',')[0] || 
+                req.connection?.remoteAddress || 
+                req.socket?.remoteAddress || 
+                req.connection?.socket?.remoteAddress ||
+                '127.0.0.1';
         
         // Limpiar la IP (remover prefijos como ::ffff:)
         return ip.replace('::ffff:', '').replace('::1', '127.0.0.1');

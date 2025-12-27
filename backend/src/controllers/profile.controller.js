@@ -5,7 +5,7 @@ import { getPrivateProfileService, getProfilesService, softActiveProfileService,
 
 export async function getPrivateProfile(req, res) {
     try {
-        const userId = req.user.sub;
+        const userId = req.user.id;
 
         const data = await getPrivateProfileService(userId);
 
@@ -13,11 +13,11 @@ export async function getPrivateProfile(req, res) {
 
         delete data.password;
 
-        handleSuccess(res, 200, "Perfil privado obtenido exitosamente", {
+        return handleSuccess(res, 200, "Perfil privado obtenido exitosamente", {
             userData: data,
         });
     } catch (error) {
-        handleErrorServer(res, 500, "Error del servidor", error);
+        return handleErrorServer(res, 500, "Error del servidor", error);
     }
 }
 
@@ -37,21 +37,34 @@ export async function getProfiles(req, res) {
         return handleErrorServer(res, 500, "Error al obtener perfiles", error);
     }
 }
-
 export async function updatePrivateProfile(req, res) {
     try {
-        const userId = req.user.sub;
-        const data = req.body;
+        const userId = req.user.id;
+        
+        const { email, contact } = req.body;
+        
+        const data = { email, contact };
+
+        if (req.files) {
+            if (req.files['tnePhoto']) {
+                data.tnePhoto = req.files['tnePhoto'][0].path;
+            }
+            if (req.files['personalPhoto']) {
+                data.personalPhoto = req.files['personalPhoto'][0].path;
+            }
+        }
 
         const updatedUser = await updatePrivateProfileService(userId, data);
 
-        if (!updatedUser)
+        if (!updatedUser) {
             return handleErrorClient(res, 404, "Usuario no encontrado");
+        }
 
         return handleSuccess(res, 200, "Perfil actualizado exitosamente", {
-            id: updatedUser.id,
             email: updatedUser.email,
             contact: updatedUser.contact,
+            tnePhoto: updatedUser.tnePhoto,
+            personalPhoto: updatedUser.personalPhoto,
         });
     } catch (error) {
         handleErrorServer(res, 500, "Error al actualizar perfil", error);

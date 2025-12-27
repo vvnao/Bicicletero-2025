@@ -21,7 +21,6 @@ export const GuardEntity = new EntitySchema({
             nullable: true, // ⬅️ Temporalmente nullable
             name: 'guard_number'
         },
-       
         phone: {
             type: 'varchar',
             length: 20,
