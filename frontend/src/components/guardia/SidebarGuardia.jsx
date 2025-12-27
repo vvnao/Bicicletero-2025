@@ -11,38 +11,18 @@ import {
     FiLogOut
 } from 'react-icons/fi';
 
-const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
+const SidebarGuardia = ({ sidebarHover, setSidebarHover }) => {
     const [activeItem, setActiveItem] = useState('');
     const [hoveredItem, setHoveredItem] = useState(null);
     const navigate = useNavigate();
     const location = useLocation();
 
     const mainMenuItems = [
-        {
-            name: 'Dashboard',
-            path: '/home/admin',
-            icon: FiBarChart2
-        },
-        {
-            name: 'Bicicleteros',
-            path: '/home/admin/bicicletas',
-            icon: FiHome
-        },
-        {
-            name: 'Guardias',
-            path: '/home/admin/guardias',
-            icon: FiShield
-        },
-        {
-            name: 'Historial',
-            path: '/home/admin/historial',
-            icon: FiArchive
-        },
-        {
-            name: 'Reportes',
-            path: '/home/admin/reportes',
-            icon: FiFileText
-        },
+        { name: "Dashboard", path: "/home/guardia", icon: FiBarChart2 },
+        { name: "Panel de Monitoreo", path: "/home/guardia/monitoring", icon: FiHome },
+        { name: "Reportes de Incidencias", path: "/home/guardia/incident-reports", icon: FiShield },
+        { name: "Solicitudes de Registro", path: "/home/guardia/pending-requests", icon: FiArchive },
+        { name: "Historial de Solicitudes", path: "/home/guardia/reviews-history", icon: FiFileText }
     ];
 
     useEffect(() => {
@@ -258,4 +238,4 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
     );
 };
 
-export default SidebarAdmin;
+export default SidebarGuardia;

@@ -11,7 +11,7 @@ import RegisterStudent from "./pages/RegisterStudent";
 import RegisterAcademic from "./pages/RegisterAcademic";
 import RegisterAssistant from "./pages/RegisterAssistant";
 import HomeAdmin from "./pages/admin/HomeAdmin";
-import HomeGuardia from "@pages/HomeGuardia";
+import HomeGuardia from "@pages/guardia/HomeGuardia";
 import HomeUser from "@pages/HomeUser";
 import BicicletasAdmin from "./pages/admin/BicicletasAdmin";
 import GuardiasAdmin from "./pages/admin/GuardiasAdmin";
@@ -22,6 +22,12 @@ import BicycleProfile from "@pages/BicycleProfile";
 import Bicycles from "./pages/Bicycles";
 import UserReviewHistory from "@pages/UserReviewHistory";
 import PendingUserRequests from '@pages/guardia/PendingUserRequests';
+import Monitoring from "@pages/guardia/Monitoring";
+import IncidentReports from "@pages/guardia/IncidentReports";
+import LayoutAdmin from "@components/admin/LayoutAdmin";
+import LayoutGuardia from "@components/guardia/LayoutGuardia";
+import GuardiaReviewWrapper from "@components/guardia/GuardiaReviewWrapper.jsx";
+
 import "./styles/Styles.css";
 
 const router = createBrowserRouter([
@@ -151,20 +157,57 @@ const router = createBrowserRouter([
     },
 
     {
+        path: "home/guardia/monitoring",
+        element: (
+            <ProtectedRoute>
+                <LayoutGuardia>
+                    <Monitoring />
+                </LayoutGuardia>
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "home/guardia/incident-reports",
+        element: (
+            <ProtectedRoute>
+                <LayoutGuardia>
+                    <IncidentReports />
+                </LayoutGuardia>
+            </ProtectedRoute>
+        ),
+    },
+    {
         path: "home/guardia/pending-requests",
         element: (
             <ProtectedRoute>
-                <PendingUserRequests />
+                <LayoutGuardia>
+                    <PendingUserRequests />
+                </LayoutGuardia>
             </ProtectedRoute>
         ),
     },
 
-    // REVIEWS (COMPARTIDO ADMIN + GUARDIA)
     {
-        path: "home/reviews/history",
+        path: "home/admin/reviews-history",
         element: (
             <ProtectedRoute>
-                <UserReviewHistory />
+                <LayoutAdmin>
+                    <UserReviewHistory />
+                </LayoutAdmin>
+            </ProtectedRoute>
+        ),
+    },
+
+
+    {
+        path: "home/guardia/reviews-history",
+        element: (
+            <ProtectedRoute>
+                <LayoutGuardia>
+                    <GuardiaReviewWrapper>
+                        <UserReviewHistory />
+                    </GuardiaReviewWrapper>
+                </LayoutGuardia>
             </ProtectedRoute>
         ),
     },
