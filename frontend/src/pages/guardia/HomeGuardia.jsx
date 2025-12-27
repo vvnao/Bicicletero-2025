@@ -27,7 +27,7 @@ function HomeGuardia() {
     const goToIncidentReports = () => navigate("/home/guardia/incident-reports");
     const goToPending = () => navigate("/home/guardia/pending-requests");
     const goToHistory = () => navigate("/home/reviews/history");
-
+    const goToPerfil = () => navigate("/home/guardia/perfil");
     return (
         <LayoutGuardia>
             <div style={{ padding: "20px", fontFamily: "Arial", margin: 0 }}>
@@ -61,6 +61,7 @@ function HomeGuardia() {
                     <button onClick={goToIncidentReports} style={btn("#ef4444")}>⚠ Reportar Incidentes</button>
                     <button onClick={goToPending} style={btn("#f59e0b")}>📝 Solicitudes Pendientes</button>
                     <button onClick={goToHistory} style={btn("#10b981")}>📚 Historial de Solicitudes</button>
+                    <button onClick={goToHistory} style={btn("#10b981")}>📚 Perfil</button>
                 </div>
 
             </div>

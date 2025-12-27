@@ -172,7 +172,7 @@ async getGuardAssignments(token, guardId = null) {
         };
     }
 },
- deleteAssignment: async (assignmentId, token) => {
+deleteAssignment: async (assignmentId, token) => {
         try {
             const response = await fetch(`${API_URL}/guard-assignments/${assignmentId}`, {
                 method: 'DELETE',

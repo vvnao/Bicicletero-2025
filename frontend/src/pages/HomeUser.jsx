@@ -1,7 +1,10 @@
 "use strict";
-
+import mascotImage from "../assets/mascot.png";
+import fondo from "../assets/fondo-login.png";
 const HomeUser = () => {
     return (
+        <>
+        
         <div className="flex flex-col h-screen">
             <div className="flex flex-1">
                 <main className="flex-1 p-6">
@@ -10,6 +13,7 @@ const HomeUser = () => {
                 </main>
             </div>
         </div>
+        </>
     );
 };
 

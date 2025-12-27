@@ -151,6 +151,16 @@ const router = createBrowserRouter([
             </ProtectedRoute>
             ),
         },
+        {
+            path: 'home/admin/perfil',
+            element: (
+                <ProtectedRoute>
+                    <LayoutAdmin>
+                        <PrivateProfile />
+                    </LayoutAdmin>
+                </ProtectedRoute>
+            ),
+        },
         ],
     },
     //!RUTAS DE GUARDIA
@@ -216,6 +226,16 @@ const router = createBrowserRouter([
             </GuardiaReviewWrapper>
             </LayoutGuardia>
         </ProtectedRoute>
+        ),
+    },
+    {
+        path: 'home/guardia/perfil',
+        element: (
+            <ProtectedRoute>
+                <LayoutGuardia>
+                    <PrivateProfile />
+                </LayoutGuardia>
+            </ProtectedRoute>
         ),
     },
 ]);

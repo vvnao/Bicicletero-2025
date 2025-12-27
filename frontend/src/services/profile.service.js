@@ -23,14 +23,31 @@ export async function getProfiles() {
         return error.response?.data || { message: 'Error al obtener perfil' };
     }
 }
-export async function updatePrivateProfile(formValues){
-    try{
+export async function updatePrivateProfile(formValues) {
+    try {
         const token = cookies.get('jwt-auth');
-        const response = await axios.put('/profile',formValues,{
-            headers: {Authorization: `Bearer ${token}` }
+
+        const formData = new FormData();
+
+        if (formValues.email) formData.append('email', formValues.email);
+        if (formValues.contact) formData.append('contact', formValues.contact);
+
+        if (formValues.tnePhoto) {
+            formData.append('tnePhoto', formValues.tnePhoto);
+        }
+
+        if (formValues.personalPhoto) {
+            formData.append('personalPhoto', formValues.personalPhoto);
+        }
+
+        const response = await axios.put('/profile', formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            }
         });
-        return response.data
-    }catch(error){
+
+        return response.data;
+    } catch (error) {
         return error.response?.data || { message: 'Error al actualizar perfil' };
     }
 }

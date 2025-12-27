@@ -8,6 +8,7 @@ import {
     FiShield,
     FiArchive,
     FiFileText,
+    FiUser,
     FiLogOut
 } from 'react-icons/fi';
 
@@ -22,7 +23,8 @@ const SidebarGuardia = ({ sidebarHover, setSidebarHover }) => {
         { name: "Panel de Monitoreo", path: "/home/guardia/monitoring", icon: FiHome },
         { name: "Reportes de Incidencias", path: "/home/guardia/incident-reports", icon: FiShield },
         { name: "Solicitudes de Registro", path: "/home/guardia/pending-requests", icon: FiArchive },
-        { name: "Historial de Solicitudes", path: "/home/guardia/reviews-history", icon: FiFileText }
+        { name: "Historial de Solicitudes", path: "/home/guardia/reviews-history", icon: FiFileText },
+        { name: "Perfil", path: "/home/guardia/perfil", icon: FiUser },
     ];
 
     useEffect(() => {

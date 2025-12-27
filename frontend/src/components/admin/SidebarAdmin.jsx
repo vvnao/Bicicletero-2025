@@ -8,7 +8,8 @@ import {
     FiShield,
     FiArchive,
     FiFileText,
-    FiLogOut
+    FiLogOut,
+    FiUser
 } from 'react-icons/fi';
 
 const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
@@ -42,6 +43,11 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
             name: 'Reportes',
             path: '/home/admin/reportes',
             icon: FiFileText
+        },
+        {
+            name: 'Perfil',
+            path: '/home/admin/perfil',
+            icon: FiUser
         },
     ];
 

@@ -46,4 +46,3 @@ export async function getBicyclesByUserId(id) {
         return error.response?.data || { message: 'Error al obtener bicicleta del usuario' };
     }
 }
-

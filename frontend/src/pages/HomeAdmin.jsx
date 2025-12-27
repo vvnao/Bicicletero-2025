@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { logout } from "@services/auth.service.js";
 import { useState, useEffect } from "react";
 
-
 function HomeAdmin() {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(true);
