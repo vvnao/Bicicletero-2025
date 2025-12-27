@@ -25,29 +25,29 @@ export async function getProfiles() {
 }
 export async function updatePrivateProfile(formValues) {
     try {
-        const token = cookies.get('jwt-auth');
+        const token = localStorage.getItem('token');
 
         const formData = new FormData();
-
-        if (formValues.email) formData.append('email', formValues.email);
-        if (formValues.contact) formData.append('contact', formValues.contact);
-
-        if (formValues.tnePhoto) {
-            formData.append('tnePhoto', formValues.tnePhoto);
-        }
+        formData.append('email', formValues.email);
+        formData.append('contact', formValues.contact);
 
         if (formValues.personalPhoto) {
             formData.append('personalPhoto', formValues.personalPhoto);
         }
 
-        const response = await axios.put('/profile', formData, {
+        if (formValues.tnePhoto) {
+            formData.append('tnePhoto', formValues.tnePhoto);
+        }
+
+        const response = await axios.patch('/profile', formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
-            }
+                'Content-Type': 'multipart/form-data',
+            },
         });
 
         return response.data;
     } catch (error) {
-        return error.response?.data || { message: 'Error al actualizar perfil' };
+        return error.response?.data || { status: 'error', message: 'Error al actualizar perfil' };
     }
 }

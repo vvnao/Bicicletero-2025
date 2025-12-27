@@ -1,40 +1,33 @@
-import { useState, useCallback } from "react";
-import { updatePrivateProfile } from "@services/profile.service";
+import { useState } from 'react';
+import { updatePrivateProfile } from '../../services/profile.service.js';
 
 export function useUpdateProfile() {
-    const [isLoading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(false);
 
-    const updateProfile = useCallback(async (formData) => {
-        setIsLoading(true);
+    const execute = async (formValues) => {
+        setLoading(true);
         setError(null);
-        setSuccess(false);
 
         try {
-            const response = await updatePrivateProfile(formData);
+            const result = await updatePrivateProfile(formValues);
 
-            if (response?.error || response?.status === "Client Error") {
-                const msg = response?.message || "Error al actualizar perfil";
+            if (result.status === 'error' || result.message?.toLowerCase().includes('error')) {
+                const msg = result.message || 'Error al actualizar';
                 setError(msg);
-                return null;
+                setLoading(false);
+                return { success: false, error: msg };
             }
 
-            setSuccess(true);
-            return response; 
-        } catch (error) {
-            const errorMessage = error.response?.data?.message || "Error inesperado en el servidor";
-            setError(errorMessage);
-            return null;
-        } finally {
-            setIsLoading(false);
+            setLoading(false);
+            return { success: true, data: result };
+        } catch (err) {
+            setLoading(false);
+            const errMsg = 'Error de conexión con el servidor';
+            setError(errMsg);
+            return { success: false, error: errMsg };
         }
-    }, []);
-
-    return {
-        updateProfile,
-        isLoading,
-        error,
-        success,
     };
+
+    return { execute, loading, error };
 }
