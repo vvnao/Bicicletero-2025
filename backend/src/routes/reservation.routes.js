@@ -5,9 +5,29 @@ import {authMiddleware} from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-router.post('/create',createReservation);
-router.patch('/:reservationId/cancel',cancelReservationController);
-router.get('/user/:userId', getUserReservationsController);
-router.get('/user/:userId/bicycles',getUserBicyclesForReservation);
+router.post(
+  '/create',
+  authorize(['user', 'admin', 'guardia']),
+  createReservation
+);
 
+router.patch(
+  '/:reservationId/cancel',
+  authorize(['user', 'admin', 'guardia']),
+  cancelReservationController
+);
+
+router.get(
+  '/user/:userId',
+  authorize(['admin', 'guardia', 'user']),
+  //isOwnerOrAdmin('userId'),
+  getUserReservationsController
+);
+
+router.get(
+  '/user/:userId/bicycles',
+  authorize(['admin', 'guardia', 'user']),
+  isOwnerOrAdmin('userId'),
+  getUserBicyclesForReservation
+);
 export default router;

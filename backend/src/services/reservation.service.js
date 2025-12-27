@@ -121,11 +121,7 @@ export async function createAutomaticReservation(
 
         await queryRunner.manager.save(ReservationEntity, reservation);
 
-        await queryRunner.commitTransaction();
-
-        console.log(
-        `Reserva ${reservationCode} creada para espacio ${space.spaceCode}`
-        );
+    await queryRunner.commitTransaction();
 
         const reservationWithRelations = await reservationRepository.findOne({
         where: { id: reservation.id },
@@ -257,9 +253,11 @@ export async function expireOldReservations() {
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
-    try {
-        const now = new Date();
-        let expiredCount = 0;
+  try {
+    const now = new Date();
+    //*esto lo uso para probar la función, cree que son 29 minutos en el futuro
+    //const now = new Date(Date.now() + 29 * 60 * 1000);
+    let expiredCount = 0;
 
         const reservationsToLock = await queryRunner.manager.find('Reservation', {
         where: {
@@ -300,13 +298,12 @@ export async function expireOldReservations() {
             reservation
             );
 
-            await sendEmail(
-            reservation.user.email,
-            'Reserva Expirada - Bicicletero UBB',
-            null,
-            emailHtml
-            );
-        }
+        await sendEmail(
+          reservation.user.email,
+          'Reserva Expirada - Bicicletero UBB',
+          emailHtml
+        );
+      }
 
         console.log(
             `--> Reserva ${reservation.reservationCode} expirada y espacio ${reservation.space?.spaceCode} liberado.`

@@ -28,9 +28,15 @@ export function getActiveSpaceLog(spaceLogs, spaceStatus) {
     : null;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
-//! FORMATEAR DATOS DEL ESPACIO SEGÚN ESTADO
+//! FORMATEAR DATOS DEL ESPACIO SEGÚN ESTADO (para frontend)
 export function formatSpaceData(space) {
   const activeLog = getActiveSpaceLog(space.spaceLogs, space.status);
+
+  const activeReservation = space.reservations?.find(
+    (res) =>
+      res.status === RESERVATION_STATUS.PENDING ||
+      res.status === RESERVATION_STATUS.ACTIVE
+  );
 
   const baseData = {
     id: space.id,
@@ -44,29 +50,44 @@ export function formatSpaceData(space) {
     case SPACE_STATUS.OCCUPIED:
       return {
         ...baseData,
-        user: formatUserData(activeLog?.user),
-        bicycle: formatBicycleData(activeLog?.bicycle),
-        arrivalTime: activeLog?.actualCheckin || null,
-        estimatedDeparture: activeLog?.estimatedCheckout || null,
+        user: formatUserData(activeLog?.user || activeReservation?.user),
+        bicycle: formatBicycleData(
+          activeLog?.bicycle || activeReservation?.bicycle
+        ),
+        reservation: activeReservation
+          ? {
+              code: activeReservation.reservationCode,
+              estimatedHours: activeReservation.estimatedHours,
+              status: activeReservation.status,
+            }
+          : null,
+        times: {
+          checkin: activeLog?.actualCheckin || null,
+          estimatedCheckout: activeLog?.estimatedCheckout || null,
+        },
         hasInfraction: checkIfHasInfraction(activeLog),
       };
 
     case SPACE_STATUS.RESERVED:
-      const activeReservation = space.reservations?.find(
-        (res) =>
-          res.status === RESERVATION_STATUS.PENDING ||
-          res.status === RESERVATION_STATUS.ACTIVE
-      );
       return {
         ...baseData,
         user: formatUserData(activeReservation?.user),
         bicycle: formatBicycleData(activeReservation?.bicycle),
-        reservationCode: activeReservation?.reservationCode || null,
-        expirationTime: activeReservation?.expirationTime || null,
+        reservation: activeReservation
+          ? {
+              code: activeReservation.reservationCode,
+              estimatedHours: activeReservation.estimatedHours,
+              status: activeReservation.status,
+              expirationTime: activeReservation.expirationTime,
+            }
+          : null,
+        times: {
+          checkin: null,
+          estimatedCheckout: null,
+        },
       };
 
     case SPACE_STATUS.TIME_EXCEEDED:
-      //* se calcula la duración del tiempo en infracción para que el guardia vea el tiempo real
       const now = new Date();
       const diffMs = activeLog?.infractionStart
         ? now - new Date(activeLog.infractionStart)
@@ -80,17 +101,30 @@ export function formatSpaceData(space) {
         ...baseData,
         user: formatUserData(activeLog?.user),
         bicycle: formatBicycleData(activeLog?.bicycle),
-        arrivalTime: activeLog?.actualCheckin || null,
-        estimatedDeparture: activeLog?.estimatedCheckout || null,
-        //* se envía el cálculo (no se guarda en la bd)
-        infractionDuration: currentInfractionMinutes,
-        infractionStart: activeLog?.infractionStart || null,
-        totalInfractionMinutes: activeLog?.totalInfractionMinutes || 0,
+        reservation: activeReservation
+          ? {
+              code: activeReservation.reservationCode,
+              estimatedHours: activeReservation.estimatedHours,
+              status: activeReservation.status,
+            }
+          : null,
+        times: {
+          checkin: activeLog?.actualCheckin || null,
+          estimatedCheckout: activeLog?.estimatedCheckout || null,
+          infractionStart: activeLog?.infractionStart || null,
+          infractionMinutes: currentInfractionMinutes,
+        },
       };
 
     case SPACE_STATUS.FREE:
     default:
-      return baseData;
+      return {
+        ...baseData,
+        user: null,
+        bicycle: null,
+        reservation: null,
+        times: null,
+      };
   }
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,6 +134,7 @@ export function formatUserData(user) {
 
   return {
     id: user.id,
+    name: `${user.names || ''} ${user.lastName || ''}`.trim(),
     names: user.names,
     lastName: user.lastName,
     rut: user.rut,
@@ -119,6 +154,7 @@ export function formatBicycleData(bicycle) {
     color: bicycle.color || 'No especificado',
     photo: bicycle.photo || null,
     serialNumber: bicycle.serialNumber || null,
+    urlImage: bicycle.photo ? `/uploads/${bicycle.photo}` : null,
   };
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
