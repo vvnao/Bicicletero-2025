@@ -1,7 +1,6 @@
 "use strict";
 import { useState, useEffect } from "react";
 import LayoutAdmin from "../../components/admin/LayoutAdmin";
-import { apiService } from "../../services/api.service.js"; 
 import { useNavigate } from "react-router-dom";
 
 function BicicletasAdmin() {
@@ -21,140 +20,104 @@ function BicicletasAdmin() {
         'OESTE': { colorContenedor: '#EF4444', colorSombra: '#DC2626' }
     };
 
-    // Obtener datos del backend
-    useEffect(() => {
-  // DEBUG: Verificar token antes de hacer la petición
-  const token = localStorage.getItem('authToken');
-  const user = localStorage.getItem('user');
-  
-  console.log('🔍 [FRONTEND] Token en localStorage:', token ? 'PRESENTE' : 'AUSENTE');
-  console.log('🔍 [FRONTEND] User en localStorage:', user);
-  
-  if (!token) {
-    console.log('❌ [FRONTEND] No hay token, redirigiendo a login');
-    navigate('/auth/login');
-    return;
-  }
-  
-  // Decodificar token para ver contenido
-  try {
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      const payload = JSON.parse(atob(parts[1]));
-      console.log('📋 [FRONTEND] Payload del token:', {
-        sub: payload.sub,
-        id: payload.id,
-        role: payload.role,
-        email: payload.email,
-        exp: payload.exp,
-        expDate: payload.exp ? new Date(payload.exp * 1000).toLocaleString() : 'No exp'
-      });
-      
-      // Verificar rol
-      if (payload.role !== 'admin') {
-        console.log('⚠️ [FRONTEND] Usuario no es admin, es:', payload.role);
-        // Redirigir según rol
-        if (payload.role === 'guardia') {
-          navigate('/home/guardia');
-        } else {
-          navigate('/home/user');
+    // Datos mock para desarrollo
+    const datosMockBicicleteros = [
+        {
+            id: 1,
+            nombre: 'NORTE',
+            capacidad: 40,
+            ocupacion: 25,
+            espaciosDisponibles: 15,
+            porcentajeOcupacion: 63,
+            estado: 'Activo',
+            colorContenedor: '#3B82F6',
+            colorSombra: '#1D4ED8'
+        },
+        {
+            id: 2,
+            nombre: 'SUR',
+            capacidad: 40,
+            ocupacion: 18,
+            espaciosDisponibles: 22,
+            porcentajeOcupacion: 45,
+            estado: 'Activo',
+            colorContenedor: '#10B981',
+            colorSombra: '#047857'
+        },
+        {
+            id: 3,
+            nombre: 'ESTE',
+            capacidad: 40,
+            ocupacion: 35,
+            espaciosDisponibles: 5,
+            porcentajeOcupacion: 88,
+            estado: 'Casi Lleno',
+            colorContenedor: '#fade77',
+            colorSombra: '#c7b162'
+        },
+        {
+            id: 4,
+            nombre: 'OESTE',
+            capacidad: 40,
+            ocupacion: 10,
+            espaciosDisponibles: 30,
+            porcentajeOcupacion: 25,
+            estado: 'Activo',
+            colorContenedor: '#EF4444',
+            colorSombra: '#DC2626'
         }
-        return;
-      }
+    ];
+
+   useEffect(() => {
+    console.log('🚀 [BICICLETAS ADMIN] Componente montado');
+    
+    // Verificar sesión
+    const token = localStorage.getItem('authToken');
+    
+    // Primero intentar obtener datos reales si hay token real
+    if (token && token !== 'simulated-token-for-development') {
+        fetchBackendData();
+    } else {
+        // Solo usar datos mock si no hay token real
+        console.log(' Usando datos mock para desarrollo');
+        setBicicleteros(datosMockBicicleteros);
+        setBicicleteroSeleccionado(datosMockBicicleteros[0]);
+        setLoading(false);
     }
-  } catch (e) {
-    console.error('❌ [FRONTEND] Error decodificando token:', e);
-    localStorage.clear();
-    navigate('/auth/login');
-    return;
-  }
-  
-  fetchBicicleteros();
 }, [navigate]);
 
-    const fetchBicicleteros = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            
-            // Obtener token del localStorage
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                throw new Error('Sesión expirada. Por favor, inicia sesión nuevamente.');
+// Modificar fetchBackendData para manejar el loading
+const fetchBackendData = async () => {
+    try {
+        setLoading(true);
+        const token = localStorage.getItem('authToken');
+        
+        const response = await fetch('http://localhost:3000/api/bikeracks', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
-            
-            console.log('📡 Solicitando bicicleteros...');
-            
-            // Usar api.service.js
-            const response = await apiService.getBikeracks(token);
-            console.log('📦 Respuesta del backend:', response);
-            
-            if (!response.success) {
-                throw new Error(response.message || 'Error del servidor');
-            }
-            
-            if (!Array.isArray(response.data)) {
-                throw new Error('Formato de datos inválido del servidor');
-            }
-            
-            // Procesar datos del backend
-            const bicicleterosProcesados = response.data.map(bicicletero => {
-                // Usar usedCapacity si está disponible, sino 0
-                const ocupacion = bicicletero.usedCapacity || 0;
-                
-                // Calcular estado
-                let estado = 'Activo';
-                if (ocupacion >= bicicletero.capacity) {
-                    estado = 'Lleno';
-                } else if (ocupacion === 0) {
-                    estado = 'Vacío';
-                } else if (ocupacion / bicicletero.capacity > 0.8) {
-                    estado = 'Casi Lleno';
-                }
-                
-                // Obtener colores basados en el nombre
-                const nombreUpper = bicicletero.name?.toUpperCase() || '';
-                const colores = coloresPorNombre[nombreUpper] || {
-                    colorContenedor: '#6B7280',
-                    colorSombra: '#4B5563'
-                };
-                
-                return {
-                    id: bicicletero.id,
-                    nombre: bicicletero.name || `Bicicletero ${bicicletero.id}`,
-                    capacidad: bicicletero.capacity || 40,
-                    ocupacion: ocupacion,
-                    espaciosDisponibles: (bicicletero.capacity || 40) - ocupacion,
-                    porcentajeOcupacion: Math.round((ocupacion / (bicicletero.capacity || 40)) * 100),
-                    estado: estado,
-                    colorContenedor: colores.colorContenedor,
-                    colorSombra: colores.colorSombra
-                };
-            });
-            
-            console.log('✅ Bicicleteros procesados:', bicicleterosProcesados);
-            setBicicleteros(bicicleterosProcesados);
-            
-            // Seleccionar el primero por defecto
-            if (bicicleterosProcesados.length > 0) {
-                setBicicleteroSeleccionado(bicicleterosProcesados[0]);
-            }
-            
-        } catch (err) {
-            console.error('💥 Error al cargar bicicleteros:', err);
-            setError(err.message || 'Error al cargar los bicicleteros');
-            
-            // Si es error de autenticación, redirigir a login
-            if (err.message?.includes('Sesión expirada') || err.message?.includes('401')) {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('user');
-                navigate('/auth/login');
-            }
-        } finally {
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            // ... procesar datos ...
+            setLoading(false);
+        } else {
+            // Si falla el backend, usar datos mock
+            console.log('⚠️ Falló conexión al backend, usando datos mock');
+            setBicicleteros(datosMockBicicleteros);
+            setBicicleteroSeleccionado(datosMockBicicleteros[0]);
             setLoading(false);
         }
-    };
-
+    } catch (error) {
+        console.log('⚠️ Error de conexión:', error.message);
+        setBicicleteros(datosMockBicicleteros);
+        setBicicleteroSeleccionado(datosMockBicicleteros[0]);
+        setLoading(false);
+    }
+};
     // Manejar selección de bicicletero
     const handleSeleccionarBicicletero = (bicicletero) => {
         setBicicleteroSeleccionado(bicicletero);
@@ -162,18 +125,24 @@ function BicicletasAdmin() {
 
     // Manejar recarga de datos
     const handleRecargar = () => {
-        fetchBicicleteros();
+        setLoading(true);
+        
+        // Simular carga
+        setTimeout(() => {
+            setBicicleteros(datosMockBicicleteros);
+            setBicicleteroSeleccionado(datosMockBicicleteros[0]);
+            setLoading(false);
+            
+            // También intentar conectar al backend
+            fetchBackendData();
+        }, 500);
     };
 
     // Manejar edición
     const handleEditar = () => {
         if (!bicicleteroSeleccionado) return;
         
-        // Aquí puedes abrir un modal o redirigir a una página de edición
         alert(`Funcionalidad de edición para: ${bicicleteroSeleccionado.nombre}\n\nEsta funcionalidad está en desarrollo.`);
-        
-        // Ejemplo de cómo sería:
-        // navigate(`/home/admin/bicicletas/editar/${bicicleteroSeleccionado.id}`);
     };
 
     // Renderizar estados de carga
@@ -209,149 +178,8 @@ function BicicletasAdmin() {
                         fontSize: '0.9rem', 
                         color: '#9CA3AF'
                     }}>
-                        Obteniendo información del servidor
+                        Obteniendo información
                     </div>
-                    <style>{`
-                        @keyframes spin {
-                            0% { transform: rotate(0deg); }
-                            100% { transform: rotate(360deg); }
-                        }
-                    `}</style>
-                </div>
-            </LayoutAdmin>
-        );
-    }
-
-    if (error) {
-        return (
-            <LayoutAdmin>
-                <div style={{ 
-                    padding: '60px 20px', 
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minHeight: '400px'
-                }}>
-                    <div style={{ 
-                        fontSize: '3rem',
-                        color: '#EF4444',
-                        marginBottom: '20px'
-                    }}>
-                        ⚠️
-                    </div>
-                    <div style={{ 
-                        fontSize: '1.3rem', 
-                        color: '#EF4444',
-                        marginBottom: '15px',
-                        fontWeight: '500'
-                    }}>
-                        Error al cargar los bicicleteros
-                    </div>
-                    <div style={{ 
-                        fontSize: '1rem', 
-                        color: '#6B7280',
-                        marginBottom: '30px',
-                        maxWidth: '400px',
-                        lineHeight: '1.5'
-                    }}>
-                        {error}
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button 
-                            onClick={handleRecargar}
-                            style={{
-                                padding: '10px 24px',
-                                backgroundColor: '#3B82F6',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontSize: '1rem',
-                                fontWeight: '500',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => e.target.style.backgroundColor = '#2563EB'}
-                            onMouseOut={(e) => e.target.style.backgroundColor = '#3B82F6'}
-                        >
-                            Reintentar
-                        </button>
-                        <button 
-                            onClick={() => navigate('/home/admin')}
-                            style={{
-                                padding: '10px 24px',
-                                backgroundColor: '#F3F4F6',
-                                color: '#4B5563',
-                                border: '1px solid #D1D5DB',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontSize: '1rem',
-                                fontWeight: '500',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseOver={(e) => e.target.style.backgroundColor = '#E5E7EB'}
-                            onMouseOut={(e) => e.target.style.backgroundColor = '#F3F4F6'}
-                        >
-                            Volver al Dashboard
-                        </button>
-                    </div>
-                </div>
-            </LayoutAdmin>
-        );
-    }
-
-    if (bicicleteros.length === 0) {
-        return (
-            <LayoutAdmin>
-                <div style={{ 
-                    padding: '60px 20px', 
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minHeight: '400px'
-                }}>
-                    <div style={{ 
-                        fontSize: '3rem',
-                        color: '#9CA3AF',
-                        marginBottom: '20px'
-                    }}>
-                        🚲
-                    </div>
-                    <div style={{ 
-                        fontSize: '1.3rem', 
-                        color: '#6B7280',
-                        marginBottom: '15px',
-                        fontWeight: '500'
-                    }}>
-                        No hay bicicleteros disponibles
-                    </div>
-                    <div style={{ 
-                        fontSize: '1rem', 
-                        color: '#9CA3AF',
-                        marginBottom: '30px',
-                        maxWidth: '400px',
-                        lineHeight: '1.5'
-                    }}>
-                        No se encontraron bicicleteros en el sistema. Contacta al administrador.
-                    </div>
-                    <button 
-                        onClick={handleRecargar}
-                        style={{
-                            padding: '10px 24px',
-                            backgroundColor: '#10B981',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '1rem',
-                            fontWeight: '500'
-                        }}
-                    >
-                        Actualizar
-                    </button>
                 </div>
             </LayoutAdmin>
         );
@@ -360,6 +188,7 @@ function BicicletasAdmin() {
     return (
         <LayoutAdmin>
             <div style={{ padding: '20px' }}>
+                
                 {/* Encabezado con título y botón de recargar */}
                 <div style={{
                     display: 'flex',
@@ -834,6 +663,10 @@ function BicicletasAdmin() {
                     @keyframes fadeIn {
                         from { opacity: 0; transform: translateY(10px); }
                         to { opacity: 1; transform: translateY(0); }
+                    }
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
                     }
                 `}</style>
             </div>

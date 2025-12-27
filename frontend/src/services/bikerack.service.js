@@ -19,7 +19,7 @@ apiClient.interceptors.request.use(
         const token = localStorage.getItem('authToken');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('🔐 Token JWT agregado a la solicitud:', config.url);
+            console.log(' Token JWT agregado a la solicitud:', config.url);
         }
         return config;
     },
@@ -31,7 +31,7 @@ apiClient.interceptors.request.use(
 // Interceptor para manejar respuestas
 apiClient.interceptors.response.use(
     (response) => {
-        console.log('✅ Respuesta recibida:', {
+        console.log(' Respuesta recibida:', {
             url: response.config.url,
             status: response.status,
             data: response.data
@@ -39,7 +39,7 @@ apiClient.interceptors.response.use(
         return response;
     },
     (error) => {
-        console.error('❌ Error en respuesta:', {
+        console.error(' Error en respuesta:', {
             url: error.config?.url,
             status: error.response?.status,
             message: error.message,
@@ -61,31 +61,31 @@ apiClient.interceptors.response.use(
 const bikerackService = {
     async getAll() {
         try {
-            console.log('📡 [DEBUG] Llamando a GET /api/bikeracks');
-            console.log('📡 [DEBUG] Token en localStorage:', localStorage.getItem('authToken'));
+            console.log(' [DEBUG] Llamando a GET /api/bikeracks');
+            console.log(' [DEBUG] Token en localStorage:', localStorage.getItem('authToken'));
             
             const response = await apiClient.get('/bikeracks');
             
-            console.log('✅ [DEBUG] Respuesta HTTP:', response.status);
-            console.log('📊 [DEBUG] Respuesta completa:', response);
+            console.log(' [DEBUG] Respuesta HTTP:', response.status);
+            console.log(' [DEBUG] Respuesta completa:', response);
             
             // DEBUG: Verificar estructura
-            console.log('🔍 [DEBUG] response.data:', response.data);
-            console.log('🔍 [DEBUG] Tipo de response.data:', typeof response.data);
+            console.log(' [DEBUG] response.data:', response.data);
+            console.log(' [DEBUG] Tipo de response.data:', typeof response.data);
             
             if (Array.isArray(response.data)) {
-                console.log('✅ response.data es array');
+                console.log(' response.data es array');
                 return response.data;
             } else if (response.data?.data && Array.isArray(response.data.data)) {
-                console.log('✅ response.data.data es array');
+                console.log(' response.data.data es array');
                 return response.data.data;
             } else {
-                console.warn('⚠️ Estructura inesperada, devolviendo array vacío');
+                console.warn(' Estructura inesperada, devolviendo array vacío');
                 return [];
             }
         } catch (error) {
-            console.error('❌ [DEBUG] Error en getAll:', error);
-            console.error('❌ [DEBUG] Error details:', {
+            console.error(' [DEBUG] Error en getAll:', error);
+            console.error(' [DEBUG] Error details:', {
                 message: error.message,
                 response: error.response?.data,
                 status: error.response?.status

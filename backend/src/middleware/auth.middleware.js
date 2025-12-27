@@ -1,53 +1,87 @@
+// backend/middleware/auth.middleware.js - VERSIÓN DEBUG
 import jwt from "jsonwebtoken";
 import { handleErrorClient } from "../Handlers/responseHandlers.js";
 
 export function authMiddleware(req, res, next) {
+  console.log('🔐 ========== AUTH MIDDLEWARE START ==========');
+  console.log('🔐 URL:', req.url);
+  console.log('🔐 Method:', req.method);
+  
   const authHeader = req.headers["authorization"];
+  console.log('🔐 Authorization header:', authHeader);
 
   if (!authHeader) {
+    console.error('❌ No Authorization header');
     return handleErrorClient(res, 401, "Acceso denegado. No se proporcionó token.");
   }
 
   const token = authHeader.split(" ")[1];
-
+  
   if (!token) {
+    console.error('❌ No token after Bearer');
     return handleErrorClient(res, 401, "Acceso denegado. Token malformado.");
   }
 
+  console.log('🔐 Token received (first 50 chars):', token.substring(0, 50) + '...');
+  
+  // Verificar si es un JWT válido
+  const parts = token.split('.');
+  console.log('🔐 Token parts:', parts.length);
+  
+  if (parts.length !== 3) {
+    console.error('❌ Invalid JWT format - not 3 parts');
+    return handleErrorClient(res, 401, "Token JWT inválido.");
+  }
+
   try {
+    // Decodificar sin verificar primero para ver el payload
+    const decodedWithoutVerify = jwt.decode(token);
+    console.log('🔐 Decoded token (without verify):', decodedWithoutVerify);
+    
+    // Verificar la firma
+    console.log('🔐 Verifying with JWT_SECRET...');
+    console.log('🔐 JWT_SECRET exists:', !!process.env.JWT_SECRET);
+    console.log('🔐 JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
+    
     const payload = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('✅ Token verified successfully');
+    console.log('📋 Token payload:', payload);
     
     // Normalizar la estructura del usuario
     req.user = {
-      // Intentar obtener el ID de diferentes maneras
-      id: payload.id || payload.userId || payload.sub || payload.user?.id,
-      
-      // Intentar obtener el rol
-      role: payload.role || payload.user?.role,
-      
-      // Intentar obtener el email
-      email: payload.email || payload.user?.email,
-      
-      // Mantener el payload completo por si acaso
+      id: payload.id || payload.userId || payload.sub,
+      role: payload.role,
+      email: payload.email,
       _raw: payload
     };
     
-    console.log(' Usuario normalizado:', {
-      id: req.user.id,
-      role: req.user.role,
-      email: req.user.email
-    });
+    console.log('👤 Normalized user:', req.user);
     
-    // Verificar que al menos tengamos un ID
     if (!req.user.id) {
-      console.error(' JWT no contiene ID:', payload);
+      console.error('❌ No ID in token payload');
       return handleErrorClient(res, 401, "Token no contiene información de usuario válida.");
     }
     
+    console.log('🔐 ========== AUTH MIDDLEWARE END ==========');
     next();
   } catch (error) {
-    console.error('X Error verificando token:', error.message);
-    return handleErrorClient(res, 401, "Token inválido o expirado.", error.message);
+    console.error('❌ JWT Verification Error:', {
+      name: error.name,
+      message: error.message,
+      expiredAt: error.expiredAt
+    });
+    
+    if (error.name === 'TokenExpiredError') {
+      return handleErrorClient(res, 401, "Token expirado. Por favor, inicia sesión nuevamente.");
+    }
+    
+    if (error.name === 'JsonWebTokenError') {
+      console.error('❌ Possible JWT_SECRET mismatch or token tampered');
+      console.error('❌ Make sure JWT_SECRET in .env matches the one used to sign the token');
+      return handleErrorClient(res, 401, "Token inválido: firma incorrecta.");
+    }
+    
+    return handleErrorClient(res, 401, "Error al verificar token.", error.message);
   }
 }
 /**

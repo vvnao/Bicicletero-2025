@@ -22,17 +22,6 @@ import BicycleProfile from "@pages/BicycleProfile";
 import Bicycles from "./pages/Bicycles";
 import "./styles/Styles.css";
 
-const token = localStorage.getItem('authToken');
-if (!token) {
-    console.log('⚠️ No hay token. Usando token de prueba...');
-    localStorage.setItem('authToken', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkB0ZXN0LmNvbSIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzMwMDAwMDAwfQ.fake-token-for-testing');
-    localStorage.setItem('user', JSON.stringify({
-        id: 1,
-        email: 'admin@test.com',
-        role: 'admin',
-        name: 'Admin Test'
-    }));
-}
 const router = createBrowserRouter([
     {
         path: "/",
