@@ -26,10 +26,10 @@ export const apiService = {
         try {
             const response = await fetchWithAuth('/guards', {}, token);
             const data = await response.json();
-            console.log('✅ getGuards response:', data);
+            console.log(' getGuards response:', data);
             return data;
         } catch (error) {
-            console.error('❌ Error en getGuards:', error);
+            console.error(' Error en getGuards:', error);
             return { success: false, message: 'Error de conexión', data: [] };
         }
     },
@@ -62,18 +62,18 @@ export const apiService = {
 
     // ========== BICICLETEROS ==========
     async getBikeracks(token) {
-        console.log('🔄 Llamando a GET /api/bikeracks');
+        console.log(' Llamando a GET /api/bikeracks');
         
         try {
             const response = await fetchWithAuth('/bikeracks', {}, token);
-            console.log('📊 Response status:', response.status);
+            console.log(' Response status:', response.status);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
             
             const result = await response.json();
-            console.log('📦 Datos crudos de bikeracks:', result);
+            console.log(' Datos crudos de bikeracks:', result);
             
             // Tu backend retorna: { success, message, data }
             if (result.success && Array.isArray(result.data)) {
@@ -88,10 +88,10 @@ export const apiService = {
                     occupancyRate: bikerack.occupancyRate
                 }));
                 
-                console.log('✅ Bikeracks mapeados:', mappedData);
+                console.log(' Bikeracks mapeados:', mappedData);
                 return { success: true, data: mappedData };
             } else {
-                console.warn('⚠️ Backend no retornó data array:', result);
+                console.warn(' Backend no retornó data array:', result);
                 // Datos mock de respaldo
                 return {
                     success: true,
@@ -104,7 +104,7 @@ export const apiService = {
                 };
             }
         } catch (error) {
-            console.error('🔥 Error crítico en getBikeracks:', error);
+            console.error(' Error crítico en getBikeracks:', error);
             
             // Datos mock de emergencia
             return {
@@ -149,7 +149,7 @@ async getGuardAssignments(token, guardId = null) {
                 console.log('📊 Asignaciones por guardia:', data.data.assignments);
             }
         } else {
-            console.log('❌ Success false:', data.message);
+            console.log(' Success false:', data.message);
         }
         
         return data;

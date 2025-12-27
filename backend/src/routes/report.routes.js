@@ -1,4 +1,4 @@
-// routes/reports.routes.js - VERSIÓN CORREGIDA
+// routes/reports.routes.js
 'use strict';
 
 import { Router } from 'express';
@@ -8,40 +8,21 @@ import {
     getReportsHistoryController,
     generateAuditReportController 
 } from '../controllers/reports.controller.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
-import { authorize } from '../middleware/authorize.middleware.js';
+import { authMiddleware, isAdmin, isAdminOrGuard } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-//~ Todas las rutas requieren autenticación
+// Todas las rutas requieren autenticación
 router.use(authMiddleware);
 
-// ================================================
-// REPORTES DE AUDITORÍA
-// ================================================
+// REPORTES DE AUDITORÍA - solo admin
+router.get('/audit', isAdmin, generateAuditReportController);
 
-//~ Reporte de auditoría/consistencia (solo admin)
-// GET /api/reports/audit?weekStart=2024-11-01&weekEnd=2024-11-07
-router.get('/audit', authorize(['admin']), generateAuditReportController);
-
-// ================================================
 // REPORTES SEMANALES
-// ================================================
+router.get('/weekly', isAdmin, generateWeeklyReportController);
+router.get('/weekly/bikerack/:bikerackId', isAdminOrGuard, getBikerackWeeklyReportController);
 
-//~ Reporte semanal general (solo admin)
-// GET /api/reports/weekly?weekStart=2024-11-01&weekEnd=2024-11-07&reportType=uso_semanal
-router.get('/weekly', authorize(['admin']), generateWeeklyReportController);
-
-//~ Reporte semanal por bicicletero (admin y guardia)
-// GET /api/reports/weekly/bikerack/1?weekStart=2024-11-01&weekEnd=2024-11-07&reportType=uso_semanal
-router.get('/weekly/bikerack/:bikerackId', authorize(['admin', 'guardia']), getBikerackWeeklyReportController);
-
-// ================================================
-// HISTORIAL DE REPORTES
-// ================================================
-
-//~ Historial de reportes generados (solo admin)
-// GET /api/reports/history
-router.get('/history', authorize(['admin']), getReportsHistoryController);
+// HISTORIAL DE REPORTES - solo admin
+router.get('/history', isAdmin, getReportsHistoryController);
 
 export default router;

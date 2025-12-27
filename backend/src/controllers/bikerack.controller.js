@@ -1,13 +1,9 @@
+// bikerack.controller.js - Versión corregida
 import { AppDataSource } from "../config/configDb.js";
 import { UserEntity } from "../entities/UserEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
 import Bikerack from "../entities/BikerackEntity.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
-import { createHistoryRecord } from "../services/history.service.js";
-import {
-  getBikeracksSummary,
-  getBikerackDetail,
-} from '../services/bikerackDashboard.service.js';
 import {
   handleSuccess,
   handleErrorClient,
@@ -15,9 +11,70 @@ import {
 } from '../Handlers/responseHandlers.js';
 
 const bikerackRepository = AppDataSource.getRepository(Bikerack);
-const userRepository = AppDataSource.getRepository(UserEntity);
 const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 const guardAssignmentRepository = AppDataSource.getRepository(GuardAssignmentEntity);
+
+//* LISTAR TODOS LOS BICICLETEROS (VERSIÓN CORREGIDA)
+export async function listBikeracks(req, res) {
+  try {
+    console.log('📋 Solicitando lista de bicicleteros...');
+    
+    // Obtener bicicleteros con sus espacios
+    const racks = await bikerackRepository.find({
+      relations: ["spaces"]
+    });
+
+    console.log(`📊 ${racks.length} bicicleteros encontrados`);
+
+    // Procesar cada bicicletero
+    const racksWithOccupancy = await Promise.all(
+      racks.map(async (rack) => {
+        // Contar bicicletas en este bicicletero
+        const used = await bicycleRepository.count({ 
+          where: { bikerack: { id: rack.id } } 
+        });
+        
+        // Contar espacios ocupados (alternativa)
+        const occupiedSpaces = rack.spaces ? 
+          rack.spaces.filter(space => space.is_occupied === true || space.status === 'occupied').length : 
+          0;
+        
+        // Cargar guardias asignados
+        const activeAssignments = await guardAssignmentRepository.find({
+          where: {
+            bikerack: { id: rack.id },
+            status: "activo"
+          },
+          relations: ["guard"]
+        });
+
+        return {
+          id: rack.id,
+          name: rack.name,
+          capacity: rack.capacity,
+          usedCapacity: used,
+          occupiedSpaces: occupiedSpaces, // Nueva propiedad
+          availableCapacity: rack.capacity - used,
+          occupancyRate: ((used / rack.capacity) * 100).toFixed(2) + '%',
+          spaces: rack.spaces || [], // Incluir espacios
+          activeGuards: activeAssignments.map(assignment => ({
+            id: assignment.guard.id,
+            name: `${assignment.guard.names} ${assignment.guard.lastName}`,
+            email: assignment.guard.email
+          })),
+          createdAt: rack.created_at,
+          updatedAt: rack.updated_at
+        };
+      })
+    );
+
+    console.log('✅ Bicicleteros procesados correctamente');
+    return handleSuccess(res, 200, "Bicicleteros obtenidos", racksWithOccupancy);
+  } catch (error) {
+    console.error('❌ Error en listBikeracks:', error);
+    return handleErrorServer(res, 500, error.message);
+  }
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////
 //! PARA EL PANEL DE MONITOREO
 export async function getDashboard(req, res) {
@@ -116,7 +173,7 @@ export async function getBikerackGuards(req, res) {
   }
 }
 
-// ✅ Listar bicicleteros con guardias disponibles
+//  Listar bicicleteros con guardias disponibles
 export async function listBikeracksWithGuards(req, res) {
   try {
     const racks = await bikerackRepository.find({
@@ -151,53 +208,7 @@ export async function listBikeracksWithGuards(req, res) {
     });
   }
 }
-//* LISTAR TODOS LOS BICICLETEROS
-export async function listBikeracks(req, res) {
-  try {
-    const racks = await bikerackRepository.find({
-      relations: ["spaces"] // Cargar espacios si los necesitas
-    });
 
-    // Agregar información de ocupación a cada bicicletero
-    const racksWithOccupancy = await Promise.all(
-      racks.map(async (rack) => {
-        const used = await bicycleRepository.count({ 
-          where: { bikerack: { id: rack.id } } 
-        });
-        
-        // Cargar guardias asignados
-        const activeAssignments = await guardAssignmentRepository.find({
-          where: {
-            bikerack: { id: rack.id },
-            status: "activo"
-          },
-          relations: ["guard"]
-        });
-
-        return {
-          id: rack.id,
-          name: rack.name,
-          capacity: rack.capacity,
-          usedCapacity: used,
-          availableCapacity: rack.capacity - used,
-          occupancyRate: ((used / rack.capacity) * 100).toFixed(2) + '%',
-          activeGuards: activeAssignments.map(assignment => ({
-            id: assignment.guard.id,
-            name: `${assignment.guard.names} ${assignment.guard.lastName}`,
-            email: assignment.guard.email
-          })),
-          createdAt: rack.created_at,
-          updatedAt: rack.updated_at
-        };
-      })
-    );
-
-    return handleSuccess(res, 200, "Bicicleteros obtenidos", racksWithOccupancy);
-  } catch (error) {
-    console.error('Error en listBikeracks:', error);
-    return handleErrorServer(res, 500, error.message);
-  }
-}
 
 //*VERIFICACION
 async function assignGuardInternal(bikerackId, guardId) {

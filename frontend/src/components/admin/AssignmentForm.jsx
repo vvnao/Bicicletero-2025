@@ -1,6 +1,6 @@
 // frontend/src/components/admin/AssignmentForm.jsx (MODIFICADO CON ALERTAS ESTÉTICAS)
 import { useState, useEffect } from 'react';
-import { apiService } from '../../services/api';
+import { apiService } from '../../services/api.service';
 import { getToken } from '../../services/auth.service';
 import { Alert } from '../admin/common/Alert';
 import { ConfirmModal } from '../admin/common/ConfirmModal';

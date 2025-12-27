@@ -1,4 +1,4 @@
-// routes/bikerack.routes.js - VERSIÓN MINIMAL FUNCIONAL
+// routes/bikerack.routes.js
 'use strict';
 import { Router } from 'express';
 import {
@@ -8,21 +8,20 @@ import {
   storeBicycleInBikerack, 
   removeBicycleFromBikerack
 } from '../controllers/bikerack.controller.js';
-import { authMiddleware } from '../middleware/auth.middleware.js'; 
-import { authorize } from '../middleware/authorize.middleware.js';
+import { authMiddleware, isAdmin, isGuard, isAdminOrGuard } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
-// Middleware de autenticación
+// Middleware de autenticación global
 router.use(authMiddleware);
 
-//------------DASHBOARD Y DETALLES---------------
-router.get('/dashboard', authorize(['admin', 'guard']), getDashboard);
-router.get('/:id', authorize(['admin', 'guard']), getBikerackSpaces);
+// Rutas que requieren admin o guardia
+router.get('/dashboard', isAdminOrGuard, getDashboard);
+router.get('/:id', isAdminOrGuard, getBikerackSpaces);
+router.get('/', isAdminOrGuard, listBikeracks); // Solo admin o guardia
 
-//------------BICICLETERO----------
-router.get("/", authorize(['admin', 'guard', 'user']), listBikeracks);
-router.post("/store-bicycle", authorize(['admin', 'guard', 'user']), storeBicycleInBikerack);
-router.post("/remove-bicycle", authorize(['admin', 'guard', 'user']), removeBicycleFromBikerack);
+// Rutas para todos los usuarios autenticados (admin, guardia, user)
+router.post("/store-bicycle", storeBicycleInBikerack);
+router.post("/remove-bicycle", removeBicycleFromBikerack);
 
 export default router;

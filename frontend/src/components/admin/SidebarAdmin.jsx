@@ -72,45 +72,54 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
         navigate("/auth/login", { replace: true });
     };
 
-    const getMenuItemStyles = (itemName) => {
-        const isActive = activeItem === itemName.toLowerCase();
-        const isHovered = hoveredItem === itemName.toLowerCase();
-        
-        let styles = {
-            padding: '14px 18px',
-            paddingTop: '14px',
-            margin: '19px 15px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            cursor: 'pointer',
-            color: '#ffffff',
-            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-            backgroundColor: 'transparent',
-            borderRadius: '12px 0 0 12px',
-            position: 'relative',
-            width: 'calc(100% - 30px)',
-        };
+  const getMenuItemStyles = (itemName) => {
+    const isActive = activeItem === itemName.toLowerCase();
+    const isHovered = hoveredItem === itemName.toLowerCase();
+    
+    // Margen base
+    let marginValue = '19px 15px';
+    let width = 'calc(100% - 30px)';
 
-        if (isActive) {
-            styles.backgroundColor = '#252e4b';
-            styles.borderLeft = '4px solid #4a90e2';
-            styles.boxShadow = '2px 0 12px rgba(0, 0, 0, 0.15)';
-            styles.color = '#ffffff';
-            styles.width = 'calc(100% - 15px)';
-            styles.marginLeft = '15px';
-            styles.marginRight = '0';
-        } 
-        
-        if (isHovered && !isActive) {
-    styles.backgroundColor = '#19213f2d';
-    styles.borderRadius = '12px 8px 8px 12px'; // Reducir el radio del lado derecho
-    styles.marginRight = '0px'; // Reducir margen derecho
-    styles.width = 'calc(100% - 23px)'; // Ajustar ancho para compensar
-}
+    if (isActive) {
+        marginValue = '19px 0 19px 15px'; // top, right, bottom, left
+        width = 'calc(100% - 15px)';
+    }
+    
+    if (isHovered && !isActive) {
+        marginValue = '19px 0 19px 15px';
+        width = 'calc(100% - 23px)';
+    }
 
-        return styles;
+    let styles = {
+        padding: '14px 18px',
+        paddingTop: '14px',
+        margin: marginValue, // Solo margin abreviado
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        cursor: 'pointer',
+        color: '#ffffff',
+        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        backgroundColor: 'transparent',
+        borderRadius: '12px 0 0 12px',
+        position: 'relative',
+        width: width,
     };
+
+    if (isActive) {
+        styles.backgroundColor = '#252e4b';
+        styles.borderLeft = '4px solid #4a90e2';
+        styles.boxShadow = '2px 0 12px rgba(0, 0, 0, 0.15)';
+        styles.color = '#ffffff';
+    } 
+    
+    if (isHovered && !isActive) {
+        styles.backgroundColor = '#19213f2d';
+        styles.borderRadius = '12px 8px 8px 12px';
+    }
+
+    return styles;
+};
 
     return (
         <div 
@@ -213,17 +222,20 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
                 marginTop: 'auto'
             }}>
                 <div
-                    style={{
-                        padding: '14px 20px',
-                        margin: '10px 15px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px',
-                        cursor: 'pointer',
-                        transition: 'all 0.25s ease',
-                        borderRadius: '12px',
-                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                    }}
+    style={{
+        padding: '14px 20px',
+        marginTop: '10px',
+        marginRight: '15px',
+        marginBottom: '10px',
+        marginLeft: '15px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        cursor: 'pointer',
+        transition: 'all 0.25s ease',
+        borderRadius: '12px',
+        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    }}
                     onClick={handleLogout}
                     onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = 'rgba(255, 107, 107, 0.2)';

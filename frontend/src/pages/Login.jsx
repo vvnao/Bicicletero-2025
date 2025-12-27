@@ -143,6 +143,44 @@ const Login = () => {
             </div>
         </main>
     );
+
+    // Login.jsx - Verifica que tengas algo similar:
+const handleLogin = async (formData) => {
+    try {
+        const response = await fetch('http://localhost:3000/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        console.log('📦 Respuesta del login:', data);
+        
+        if (data.success && data.token) {
+            // GUARDAR TOKEN CORRECTAMENTE
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            console.log('✅ Token guardado:', data.token.substring(0, 20) + '...');
+            
+            // Redirigir según el rol
+            if (data.user.role === 'admin') {
+                navigate('/home/admin');
+            } else if (data.user.role === 'guardia') {
+                navigate('/home/guardia');
+            } else {
+                navigate('/home/user');
+            }
+        } else {
+            console.error('❌ Error en login:', data.message);
+            alert(data.message || 'Error al iniciar sesión');
+        }
+    } catch (error) {
+        console.error('💥 Error de conexión:', error);
+        alert('Error de conexión con el servidor');
+    }
 };
+};
+
+
 
 export default Login;

@@ -2,8 +2,13 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { findUserByEmail } from "./user.service.js";
-import guardServiceInstance from "./guard.service.js"; // ← Importar la instancia directamente
+import guardServiceInstance from "./guard.service.js";
 
+// CARGAR DOTENV - Esto es crítico
+import dotenv from 'dotenv';
+dotenv.config(); // ← AÑADE ESTA LÍNEA
+
+console.log(' [AUTH] JWT_SECRET:', process.env.JWT_SECRET ? 'PRESENTE' : 'AUSENTE');
 
 export async function loginUser(email, password) {
   const user = await findUserByEmail(email);
@@ -20,13 +25,11 @@ export async function loginUser(email, password) {
     throw new Error("Tu registro aún no ha sido aprobado por un guardia.");
   }
 
-  // Obtener guardId si el usuario es guardia
   let guardId = null;
   let guardInfo = null;
   
   if (user.role === "guardia") {
     try {
-      // Usar la instancia importada directamente
       const guard = await guardServiceInstance.getGuardByUserId(user.id);
       if (guard) {
         guardId = guard.id;
@@ -41,7 +44,6 @@ export async function loginUser(email, password) {
     }
   }
 
-  // Para que no se repita el user al hacer login
   if (user.bicycles) {
     user.bicycles = user.bicycles.map((bike) => {
       const { user, ...bikeData } = bike;
@@ -49,20 +51,30 @@ export async function loginUser(email, password) {
     });
   }
 
-  // Crear payload del token (INCLUYENDO guardId)
+  // DEBUG: Verificar que JWT_SECRET esté disponible
+  if (!process.env.JWT_SECRET) {
+    console.error(' [AUTH] JWT_SECRET NO DEFINIDO');
+    throw new Error('Error de configuración del servidor');
+  }
+
+  // Crear payload del token
   const payload = { 
-    sub: user.id, 
+    id: user.id, 
     email: user.email, 
     role: user.role,
     guardId: guardId
   };
 
+  console.log(' [AUTH] Generando token con payload:', payload);
+  console.log(' [AUTH] JWT_SECRET longitud:', process.env.JWT_SECRET.length);
+
   // Generar token JWT
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5d" });
 
+  console.log(' [AUTH] Token generado (primeros 50 chars):', token.substring(0, 50) + '...');
+
   delete user.password;
 
-  // Agregar guardId a la respuesta del usuario
   const userResponse = {
     ...user,
     ...(guardId && { guardId: guardId }),

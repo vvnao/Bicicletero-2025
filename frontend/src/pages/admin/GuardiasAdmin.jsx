@@ -1,7 +1,7 @@
 // frontend/src/pages/admin/GuardiasAdmin.jsx (CORREGIDO)
 import { useState, useEffect } from 'react';
 import LayoutAdmin from "../../components/admin/LayoutAdmin";
-import { apiService } from '../../services/api';
+import { apiService } from '../../services/api.service';
 import GuardForm from '../../components/admin/GuardForm';
 import AssignmentForm from '../../components/admin/AssignmentForm';
 import { getToken } from '../../services/auth.service';
