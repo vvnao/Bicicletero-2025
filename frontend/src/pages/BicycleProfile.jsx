@@ -1,6 +1,7 @@
 "use strict";
-import { useState, useEffect } from "react"; // Añadido useEffect
-import { FiTag, FiSettings, FiDroplet, FiHash, FiUser, FiEdit3, FiChevronRight } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom"; 
+import { FiTag, FiSettings, FiDroplet, FiHash, FiUser, FiEdit3, FiChevronRight, FiPlusCircle } from "react-icons/fi";
 import { useGetPrivateBicycles } from "@hooks/bicycles/useGetPrivateBicycles";
 import { useUpdateBicycles } from "@hooks/bicycles/useUpdateBicycles";
 import Swal from "sweetalert2";
@@ -11,30 +12,27 @@ const BicycleProfile = () => {
     
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showZoomModal, setShowZoomModal] = useState(false);
+    
     const [localImages, setLocalImages] = useState({});
+    const [localColors, setLocalColors] = useState({}); 
 
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-    const currentBicycle = bicycles ? bicycles[currentIndex] : null;
-
-    useEffect(() => {
-        if (bicycles) {
-            console.log("Lista de Bicicletas get:", bicycles);
-            if (bicycles[currentIndex]) {
-                console.log("Foto de la bici actual en DB:", bicycles[currentIndex].photo);
-            }
-        }
-    }, [bicycles, currentIndex]);
+    
+    const hasBicycles = bicycles && bicycles.length > 0;
+    const currentBicycle = hasBicycles ? bicycles[currentIndex] : null;
 
     const formatUrl = (path) => {
         if (!path) return null;
-        const formatted = `${API_URL}/${path.replace(/\\/g, "/").replace("src/", "")}`;
-        console.log("url formateada para mostrar:", formatted);
-        return formatted;
+        return `${API_URL}/${path.replace(/\\/g, "/").replace("src/", "")}`;
     };
 
     const bicycleImageUrl = (currentBicycle && localImages[currentBicycle.id]) 
         ? localImages[currentBicycle.id] 
         : (currentBicycle?.photo ? formatUrl(currentBicycle.photo) : null);
+
+    const bicycleColor = (currentBicycle && localColors[currentBicycle.id])
+        ? localColors[currentBicycle.id]
+        : currentBicycle?.color;
 
     const handleEditClick = async () => {
         if (!currentBicycle) return;
@@ -52,7 +50,7 @@ const BicycleProfile = () => {
                 <div class="flex flex-col gap-4 text-left p-2">
                     <div class="flex flex-col gap-1">
                         <label class="text-xs font-bold text-gray-400">COLOR PRIMARIO</label>
-                        <input id="swal-color" class="w-full p-2 rounded bg-[#1a1f37] border border-slate-600 text-white" value="${currentBicycle.color || ''}">
+                        <input id="swal-color" class="w-full p-2 rounded bg-[#1a1f37] border border-slate-600 text-white" value="${bicycleColor || ''}">
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="text-xs font-bold text-gray-400">FOTO DE LA BICICLETA</label>
@@ -69,39 +67,18 @@ const BicycleProfile = () => {
         });
 
         if (formValues) {
-            Swal.fire({
-                title: 'Actualizando...',
-                text: 'Enviando datos',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
-            });
-
+            Swal.fire({ title: 'Actualizando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             const result = await updateBicycle(currentBicycle.id, formValues);
-            console.log("Respuesta del Servidor update:", result);
 
             if (result.success) {
+                setLocalColors(prev => ({ ...prev, [currentBicycle.id]: formValues.color }));
                 if (formValues.photo) {
                     const objectUrl = URL.createObjectURL(formValues.photo);
-                    console.log("Generada url local temporal:", objectUrl);
-                    setLocalImages(prev => ({
-                        ...prev,
-                        [currentBicycle.id]: objectUrl
-                    }));
+                    setLocalImages(prev => ({ ...prev, [currentBicycle.id]: objectUrl }));
                 }
-
-                await Swal.fire({
-                    icon: 'success',
-                    title: '¡Actualizado!',
-                    text: 'Los datos se han guardado correctamente.',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-
-                if (refetch) {
-                    await refetch();
-                }
+                Swal.fire({ icon: 'success', title: '¡Actualizado!', timer: 1500, showConfirmButton: false });
+                if (refetch) await refetch();
             } else {
-                console.error("Error al actualizar:", result.error);
                 Swal.fire('Error', result.error || 'No se pudo actualizar', 'error');
             }
         }
@@ -111,17 +88,38 @@ const BicycleProfile = () => {
         <div className="min-h-screen bg-blue p-4 md:p-10 text-white font-sans">
             {showZoomModal && bicycleImageUrl && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick={() => setShowZoomModal(false)}>
-                    <img src={bicycleImageUrl} className="max-w-full max-h-full rounded-xl object-contain animate-in zoom-in duration-300" />
+                    <img src={bicycleImageUrl} className="max-w-full max-h-full rounded-xl object-contain animate-in zoom-in duration-300" alt="Bicycle Zoom" />
                 </div>
             )}
 
-            {!isLoading && currentBicycle ? (
+            {isLoading ? (
+                <div className="flex justify-center items-center h-64"><p className="animate-pulse">Cargando...</p></div>
+            ) : !hasBicycles ? (
+                <div className="max-w-2xl mx-auto mt-20 text-center space-y-8"> 
+                    
+                    <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] p-12 border border-white/10 shadow-2xl">
+                        <div className="w-24 h-24 bg-[#3b82f6]/20 text-[#3b82f6] rounded-full flex items-center justify-center mx-auto mb-6">
+                            <FiPlusCircle size={48} />
+                        </div>
+                        
+                        <h2 className="text-3xl font-bold mb-2 text-white">No hay bicicletas aún</h2>
+                        <p className="text-gray-400 mb-8">Parece que todavía no has registrado ninguna bicicleta en tu perfil.</p>
+                        
+                        <Link 
+                            to="/home/user/addBicycles"
+                            className="inline-flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-4 px-8 rounded-2xl transition-colors shadow-lg shadow-blue-500/20"
+                        >
+                            Registrar primera bicicleta
+                        </Link>
+                    </div>
+                </div>
+            ) : (
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/10 p-8 flex flex-col items-center">
                             <div className="w-48 h-48 rounded-full border-4 border-[#3b82f6]/30 overflow-hidden bg-[#1a1f37] mb-6 shadow-xl">
                                 {bicycleImageUrl ? (
-                                    <img src={bicycleImageUrl} className="w-full h-full object-cover" />
+                                    <img src={bicycleImageUrl} className="w-full h-full object-cover" alt="Bicycle" />
                                 ) : (
                                     <div className="flex items-center justify-center h-full text-white/10"><FiSettings size={60} /></div>
                                 )}
@@ -158,14 +156,12 @@ const BicycleProfile = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-12 gap-x-6">
                                 <InfoItem label="Marca" value={currentBicycle.brand} icon={<FiTag />} />
                                 <InfoItem label="Modelo" value={currentBicycle.model} icon={<FiSettings />} />
-                                <InfoItem label="Color" value={currentBicycle.color} icon={<FiDroplet />} />
+                                <InfoItem label="Color" value={bicycleColor} icon={<FiDroplet />} />
                                 <InfoItem label="N° Serie" value={currentBicycle.serialNumber} icon={<FiHash />} />
                             </div>
                         </div>
                     </div>
                 </div>
-            ) : (
-                <div className="flex justify-center items-center h-64"><p className="animate-pulse">Cargando...</p></div>
             )}
         </div>
     );
