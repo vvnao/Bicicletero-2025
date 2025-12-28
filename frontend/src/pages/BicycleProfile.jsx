@@ -1,98 +1,130 @@
 "use strict";
-import { useState } from "react";
-//Quiero ocupar estos iconos
-//import { FaUsers, FaCalendarAlt, FaCheck, FaCoins } from "react-icons/fa";
+import { useState, useRef } from "react";
+import { FiTag, FiSettings, FiDroplet, FiHash, FiCamera, FiUser, FiEdit3, FiChevronRight, FiX } from "react-icons/fi"; // Se agregó FiX
 import { useGetPrivateBicycles } from "@hooks/bicycles/useGetPrivateBicycles";
+import { useUpdateBicycles } from "@hooks/bicycles/useUpdateBicycles";
 
 const BicycleProfile = () => {
     const { isLoading, bicycles, error } = useGetPrivateBicycles();
+    const { execute: updateBicycle, loading: isUpdating } = useUpdateBicycles();
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [showModal, setShowModal] = useState(false); // Nuevo estado para el modal
+    const fileInputRef = useRef(null);
 
-    const handleNext = () => {
-        setCurrentIndex((prev) => (prev + 1) % bicycles.length);
-    };
-
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
     const currentBicycle = bicycles ? bicycles[currentIndex] : null;
 
+    const formatUrl = (path) => {
+        if (!path) return null;
+        return `${API_URL}/${path.replace(/\\/g, "/").replace("src/", "")}`;
+    };
+
     return (
-        <div className="flex flex-col min-h-screen bg-[#272e4b]">
-            
-            <div className="flex flex-1">
-                
-                <main className="flex-1 p-8 transition-all duration-300">
-                    <div className="flex justify-between items-center mb-8 p-6 bg-white rounded-2xl shadow-xl border-b-4 border-blue-500">
-                        <div>
-                            <h2 className="text-3xl font-bold text-[#1e40af]">Perfil bicicletas</h2>
-                            <p className="text-gray-500 italic mt-1 text-sm">
-                                {bicycles?.length > 0 ? `Bicicleta ${currentIndex + 1} de ${bicycles.length}` : "Sin registros"}
-                            </p>
+        <div className="min-h-screen bg-blue p-4 md:p-10 text-white font-sans">
+            {showModal && currentBicycle?.photo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 cursor-zoom-out"
+                    onClick={() => setShowModal(false)}>
+                    <img 
+                        src={formatUrl(currentBicycle.photo)} 
+                        className="max-w-full max-h-full rounded-lg shadow-2xl object-contain animate-in zoom-in duration-300"
+                        alt="Bicicleta Grande"
+                    />
+                </div>
+            )}
+
+            {!isLoading && currentBicycle && (
+                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/10 p-8 flex flex-col items-center">
+                            
+                            <div className="relative mb-8">
+                                <div className="w-48 h-48 rounded-full border-4 border-[#3b82f6]/30 p-1 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+                                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/20 bg-[#1a1f37]">
+                                        {currentBicycle.photo ? (
+                                            <img 
+                                                src={formatUrl(currentBicycle.photo)} 
+                                                className="w-full h-full object-cover"
+                                                alt="Bicicleta"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-white/20">
+                                                <FiSettings size={60} />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="text-center mb-10">
+                                <h2 className="text-3xl font-bold tracking-tight text-white">{currentBicycle.brand}</h2>
+                                <div className="mt-2 inline-block px-4 py-1 rounded-full bg-[#3b82f6]/20 border border-[#3b82f6]/30 text-[#3b82f6] text-xs font-bold uppercase tracking-widest">
+                                    {currentBicycle.model}
+                                </div>
+                            </div>
+
+                            <div className="w-full space-y-4">
+                                <button 
+                                    onClick={() => setShowModal(true)} 
+                                    className="w-full flex items-center justify-center gap-3 py-4 bg-[#3b82f6] text-white rounded-2xl font-bold shadow-lg shadow-blue-900/20 hover:bg-[#2563eb] transition-all active:scale-95"
+                                >
+                                    <FiUser size={18} />
+                                    Ver Perfil
+                                </button>
+                                <button className="w-full flex items-center justify-center gap-3 py-4 bg-white/5 text-white border border-white/10 rounded-2xl font-bold hover:bg-white/10 transition-all backdrop-blur-sm">
+                                    <FiEdit3 size={18} />
+                                    Editar Perfil
+                                </button>
+                            </div>
                         </div>
-                        <div className="text-4xl">🚲</div>
+
+                        {bicycles.length > 1 && (
+                            <div className="bg-gradient-to-r from-[#272e4b]/60 to-[#3b82f6]/20 rounded-2xl p-6 flex justify-between items-center border border-white/10 shadow-xl">
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-widest text-white/50 font-bold">Bicicletas</p>
+                                    <p className="font-bold text-lg text-white">{currentIndex + 1} <span className="text-white/30 text-sm">/ {bicycles.length}</span></p>
+                                </div>
+                                <button 
+                                    onClick={() => setCurrentIndex((prev) => (prev + 1) % bicycles.length)}
+                                    className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-[#3b82f6]"
+                                >
+                                    <FiChevronRight size={28} />
+                                </button>
+                            </div>
+                        )}
                     </div>
 
-                    {isLoading && (
-                        <div className="flex justify-center items-center h-64">
-                            <p className="text-white text-lg animate-pulse font-medium tracking-wide">Cargando bicicletas...</p>
-                        </div>
-                    )}
-
-                    {error && (
-                        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md">
-                            <p className="font-bold">Error</p>
-                            <p>{error}</p>
-                        </div>
-                    )}
-
-                    {!isLoading && bicycles?.length === 0 && (
-                        <div className="bg-white/10 border border-white/20 p-10 rounded-2xl text-center text-white">
-                            <p className="text-xl opacity-80">No tienes bicicletas registradas aún.</p>
-                            <button className="mt-4 text-blue-400 hover:underline">Añadir mi primera bicicleta</button>
-                        </div>
-                    )}
-
-                    {!isLoading && currentBicycle && (
-                        <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border-l-[10px] border-[#3b82f6]">
-                            <div className="p-8">
-                                <div className="flex justify-between items-start mb-8">
-                                    <h3 className="text-2xl font-bold text-gray-800 antialiased tracking-tight">
-                                        Detalles de la bicicleta
-                                    </h3>
+                    <div className="lg:col-span-8">
+                        <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/10 h-full overflow-hidden">
+                            <div className="p-10 border-b border-white/5 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white">Perfil Bicicletas</h3>
                                 </div>
+                            </div>
+                            
+                            <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                <InfoItem label="Marca Registrada" value={currentBicycle.brand} icon={<FiTag />} />
+                                <InfoItem label="Modelo del Cuadro" value={currentBicycle.model} icon={<FiSettings />} />
+                                <InfoItem label="Color Primario" value={currentBicycle.color} icon={<FiDroplet />} />
+                                <InfoItem label="Número de Identificación" value={currentBicycle.serialNumber} icon={<FiHash />} />
+                            </div>
+                        </div>
+                    </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <BicycleData label="Marca" value={currentBicycle.brand} icon="🏷️" />
-                                    <BicycleData label="Modelo" value={currentBicycle.model} icon="⚙️" />
-                                    <BicycleData label="Color" value={currentBicycle.color} icon="🎨" />
-                                    <BicycleData label="N° de Serie" value={currentBicycle.serialNumber} icon="🆔" />
-                                </div>
-
-                                {bicycles.length > 1 && (
-                                    <div className="mt-10 flex flex-col items-center">
-                                        <button 
-                                            onClick={handleNext} 
-                                            className="group flex items-center gap-3 bg-[#272e4b] text-white px-8 py-3 rounded-xl hover:bg-[#323955] transition-all shadow-lg active:scale-95"
-                                        >
-                                            <span className="font-semibold tracking-wide">Siguiente Bicicleta</span>
-                                            <span className="group-hover:translate-x-1 transition-transform">➡️</span>
-                                        </button>
-                                        <p className="mt-3 text-xs text-gray-400 font-medium">Haz clic para rotar entre tus bicicletas registradas</p>
-                                    </div>
-                                )}
-                            </div>  
-                        </div>     
-                    )}
-                </main>
-            </div>
+                </div>
+            )}
         </div>
     );
 };
 
-const BicycleData = ({ label, value, icon }) => (
-    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-hover hover:shadow-md">
-        <div className="text-2xl bg-white p-2 rounded-lg shadow-sm">{icon}</div>
+const InfoItem = ({ label, value, icon }) => (
+    <div className="flex items-center gap-6 group">
+        <div className="p-4 bg-white/5 rounded-2xl text-[#3b82f6] border border-white/10 group-hover:bg-[#3b82f6] group-hover:text-white transition-all duration-300 shadow-lg">
+            {icon}
+        </div>
         <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.15em] mb-0.5">{label}</p>
-            <p className="text-gray-800 font-semibold text-lg antialiased tracking-wide">{value}</p>
+            <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.25em] mb-1">{label}</p>
+            <p className="text-white font-bold text-xl tracking-wide">{value || "---"}</p>
         </div>
     </div>
 );

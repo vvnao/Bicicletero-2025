@@ -40,7 +40,7 @@ export async function getAllBicycles(){
 
 export async function getBicyclesByUserId(id) {
     try {
-        const token = localStorage.getItem('token');
+        const token = cookies.get('jwt-auth');
         const response = await axios.get(`/bicycles/user/${id}`, {
             headers: { Authorization: `Bearer ${token}` },
             data: { id: id }
@@ -68,5 +68,27 @@ export async function deleteBicycles(id) {
         return { 
             ok: false, 
             error: error.response?.data?.message || 'Error al eliminar bicicleta' };
+    }
+}
+export async function updateBicycles(id, formValues) { 
+    try {
+        const token = cookies.get('jwt-auth');
+
+        const formData = new FormData();
+        formData.append('color', formValues.color);
+
+        if (formValues.photo) {
+            formData.append('photo', formValues.photo);
+        }
+
+        const response = await axios.patch(`/bicycles/${id}`, formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || { message: "Error al actualizar bicicleta" };
     }
 }

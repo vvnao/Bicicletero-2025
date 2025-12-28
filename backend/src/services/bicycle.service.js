@@ -48,10 +48,8 @@ export async function updateBicyclesServices(userId, data) {
 
     const bicycle = await bicycleRepository.findOne({
         where: {
-            id: id,
-            user: {
-                id: userId
-            }
+            id,
+            user: { id: userId }
         }
     });
 
@@ -62,6 +60,7 @@ export async function updateBicyclesServices(userId, data) {
 
     return await bicycleRepository.save(bicycle);
 }
+
 export async function deleteBicyclesServices(userId, bicycleId) {
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 

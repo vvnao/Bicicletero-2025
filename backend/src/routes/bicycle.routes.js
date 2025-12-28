@@ -9,7 +9,7 @@ router.post("/", authMiddleware,uploadDocuments,handleFileSizeLimit, createBicyc
 router.get("/",authMiddleware, getBicycles);
 router.get("/all", getAllBicycles);
 router.delete("/", authMiddleware, deleteBicycles);
-router.put("/", authMiddleware, updateBicycles);
+router.patch("/:id", authMiddleware,uploadDocuments,handleFileSizeLimit, updateBicycles);
 router.get("/user/:id", authMiddleware, getBicyclesByUserId);
 
 export default router;

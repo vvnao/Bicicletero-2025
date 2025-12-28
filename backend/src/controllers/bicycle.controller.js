@@ -70,16 +70,25 @@ export async function deleteBicycles(req, res) {
 export async function updateBicycles(req, res) {
     try {
         const userId = req.user.id;
-        const data = req.body;
+        const { id } = req.params;
+        const { color } = req.body;
 
-        const updatedBike = await updateBicyclesServices(userId, data);
+        const photo =req.files?.photo && req.files.photo.length > 0? req.files.photo[0].filename: undefined;
 
-        if (!updatedBike)
+        const updatedBike = await updateBicyclesServices(userId, {
+            id,
+            color,
+            photo
+        });
+
+        if (!updatedBike) {
             return handleErrorClient(res, 404, "Bicicleta no encontrada");
+        }
 
-        return handleSuccess(res, 200, "Perfil de bicicleta actualizado exitosamente", {
-            color: updatedBike.color,
-            photo: updatedBike.photo,
+        return handleSuccess(res,200,"Perfil de bicicleta actualizado exitosamente",{
+                id: updatedBike.id,
+                color: updatedBike.color,
+                photo: updatedBike.photo
         });
     } catch (error) {
         return handleErrorServer(res, 500, "Error del servidor", error);
