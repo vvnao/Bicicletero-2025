@@ -1,179 +1,265 @@
-// frontend/src/services/api.js - VERSIÓN COMPLETA Y FUNCIONAL
+
 const API_URL = 'http://localhost:3000/api';
 
-// Función auxiliar para manejar fetch con auth
-const fetchWithAuth = async (endpoint, options = {}, token) => {
-    const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers
+// Helper para manejar fetch con error handling
+const handleResponse = async (response) => {
+    const contentType = response.headers.get('content-type');
+    
+    if (!response.ok) {
+        if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP ${response.status}`);
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+    }
+    
+    if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+    } else {
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch {
+            return { success: true, data: text || {} };
+        }
+    }
+};
+
+// Configuración base para fetch
+const createFetchConfig = (method = 'GET', body = null, token = null) => {
+    const config = {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+        }
     };
     
     if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        config.headers['Authorization'] = `Bearer ${token}`;
     }
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        headers
-    });
+    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        config.body = JSON.stringify(body);
+    }
     
-    return response;
+    return config;
 };
 
 export const apiService = {
     // ========== GUARDIAS ==========
     async getGuards(token) {
         try {
-            const response = await fetchWithAuth('/guards', {}, token);
-            const data = await response.json();
-            console.log('✅ getGuards response:', data);
-            return data;
+            console.log('🔵 [GET GUARDS] Iniciando petición...');
+            
+            const response = await fetch(`${API_URL}/guards`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const result = await handleResponse(response);
+            console.log('🔵 [GET GUARDS] Respuesta:', result);
+            return result;
+            
         } catch (error) {
             console.error('❌ Error en getGuards:', error);
-            return { success: false, message: 'Error de conexión', data: [] };
+            return { 
+                success: false, 
+                message: error.message || 'Error de conexión', 
+                data: [] 
+            };
         }
     },
 
     async createGuard(guardData, token) {
         try {
-            const response = await fetchWithAuth('/guards', {
-                method: 'POST',
-                body: JSON.stringify(guardData)
-            }, token);
-            return await response.json();
+            console.log('🔵 Creando guardia...');
+            const response = await fetch(`${API_URL}/guards`, createFetchConfig('POST', guardData, token));
+            return await handleResponse(response);
         } catch (error) {
-            console.error('Error en createGuard:', error);
-            return { success: false, message: 'Error de conexión' };
+            console.error('❌ Error en createGuard:', error);
+            return { success: false, message: error.message || 'Error de conexión' };
         }
     },
 
     async toggleGuardAvailability(id, isAvailable, token) {
         try {
-            const response = await fetchWithAuth(`/guards/${id}/availability`, {
-                method: 'PATCH',
-                body: JSON.stringify({ isAvailable })
-            }, token);
-            return await response.json();
+            console.log('🔵 Cambiando disponibilidad...');
+            const response = await fetch(
+                `${API_URL}/guards/${id}/availability`, 
+                createFetchConfig('PATCH', { isAvailable }, token)
+            );
+            return await handleResponse(response);
         } catch (error) {
-            console.error('Error en toggleGuardAvailability:', error);
-            return { success: false, message: 'Error de conexión' };
+            console.error('❌ Error en toggleGuardAvailability:', error);
+            return { success: false, message: error.message || 'Error de conexión' };
         }
     },
 
     // ========== BICICLETEROS ==========
     async getBikeracks(token) {
-        console.log('🔄 Llamando a GET /api/bikeracks');
+        console.log('🟢 [GET BIKERACKS] Iniciando petición...');
+        console.log('🟢 URL:', `${API_URL}/bikeracks`);
+        console.log('🟢 Token presente:', !!token);
         
         try {
-            const response = await fetchWithAuth('/bikeracks', {}, token);
-            console.log('📊 Response status:', response.status);
+            const response = await fetch(`${API_URL}/bikeracks`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
+            console.log('🟢 Response status:', response.status);
+            console.log('🟢 Response ok:', response.ok);
+            console.log('🟢 Response headers:', Object.fromEntries(response.headers.entries()));
             
-            const result = await response.json();
-            console.log('📦 Datos crudos de bikeracks:', result);
-            
-            // Tu backend retorna: { success, message, data }
-            if (result.success && Array.isArray(result.data)) {
-                // Mapear a estructura que espera el frontend
-                const mappedData = result.data.map(bikerack => ({
-                    id: bikerack.id.toString(),
-                    name: bikerack.name || 'Sin nombre',
-                    capacity: bikerack.capacity || 0,
-                    // Campos extra si los quieres mostrar
-                    usedCapacity: bikerack.usedCapacity,
-                    availableCapacity: bikerack.availableCapacity,
-                    occupancyRate: bikerack.occupancyRate
-                }));
-                
-                console.log('✅ Bikeracks mapeados:', mappedData);
-                return { success: true, data: mappedData };
-            } else {
-                console.warn('⚠️ Backend no retornó data array:', result);
-                // Datos mock de respaldo
-                return {
-                    success: true,
-                    data: [
-                        { id: '1', name: 'Bicicletero Central (Mock)', capacity: 40 },
-                        { id: '2', name: 'Bicicletero Norte (Mock)', capacity: 40 },
-                        { id: '3', name: 'Bicicletero Sur (Mock)', capacity: 40 },
-                        { id: '4', name: 'Bicicletero Este (Mock)', capacity: 40 }
-                    ]
+            if (response.status === 401) {
+                console.error('❌ ERROR 401: Token inválido');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                return { 
+                    success: false, 
+                    message: 'Sesión expirada',
+                    data: [] 
                 };
             }
-        } catch (error) {
-            console.error('🔥 Error crítico en getBikeracks:', error);
             
-            // Datos mock de emergencia
+            // Obtener el texto crudo primero
+            const textData = await response.text();
+            console.log('🟢 Texto crudo de respuesta:', textData);
+            
+            // Intentar parsearlo
+            let result;
+            try {
+                result = JSON.parse(textData);
+                console.log('🟢 JSON parseado:', result);
+            } catch (parseError) {
+                console.error('❌ Error parseando JSON:', parseError);
+                return {
+                    success: false,
+                    message: 'Respuesta inválida del servidor',
+                    data: []
+                };
+            }
+            
+            // Analizar estructura
+            console.log('🟢 Tipo de resultado:', typeof result);
+            console.log('🟢 Es array?:', Array.isArray(result));
+            console.log('🟢 Keys:', Object.keys(result));
+            console.log('🟢 result.success:', result.success);
+            console.log('🟢 result.data:', result.data);
+            console.log('🟢 Tipo de result.data:', typeof result.data);
+            console.log('🟢 result.data es array?:', Array.isArray(result.data));
+            
+            // Si result.data existe, mostrar su contenido
+            if (result.data) {
+                console.log('🟢 Contenido de result.data:', result.data);
+                console.log('🟢 Primer elemento:', result.data[0]);
+            }
+            
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Error crítico en getBikeracks:', error);
+            console.error('❌ Stack:', error.stack);
+            
             return {
-                success: true,
-                data: [
-                    { id: 'mock-1', name: 'Bicicletero Central', capacity: 40 },
-                    { id: 'mock-2', name: 'Bicicletero Norte', capacity: 40 },
-                    { id: 'mock-3', name: 'Bicicletero Sur', capacity: 40 },
-                    { id: 'mock-4', name: 'Bicicletero Este', capacity: 40 }
-                ]
+                success: false,
+                message: error.message || 'Error de conexión',
+                data: []
             };
         }
     },
 
-   // ========== ASIGNACIONES ==========
-async getGuardAssignments(token, guardId = null) {
-    try {
-        const endpoint = guardId 
-            ? `/guard-assignments/guard/${guardId}`
-            : '/guard-assignments';
-            
-        console.log(`📡 Llamando endpoint: ${endpoint}`);
-        const response = await fetchWithAuth(endpoint, {}, token);
-        
-        const data = await response.json();
-        console.log('📦 Respuesta completa de asignaciones:', data);
-        
-        // IMPORTANTE: Verifica la estructura
-        if (data.success) {
-            console.log('✅ Success true. Datos recibidos:');
-            
-            // Si data.data es array, mostrar primer elemento
-            if (Array.isArray(data.data)) {
-                console.log(`📊 Total asignaciones: ${data.data.length}`);
-                if (data.data.length > 0) {
-                    console.log('🔍 Primera asignación:', data.data[0]);
-                    console.log('🔍 Estructura guard en primera asignación:', data.data[0].guard);
-                    console.log('🔍 Estructura bikerack en primera asignación:', data.data[0].bikerack);
-                }
-            } else if (data.data && data.data.assignments) {
-                // Para endpoint por guardia específico
-                console.log('📊 Asignaciones por guardia:', data.data.assignments);
-            }
-        } else {
-            console.log('❌ Success false:', data.message);
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('Error en getGuardAssignments:', error);
-        return { success: false, message: 'Error de conexión', data: [] };
-    }
-},
-    async checkAvailability(params, token) {
-    try {
-        const queryString = new URLSearchParams(params).toString();
-        const response = await fetchWithAuth(`/guard-assignments/check-availability?${queryString}`, {}, token);
-        return await response.json();
-    } catch (error) {
-        console.error('Error checking availability:', error);
-        return { 
-            success: false, 
-            message: 'Error de conexión',
-            data: { availableBikeracks: [] }
-        };
-    }
-},
-deleteAssignment: async (assignmentId, token) => {
+    // ========== ASIGNACIONES ==========
+    async getGuardAssignments(token, guardId = null) {
         try {
+            const endpoint = guardId 
+                ? `/guard-assignments/guard/${guardId}`
+                : '/guard-assignments';
+                
+            console.log('🟡 [GET ASSIGNMENTS] Llamando:', endpoint);
+            
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('🟡 Response status:', response.status);
+            
+            // Obtener texto crudo
+            const textData = await response.text();
+            console.log('🟡 Texto crudo:', textData);
+            
+            // Parsear
+            let result;
+            try {
+                result = JSON.parse(textData);
+                console.log('🟡 JSON parseado:', result);
+            } catch (parseError) {
+                console.error('❌ Error parseando assignments:', parseError);
+                return { success: false, message: 'Error parseando respuesta', data: [] };
+            }
+            
+            // Analizar estructura
+            console.log('🟡 Estructura de assignments:');
+            console.log('  - Tipo:', typeof result);
+            console.log('  - Es array?:', Array.isArray(result));
+            console.log('  - Keys:', Object.keys(result));
+            console.log('  - result.success:', result.success);
+            console.log('  - result.data:', result.data);
+            console.log('  - Tipo result.data:', typeof result.data);
+            console.log('  - result.data es array?:', Array.isArray(result.data));
+            
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Error en getGuardAssignments:', error);
+            return { 
+                success: false, 
+                message: error.message || 'Error de conexión', 
+                data: [] 
+            };
+        }
+    },
+
+    async checkAvailability(params, token) {
+        try {
+            const queryString = new URLSearchParams(params).toString();
+            const response = await fetch(
+                `${API_URL}/guard-assignments/check-availability?${queryString}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            return await handleResponse(response);
+        } catch (error) {
+            console.error('❌ Error checking availability:', error);
+            return { 
+                success: false, 
+                message: error.message || 'Error de conexión',
+                data: { availableBikeracks: [] }
+            };
+        }
+    },
+
+    async deleteAssignment(assignmentId, token) {
+        try {
+            console.log('🔵 Eliminando asignación:', assignmentId);
             const response = await fetch(`${API_URL}/guard-assignments/${assignmentId}`, {
                 method: 'DELETE',
                 headers: {
@@ -182,18 +268,10 @@ deleteAssignment: async (assignmentId, token) => {
                 }
             });
             
-            if (!response.ok) {
-                const errorData = await response.json();
-                return { 
-                    success: false, 
-                    message: errorData.message || 'Error al eliminar asignación' 
-                };
-            }
+            return await handleResponse(response);
             
-            const data = await response.json();
-            return data;
         } catch (error) {
-            console.error('Error deleting assignment:', error);
+            console.error('❌ Error deleting assignment:', error);
             return { 
                 success: false, 
                 message: error.message || 'Error de conexión' 
@@ -203,14 +281,72 @@ deleteAssignment: async (assignmentId, token) => {
 
     async createAssignment(assignmentData, token) {
         try {
-            const response = await fetchWithAuth('/guard-assignments', {
+            console.log('🔵 Creando asignación:', assignmentData);
+            const response = await fetch(`${API_URL}/guard-assignments`, {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(assignmentData)
-            }, token);
-            return await response.json();
+            });
+            
+            return await handleResponse(response);
+            
         } catch (error) {
-            console.error('Error en createAssignment:', error);
-            return { success: false, message: 'Error de conexión' };
+            console.error('❌ Error en createAssignment:', error);
+            return { 
+                success: false, 
+                message: error.message || 'Error de conexión' 
+            };
+        }
+    },
+
+    async updateAssignment(assignmentId, assignmentData, token) {
+        try {
+            console.log('🔵 Actualizando asignación:', assignmentId, assignmentData);
+            const response = await fetch(`${API_URL}/guard-assignments/${assignmentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(assignmentData)
+            });
+            
+            return await handleResponse(response);
+            
+        } catch (error) {
+            console.error('❌ Error en updateAssignment:', error);
+            return { 
+                success: false, 
+                message: error.message || 'Error de conexión' 
+            };
+        }
+    },
+
+    // ========== AUTH ==========
+    async validateToken(token) {
+        try {
+            console.log('🔵 Validando token...');
+            const response = await fetch(`${API_URL}/auth/validate`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            return await handleResponse(response);
+            
+        } catch (error) {
+            console.error('❌ Error validating token:', error);
+            return { 
+                success: false, 
+                message: 'Token inválido o expirado' 
+            };
         }
     }
 };
+
+export default apiService;

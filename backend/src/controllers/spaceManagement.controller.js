@@ -3,6 +3,7 @@ import {
   occupySpaceWithoutReservation,
   liberateSpace,
 } from '../services/spaceManagement.service.js';
+import HistoryService from '../services/history.service.js';
 import {
   handleSuccess,
   handleErrorClient,
@@ -21,6 +22,35 @@ export async function occupyWithReservation(req, res) {
     }
 
     const result = await occupySpaceWithReservation(reservationCode);
+
+    await HistoryService.logEvent({
+      historyType: 'user_checkin',
+      description: `Usuario ${result.user.names} ingresó al bicicletero ${result.space.bikerack.name} con reserva`,
+      details: {
+        userId: result.user.id,
+        userName: `${result.user.names} ${result.user.lastName}`,
+        userEmail: result.user.email,
+        spaceId: result.space.id,
+        spaceCode: result.space.spaceCode,
+        bikerackId: result.space.bikerack.id,
+        bikerackName: result.space.bikerack.name,
+        reservationId: result.reservation?.id,
+        reservationCode: result.reservation?.reservationCode,
+        bicycleId: result.reservation?.bicycleId,
+        retrievalCode: result.retrievalCode,
+        estimatedHours: result.reservation?.estimatedHours,
+        guardId: req.user?.id || null,
+        timestamp: new Date().toISOString()
+      },
+      userId: result.user.id,
+      guardId: req.user?.id || null,
+      spaceId: result.space.id,
+      bikerackId: result.space.bikerack.id,
+      reservationId: result.reservation?.id,
+      bicycleId: result.reservation?.bicycleId,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     await sendEmail(
       result.user.email,
@@ -79,6 +109,36 @@ export async function occupyWithoutReservation(req, res) {
       parseInt(bicycleId)
     );
 
+    // 🟢 AÑADIR ESTO: REGISTRAR CHECK-IN EN HISTORIAL
+    await HistoryService.logEvent({
+      historyType: 'user_checkin',
+      description: `Usuario ${result.user.names} ingresó al bicicletero ${result.space.bikerack.name} sin reserva`,
+      details: {
+        userId: result.user.id,
+        userName: `${result.user.names} ${result.user.lastName}`,
+        userEmail: result.user.email,
+        spaceId: result.space.id,
+        spaceCode: result.space.spaceCode,
+        bikerackId: result.space.bikerack.id,
+        bikerackName: result.space.bikerack.name,
+        reservationId: result.reservation?.id,
+        reservationCode: result.reservation?.reservationCode,
+        bicycleId: parseInt(bicycleId),
+        retrievalCode: result.retrievalCode,
+        estimatedHours: hours,
+        guardId: req.user?.id || null,
+        timestamp: new Date().toISOString()
+      },
+      userId: result.user.id,
+      guardId: req.user?.id || null,
+      spaceId: result.space.id,
+      bikerackId: result.space.bikerack.id,
+      reservationId: result.reservation?.id,
+      bicycleId: parseInt(bicycleId),
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
     await sendEmail(
       result.user.email,
       'Ingreso Confirmado - Bicicletero UBB',
@@ -109,6 +169,35 @@ export async function liberateSpaceController(req, res) {
     }
 
     const result = await liberateSpace(parseInt(spaceId), retrievalCode);
+
+      const historyType = result.isInfraction ? 'infraction' : 'user_checkout';
+    const description = result.isInfraction 
+      ? `Usuario ${result.user.names} retiró con infracción (${result.infractionDuration}h extra)`
+      : `Usuario ${result.user.names} retiró del bicicletero ${result.space.bikerack.name}`;
+    
+    await HistoryService.logEvent({
+      historyType: historyType,
+      description: description,
+      details: {
+        userId: result.user.id,
+        userName: `${result.user.names} ${result.user.lastName}`,
+        userEmail: result.user.email,
+        spaceId: result.space.id,
+        spaceCode: result.space.spaceCode,
+        bikerackId: result.space.bikerack.id,
+        bikerackName: result.space.bikerack.name,
+        isInfraction: result.isInfraction,
+        infractionDuration: result.infractionDuration,
+        guardId: req.user?.id || null,
+        timestamp: new Date().toISOString()
+      },
+      userId: result.user.id,
+      guardId: req.user?.id || null,
+      spaceId: result.space.id,
+      bikerackId: result.space.bikerack.id,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     let emailHtml;
     let subject;

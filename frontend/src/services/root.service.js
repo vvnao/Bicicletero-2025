@@ -9,34 +9,21 @@ const instance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // permite enviar cookies al backend
+  withCredentials: true, // permite enviar cookies si el backend las usa
 });
 
-// Interceptor: añade el token JWT automáticamente
+// 🔐 INTERCEPTOR ÚNICO → AGREGA JWT A TODAS LAS REQUESTS
 instance.interceptors.request.use(
   (config) => {
-    const token = cookies.get('jwt-auth', { path: '/' });
+    const token = cookies.get('jwt-auth');
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => Promise.reject(error)
-);
-
-instance.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const backendMessage =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      'Error inesperado del servidor';
-
-    return Promise.reject({
-      status: error.response?.status,
-      message: backendMessage,
-    });
-  }
 );
 
 export default instance;

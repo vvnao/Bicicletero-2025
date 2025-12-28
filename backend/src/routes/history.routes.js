@@ -1,86 +1,35 @@
-// routes/history.routes.js
 'use strict';
-
+// routes/history.routes.js - CORREGIDO
 import { Router } from 'express';
-import HistoryController from '../controllers/history.controller.js';
-import { authMiddleware} from '../middleware/auth.middleware.js';
-import { authorize } from '../middleware/authorize.middleware.js';
-
+import historyController from '../controllers/history.controller.js';
+import HistoryEntity from '../entities/HistoryEntity.js'; // Asegúrate que NO tenga llaves {} si es export default
+import { authMiddleware, isAdmin } from '../middleware/auth.middleware.js';
 const router = Router();
 
-// Middleware de autenticación
+// Aplicar autenticación a todas las rutas
 router.use(authMiddleware);
 
-// ================================================
-// HISTORIAL GENERAL Y ESPECÍFICO
-// ================================================
+// --- RUTAS DE HISTORIAL ---
 
-// Historial completo con filtros - Esta es la ruta principal
-router.get('/', authorize(['admin', 'guardia']), (req, res) => 
-    HistoryController.getHistory(req, res));
+// 1. Historial General (con filtros por query params)
+router.get('/', historyController.getHistory);
 
-// Historial general (todos) - Nuevo endpoint para tabla completa
-router.get('/all', authorize(['admin', 'guardia']), (req, res) => 
-    HistoryController.getAllHistory(req, res));
+// 2. Historiales por Entidad (Misión: Separación)
+router.get('/user/:userId', historyController.getSpecificUserHistory);
+router.get('/guard/:guardId', historyController.getSpecificGuardHistory);
+router.get('/bicycle/:bicycleId', historyController.getSpecificBicycleHistory);
+router.get('/bikerack/:bikerackId', historyController.getSpecificBikerackHistory);
 
-// Actividad reciente
-router.get('/recent', authorize(['admin', 'guardia']), (req, res) => 
-    HistoryController.getRecentActivity(req, res));
+// 3. Estadísticas y Actividad Reciente
+router.get('/statistics', historyController.getStatistics);
+router.get('/recent', historyController.getRecentActivity);
 
-// Estadísticas
-router.get('/statistics', authorize(['admin', 'guardia']), (req, res) => 
-    HistoryController.getStatistics(req, res));
+// 4. Mantenimiento (Solo Admin)
+router.delete('/clean', historyController.cleanHistory);
+router.get('/export', historyController.exportHistory);
 
-// Exportar historial
-router.get('/export', authorize(['admin']), (req, res) => 
-    HistoryController.exportHistory(req, res));
+router.get("/occupancy", isAdmin, historyController.getBicycleUsage);
 
-// Limpiar historial antiguo
-router.delete('/clean', authorize(['admin']), (req, res) => 
-    HistoryController.cleanHistory(req, res));
-
-// ================================================
-// HISTORIAL ESPECÍFICO (con rutas separadas)
-// ================================================
-
-// Historial de usuarios (todos los usuarios)
-router.get('/users', authorize(['admin', 'guardia']), (req, res) => 
-    HistoryController.getAllUserHistory(req, res));
-
-// Historial de usuario específico
-router.get('/users/:userId', (req, res) => 
-    HistoryController.getSpecificUserHistory(req, res));
-
-// Historial de guardias (todos los guardias)
-router.get('/guards', authorize(['admin', 'guardia']), (req, res) => 
-    HistoryController.getAllGuardHistory(req, res));
-
-// Historial de guardia específico
-router.get('/guards/:guardId', (req, res) => 
-    HistoryController.getSpecificGuardHistory(req, res));
-
-// Historial de bicicletas (todas las bicicletas)
-router.get('/bicycles', authorize(['admin', 'guardia']), (req, res) => 
-    HistoryController.getAllBicycleHistory(req, res));
-
-// Historial de bicicleta específica
-router.get('/bicycles/:bicycleId', (req, res) => 
-    HistoryController.getSpecificBicycleHistory(req, res));
-
-// Historial de bicicleteros (todos los bicicleteros)
-router.get('/bikeracks', authorize(['admin', 'guardia']), (req, res) => 
-    HistoryController.getAllBikerackHistory(req, res));
-
-// Historial de bicicletero específico
-router.get('/bikeracks/:bikerackId', (req, res) => 
-    HistoryController.getSpecificBikerackHistory(req, res));
-
-// ================================================
-// CREAR REGISTROS (para integración con otros servicios)
-// ================================================
-
-// Crear registro manual (para testing/integración)
-router.post('/record', authorize(['admin', 'guardia']), (req, res) => 
-    HistoryController.createHistoryRecord(req, res));
-
+router.get("/guards", isAdmin, historyController.getGuardsHistory);
+router.get("/management", isAdmin, historyController.getManagementMovements);
 export default router;

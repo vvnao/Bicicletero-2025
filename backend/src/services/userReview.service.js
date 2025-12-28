@@ -3,7 +3,8 @@ import { UserEntity } from "../entities/UserEntity.js";
 import { UserReviewEntity } from "../entities/UserReviewEntity.js";
 import { sendEmail } from "./email.service.js";
 import { emailTemplates } from "../templates/userRequestEmail.template.js";
-
+import { HISTORY_TYPES } from "../constants/historyTypes.js";
+import historyService from "./history.service.js";
 const userRepository = AppDataSource.getRepository(UserEntity);
 const reviewRepository = AppDataSource.getRepository(UserReviewEntity);
 
@@ -17,7 +18,7 @@ export async function getPendingUsers() {
 
 // GUARDIA — aprobar usuario
 export async function approveUser(userId, guardId) {
-
+    // --- INICIO CÓDIGO ORIGINAL ---
     const user = await userRepository.findOne({ where: { id: userId } });
     if (!user) throw new Error("Usuario no encontrado");
 
@@ -36,12 +37,30 @@ export async function approveUser(userId, guardId) {
         "Solicitud aprobada",
         emailTemplates.requestApproved(user)
     );
+   
+    try {
+        await historyService.logEvent({
+            historyType: HISTORY_TYPES.USER_STATUS_CHANGE,
+            description: `Solicitud de registro aprobada para ${user.names} ${user.lastName}`,
+            userId: Number(userId),
+            guardId: Number(guardId),
+            details: {
+                action: "aprobado",
+                previousStatus: "pendiente",
+                reviewId: review.id // Guardamos referencia a la revisión original
+            }
+        });
+    } catch (historyError) {
+        // Logeamos el error del historial pero NO detenemos la función principal
+        console.error("Error al registrar en historial:", historyError);
+    }
 
     return user;
 }
 
 // GUARDIA — rechazar usuario
-export async function rejectUser(userId, guardId, comment) {
+export async function rejectUser(userId, guardId, reason) {
+   
     const user = await userRepository.findOne({ where: { id: userId } });
     if (!user) throw new Error("Usuario no encontrado");
 
@@ -52,15 +71,30 @@ export async function rejectUser(userId, guardId, comment) {
         user: { id: Number(userId) },
         guard: { id: Number(guardId) },
         action: "rechazado",
-        comment,
+        comment: reason, 
     });
     await reviewRepository.save(review);
 
     await sendEmail(
         user.email,
         "Solicitud rechazada",
-        emailTemplates.requestRejected(user, comment)
+        emailTemplates.requestRejected(user, reason)
     );
+    try {
+        await historyService.logEvent({
+            historyType: HISTORY_TYPES.USER_STATUS_CHANGE,
+            description: `Solicitud RECHAZADA por el guardia para ${user.names}`,
+            userId: Number(userId),
+            guardId: Number(guardId),
+            details: {
+                action: "rechazado",
+                reason: reason, // Aquí es donde el Admin verá el "por qué"
+                reviewId: review.id
+            }
+        });
+    } catch (error) {
+        console.error("Error al registrar rastro de rechazo:", error);
+    }
 
     return user;
 }

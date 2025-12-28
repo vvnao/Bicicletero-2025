@@ -1,24 +1,31 @@
-// routes/guardAssignment.routes.js 
+// routes/guardAssignment.routes.js - VERSIÓN CORRECTA
 import express from 'express';
-import { GuardAssignmentController } from '../controllers/guardAssignment.controller.js';
-import { authMiddleware } from '../middleware/auth.middleware.js';
-import { authorize } from '../middleware/authorize.middleware.js';
+import GuardAssignmentController from '../controllers/guardAssignment.controller.js'; // SIN LLAVES
+import { authMiddleware, isAdmin, isAdminOrGuard } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 const controller = new GuardAssignmentController();
 
+// Middleware de autenticación global
 router.use(authMiddleware);
 
 // RUTAS
-router.post('/', authorize(['admin']), (req, res) => controller.create(req, res));
-router.get('/check-availability', authorize(['admin']), (req, res) => controller.checkAvailability(req, res));
-router.get('/guard/:guardId', authorize(['admin', 'guardia']), (req, res) => controller.getByGuard(req, res));
-router.get('/', authorize(['admin', 'guardia']), (req, res) => controller.getAllActiveAssignments(req, res));
+// Crear asignación - SOLO ADMIN
+router.post('/', isAdmin, (req, res) => controller.create(req, res));
 
-// Ruta por ID de asignación
-router.get('/:id', authorize(['admin', 'guardia']), (req, res) => controller.getAssignmentById(req, res));
+// Verificar disponibilidad - SOLO ADMIN
+router.get('/check-availability', isAdmin, (req, res) => controller.checkAvailability(req, res));
 
+// Obtener asignaciones por guardia - ADMIN y el propio guardia
+router.get('/guard/:guardId', isAdminOrGuard, (req, res) => controller.getByGuard(req, res));
 
-router.delete('/:id', authorize(['admin']), (req, res) => controller.deleteAssignment(req, res));
+// Obtener todas las asignaciones activas - ADMIN y GUARDIA
+router.get('/', isAdminOrGuard, (req, res) => controller.getAllActiveAssignments(req, res));
+
+// Obtener asignación por ID - ADMIN y GUARDIA
+router.get('/:id', isAdminOrGuard, (req, res) => controller.getAssignmentById(req, res));
+
+// Eliminar asignación - SOLO ADMIN
+router.delete('/:id', isAdmin, (req, res) => controller.deleteAssignment(req, res));
 
 export default router;

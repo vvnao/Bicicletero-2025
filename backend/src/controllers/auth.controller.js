@@ -23,6 +23,7 @@ export async function login(req, res) {
 
         // 1. Hacer login (esto devuelve token y datos básicos)
         const data = await loginUser(email, password);
+        
 
         // 2. Si el usuario es guardia, obtener su guardId
         if (data.user.role === 'guardia') {
@@ -50,6 +51,7 @@ export async function login(req, res) {
         return handleSuccess(res, 200, "Inicio de sesión exitoso", data);
 
     } catch (error) {
+        console.error(' [LOGIN] Error:', error.message);
         return handleErrorClient(res, 401, error.message);
     }
 }
@@ -57,6 +59,10 @@ export async function login(req, res) {
 // REGISTRO
 export async function register(req, res) {
     try {
+
+        if (!req.body || Object.keys(req.body).length === 0) {
+            console.error("DEBUG: El body llegó vacío. Revisa Multer y Postman.");
+        }
         let data = { ...req.body };
 
         console.log("FILES RECIBIDOS:", req.files);

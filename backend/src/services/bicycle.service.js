@@ -18,7 +18,7 @@ export async function createBicycleService(data, userId, file) {
         const existing = await bicycleRepository.findOneBy({ serialNumber: data.serialNumber });
         if (existing) throw new Error("Ya existe una bicicleta con ese número de serie");
     }
-
+    
     const newBicycle = bicycleRepository.create({
         brand: data.brand,
         model: data.model,
@@ -27,20 +27,29 @@ export async function createBicycleService(data, userId, file) {
         photo: file ? file.path : null, 
         user: user,
     });
-
-    return await bicycleRepository.save(newBicycle);
+    
+    const saved = await bicycleRepository.save(newBicycle);
+    
+    // ✅ RETORNAR CON RELACIONES CARGADAS
+    return await bicycleRepository.findOne({
+        where: { id: saved.id },
+        relations: ['user']
+    });
 }
+
 export async function getBicyclesServices(userId) {
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 
     const bicycles = await bicycleRepository.find({
         where: {
             user: { id: userId }
-        }
+        },
+        relations: ['user'] // ✅ Cargar relación
     });
 
     return bicycles;
 }
+
 export async function updateBicyclesServices(userId, data) {
     const { id, color, photo } = data;
 
@@ -48,9 +57,12 @@ export async function updateBicyclesServices(userId, data) {
 
     const bicycle = await bicycleRepository.findOne({
         where: {
-            id,
-            user: { id: userId }
-        }
+            id: id,
+            user: {
+                id: userId
+            }
+        },
+        relations: ['user'] // ✅ Cargar relación
     });
 
     if (!bicycle) return null;
@@ -58,7 +70,13 @@ export async function updateBicyclesServices(userId, data) {
     if (color !== undefined) bicycle.color = color;
     if (photo !== undefined) bicycle.photo = photo;
 
-    return await bicycleRepository.save(bicycle);
+    const updated = await bicycleRepository.save(bicycle);
+    
+    // ✅ Recargar con relaciones
+    return await bicycleRepository.findOne({
+        where: { id: updated.id },
+        relations: ['user']
+    });
 }
 
 export async function deleteBicyclesServices(userId, bicycleId) {
@@ -68,7 +86,8 @@ export async function deleteBicyclesServices(userId, bicycleId) {
         where: {
             id: bicycleId,
             user: { id: userId }
-        }
+        },
+        relations: ['user'] // ✅ Cargar relación antes de eliminar
     });
 
     if (!bicycle) return false;

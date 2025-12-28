@@ -125,6 +125,36 @@ export async function getBikerackWeeklyReportController(req, res) {
     }
 }
 
+export async function downloadWeeklyReport(req, res) {
+    try {
+        const { start, end } = req.query;
+        
+        // 1. Generar los datos
+        const reportData = await ReportService.generateWeeklyUsageReport(new Date(start), new Date(end));
+        
+        // 2. Convertir a Excel
+        const buffer = await ReportService.exportToExcel(reportData);
+        
+        // 3. Configurar headers para que el navegador lo reconozca como descarga
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=Reporte_${start}.xlsx`);
+        
+        return res.send(buffer);
+    } catch (error) {
+        res.status(500).json({ message: "Error al generar Excel" });
+    }
+}
+
+export async function getHistory(req, res) {
+    const historyRepo = AppDataSource.getRepository(ReportHistoryEntity);
+    // Trae los últimos 30 días como dice tu diseño
+    const history = await historyRepo.find({
+        order: { createdAt: 'DESC' },
+        take: 10 // O los que necesites mostrar
+    });
+    res.json(history);
+}
+
 /**
  * Reporte de auditoría/consistencia
  */

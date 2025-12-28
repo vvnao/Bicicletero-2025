@@ -1,551 +1,415 @@
-// services/history.service.js - VERSIÓN CORREGIDA CON TODAS LAS EXPORTACIONES
-'use strict';
+"use strict";
 
 import { AppDataSource } from "../config/configDb.js";
-import { HistoryEntity } from "../entities/HistoryEntity.js";
-
-// Definir HISTORY_TYPES
-const HISTORY_TYPES = {
-    USER_CHECKIN: 'user_checkin',
-    USER_CHECKOUT: 'user_checkout',
-    USER_REGISTRATION_REQUEST: 'user_registration_request',
-    USER_STATUS_CHANGE: 'user_status_change',
-    GUARD_ASSIGNMENT: 'guard_assignment',
-    GUARD_SHIFT_START: 'guard_shift_start',
-    GUARD_SHIFT_END: 'guard_shift_end',
-    RESERVATION_CREATE: 'reservation_create',
-    RESERVATION_CANCEL: 'reservation_cancel',
-    RESERVATION_ACTIVATE: 'reservation_activate',
-    RESERVATION_COMPLETE: 'reservation_complete',
-    BICYCLE_REGISTRATION: 'bicycle_registration',
-    INFRACTION: 'infraction',
-    SYSTEM_NOTIFICATION: 'system_notification',
-    ADMIN_ACTION: 'admin_action'
-};
+import HistoryEntity, { HISTORY_TYPES } from "../entities/HistoryEntity.js";
+import { Between, LessThan } from "typeorm"; // Importamos utilidades de TypeORM
+import { Not, In } from "typeorm";
 
 class HistoryService {
-    constructor() {
-        this.historyRepository = AppDataSource.getRepository(HistoryEntity);
+  constructor() {
+    this.historyRepository = AppDataSource.getRepository("History");
+  }
+
+  // ==========================================
+  //  MÉTODO PRINCIPAL DE CONSULTA (CORE)
+  // ==========================================
+async getHistory(filters = {}) {
+    const {
+        page = 1,
+        limit = 10,
+        type,
+        historyType,
+        userId,
+        guardId,
+        bicycleId,
+        reservationId,
+        bikerackId,
+        search,
+        startDate,
+        endDate,
+        onlyGuards = false // 🚩 Nueva bandera para separar historiales
+    } = filters;
+
+    const queryBuilder = this.historyRepository
+        .createQueryBuilder("history")
+        .leftJoinAndSelect("history.user", "user")
+        .leftJoinAndSelect("history.guard", "guard")
+        .leftJoinAndSelect("history.bicycle", "bicycle")
+        .leftJoinAndSelect("history.reservation", "reservation")
+        .leftJoinAndSelect("history.bikerack", "bikerack");
+
+    // --- FILTRO DE SEPARACIÓN (CLAVE) ---
+    if (onlyGuards) {
+        // Esto obliga a que el registro TENGA un guardia asociado
+       queryBuilder.andWhere("guard.id IS NOT NULL");
     }
 
-    // ================================================
-    // MÉTODOS PARA REGISTRAR EVENTOS
-    // ================================================
-
-    /**
-     * Registrar evento genérico en historial
-     */
-    async createHistoryRecord(eventData) {
-        try {
-            console.log('📝 Registrando evento:', eventData.historyType);
-            
-            const history = this.historyRepository.create({
-                historyType: eventData.historyType,
-                description: eventData.description,
-                details: eventData.details || {},
-                timestamp: new Date(),
-                ipAddress: eventData.ipAddress,
-                userAgent: eventData.userAgent,
-                // Relaciones
-                user: eventData.userId ? { id: eventData.userId } : null,
-                guard: eventData.guardId ? { id: eventData.guardId } : null,
-                bicycle: eventData.bicycleId ? { id: eventData.bicycleId } : null,
-                bikerack: eventData.bikerackId ? { id: eventData.bikerackId } : null,
-                reservation: eventData.reservationId ? { id: eventData.reservationId } : null,
-                space: eventData.spaceId ? { id: eventData.spaceId } : null,
-                assignment: eventData.assignmentId ? { id: eventData.assignmentId } : null
-            });
-
-            const savedHistory = await this.historyRepository.save(history);
-            console.log('✅ Evento registrado:', savedHistory.id);
-            return savedHistory;
-        } catch (error) {
-            console.error('❌ Error registrando evento:', error);
-            throw error;
-        }
+    // 1. Filtro por Tipo de Evento
+    const finalType = type || historyType;
+    if (finalType) {
+        queryBuilder.andWhere("history.type = :type", { type: finalType });
     }
 
-    /**
- * Obtener historial general formateado para tabla
- */
-async getGeneralHistoryTable(filters = {}) {
+    // 2. Filtros por Entidad (IDs)
+    if (userId) queryBuilder.andWhere("user.id = :userId", { userId });
+    if (guardId) queryBuilder.andWhere("guard.id = :guardId", { guardId });
+    if (bicycleId) queryBuilder.andWhere("bicycle.id = :bicycleId", { bicycleId });
+    if (reservationId) queryBuilder.andWhere("reservation.id = :reservationId", { reservationId });
+    if (bikerackId) queryBuilder.andWhere("bikerack.id = :bikerackId", { bikerackId });
+
+    // 3. Filtro de Búsqueda (Texto)
+    if (search) {
+      queryBuilder.andWhere("history.description ILIKE :search", { search: `%${search}%` });
+    }
+
+    // 4. Filtro por Fechas
+    if (startDate && endDate) {
+      queryBuilder.andWhere("history.created_at BETWEEN :start AND :end", {
+        start: new Date(startDate),
+        end: new Date(endDate)
+      });
+    } else if (startDate) {
+      queryBuilder.andWhere("history.created_at >= :start", { start: new Date(startDate) });
+    }
+
+    // 5. Paginación y Orden
+    queryBuilder
+      .orderBy("history.created_at", "DESC")
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  // ==========================================
+  //  MÉTODOS ESPECÍFICOS (SEPARACIÓN)
+  // ==========================================
+
+  // Historial de un Usuario Específico
+  async getUserHistory(userId, filters) {
+    return this.getHistory({ ...filters, userId });
+  }
+
+ async getGuardsHistory(filters) {
+    return this.getHistory({ ...filters, onlyGuards: true });
+}
+
+// Para el historial de UN guardia solo
+async getSpecificGuardHistory(guardId, filters) {
+    return this.getHistory({ ...filters, guardId }); 
+}
+
+  // Historial de una Bicicleta Específica
+  async getBicycleHistory(bicycleId, filters) {
+    return this.getHistory({ ...filters, bicycleId });
+  }
+
+  // Historial de un Bicicletero (Espacio) Específico
+  // Si bikerackId es null, trae de todos (útil para getAllBikerackHistory)
+  async getBikerackHistory(bikerackId, filters) {
+    return this.getHistory({ ...filters, bikerackId });
+  }
+
+  // ==========================================
+  //  ESTADÍSTICAS Y EXTRAS
+  // ==========================================
+
+  async getRecentActivity(limit = 5) {
+    return await this.historyRepository.find({
+      order: { created_at: "DESC" },
+      take: limit,
+      relations: ["user", "guard"] // Traemos relaciones básicas
+    });
+  }
+
+  async getHistoryStatistics(startDate, endDate, groupBy = 'type') {
+    const queryBuilder = this.historyRepository.createQueryBuilder("history");
+
+    if (startDate && endDate) {
+      queryBuilder.where("history.created_at BETWEEN :start AND :end", {
+        start: new Date(startDate),
+        end: new Date(endDate)
+      });
+    }
+
+    // Agrupamos por tipo de evento para contar cuántos han ocurrido
+    const stats = await queryBuilder
+      .select("history.type", "type")
+      .addSelect("COUNT(history.id)", "count")
+      .groupBy("history.type")
+      .getRawMany();
+
+    return stats;
+  }
+
+  async exportHistory(filters) {
+    // Reutilizamos getHistory pero con un límite muy alto para exportar todo
+    // OJO: En producción real, esto debería ser un Stream, pero para este caso sirve.
+    filters.limit = 10000; 
+    filters.page = 1;
+    return this.getHistory(filters);
+  }
+
+  async cleanOldHistory(days) {
+    const dateLimit = new Date();
+    dateLimit.setDate(dateLimit.getDate() - days);
+
+    const result = await this.historyRepository
+      .createQueryBuilder()
+      .delete()
+      .from(HistoryEntity)
+      .where("created_at < :dateLimit", { dateLimit })
+      .execute();
+
+    return result;
+  }
+
+  // ==========================================
+  //  REGISTRO DE EVENTOS (LOGGING)
+  // ==========================================
+
+async logEvent(data) {
+  try {
+    // 1. Extraemos los datos, permitiendo tanto 'type' como 'historyType'
+    const {
+      type,
+      historyType,
+      description,
+      details,
+      // Aceptamos tanto el objeto completo (user) como el ID (userId)
+      user, userId,
+      guard, guardId,
+      bicycle, bicycleId,
+      reservation, reservationId,
+      bikerack, bikerackId
+    } = data;
+
+    const newEntry = this.historyRepository.create({
+      type: type || historyType, // Usa el que venga
+      description,
+      details,
+     
+      user: user || (userId ? { id: userId } : null),
+      guard: guard || (guardId ? { id: guardId } : null),
+      bicycle: bicycle || (bicycleId ? { id: bicycleId } : null),
+      reservation: reservation || (reservationId ? { id: reservationId } : null),
+      bikerack: bikerack || (bikerackId ? { id: bikerackId } : null)
+    });
+
+    return await this.historyRepository.save(newEntry);
+  } catch (error) {
+    console.error("❌ Error en logEvent:", error);
+    return null; // No bloqueamos el flujo principal (registro/login) si falla el historial
+  }
+}
+
+async logReservationCreated(reservation) {
     try {
-        const {
-            page = 1,
-            limit = 50,
-            search,
-            startDate,
-            endDate,
-            historyType,
-            sortBy = 'timestamp',
-            sortOrder = 'DESC'
-        } = filters;
-
-        const skip = (page - 1) * limit;
-        
-        const query = this.historyRepository.createQueryBuilder('history')
-            .leftJoinAndSelect('history.user', 'user')
-            .leftJoinAndSelect('history.guard', 'guard')
-            .leftJoinAndSelect('history.bicycle', 'bicycle')
-            .leftJoinAndSelect('history.bikerack', 'bikerack')
-            .orderBy(`history.${sortBy}`, sortOrder);
-
-        // Aplicar filtros básicos
-        if (startDate && endDate) {
-            query.andWhere('DATE(history.timestamp) BETWEEN :startDate AND :endDate', {
-                startDate,
-                endDate
-            });
-        }
-
-        if (historyType) {
-            query.andWhere('history.historyType = :historyType', { historyType });
-        }
-
-        if (search) {
-            query.andWhere(
-                '(history.description LIKE :search OR ' +
-                'user.names LIKE :search OR ' +
-                'user.lastName LIKE :search OR ' +
-                'guard.names LIKE :search OR ' +
-                'guard.lastName LIKE :search OR ' +
-                'bicycle.brand LIKE :search OR ' +
-                'bicycle.model LIKE :search)',
-                { search: `%${search}%` }
-            );
-        }
-
-        // Obtener datos paginados
-        const [data, total] = await query
-            .skip(skip)
-            .take(limit)
-            .getManyAndCount();
-
-        // Formatear específicamente para tabla
-        const tableData = data.map(item => ({
-            id: item.id,
-            fecha: new Date(item.timestamp).toLocaleDateString('es-CL'),
-            hora: new Date(item.timestamp).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
-            tipo: item.historyType,
-            descripcion: item.description,
-            usuario: item.user ? `${item.user.names} ${item.user.lastName}` : 'N/A',
-            guardia: item.guard ? `${item.guard.names} ${item.guard.lastName}` : 'N/A',
-            bicicleta: item.bicycle ? `${item.bicycle.brand} ${item.bicycle.model}` : 'N/A',
-            bicicletero: item.bikerack?.name || 'N/A',
-            detalles: item.details ? JSON.stringify(item.details) : null
-        }));
-
-        return {
-            data: tableData,
-            meta: {
-                total,
-                page,
-                limit,
-                totalPages: Math.ceil(total / limit),
-                sortBy,
-                sortOrder
+        // Usamos el logEvent que ya tenemos configurado y que funciona
+        return await this.logEvent({
+            type: 'reservation_create', 
+            description: `Reserva creada: Código ${reservation.reservationCode} para el espacio ${reservation.space.spaceCode}`,
+            userId: reservation.user.id,
+            bicycleId: reservation.bicycleId,
+            bikerackId: reservation.space.bikerack.id,
+            spaceId: reservation.space.id, // Esto es lo que agregamos a la entidad hace poco
+            details: {
+                reservationCode: reservation.reservationCode,
+                expirationTime: reservation.expirationTime,
+                estimatedHours: reservation.estimatedHours
             }
-        };
+        });
     } catch (error) {
-        console.error('Error obteniendo tabla general:', error);
-        throw error;
+        // Si el historial falla, que no detenga la reserva de tu compañera
+        console.error("Error silencioso en historial de reserva:", error);
     }
 }
 
-    /**
-     * Alias para logEvent (para mantener compatibilidad)
-     */
-    async logEvent(eventData) {
-        return this.createHistoryRecord(eventData);
-    }
+  /* ====== WRAPPERS SEMÁNTICOS ====== */
 
-    /**
-     * Registrar check-in de usuario
-     */
-    async logUserCheckIn(data) {
-        return this.createHistoryRecord({
-            historyType: HISTORY_TYPES.USER_CHECKIN,
-            description: `Check-in realizado por usuario`,
-            details: {
-                spaceCode: data.spaceCode,
-                bikerackName: data.bikerackName,
-                estimatedHours: data.estimatedHours,
-                method: data.withReservation ? 'con_reserva' : 'sin_reserva',
-                reservationCode: data.reservationCode
-            },
-            userId: data.userId,
-            bicycleId: data.bicycleId,
-            bikerackId: data.bikerackId,
-            spaceId: data.spaceId,
-            reservationId: data.reservationId,
-            guardId: data.guardId,
-            ipAddress: data.ipAddress,
-            userAgent: data.userAgent
-        });
-    }
+  async logUserCheckin(user, bicycle, bikerack) {
+    return this.logEvent({
+      type: HISTORY_TYPES.USER_CHECKIN,
+      description: `Usuario ${user.email} ingresó bicicleta`,
+      user,
+      bicycle,
+      bikerack,
+    });
+  }
 
-    /**
-     * Registrar check-out de usuario
-     */
-    async logUserCheckOut(data) {
-        return this.createHistoryRecord({
-            historyType: HISTORY_TYPES.USER_CHECKOUT,
-            description: `Check-out realizado por usuario`,
-            details: {
-                spaceCode: data.spaceCode,
-                bikerackName: data.bikerackName,
-                actualHours: data.actualHours,
-                status: data.status
-            },
-            userId: data.userId,
-            bicycleId: data.bicycleId,
-            bikerackId: data.bikerackId,
-            spaceId: data.spaceId,
-            reservationId: data.reservationId,
-            guardId: data.guardId,
-            ipAddress: data.ipAddress,
-            userAgent: data.userAgent
-        });
-    }
+  async logUserCheckout(user, bicycle, bikerack) {
+    return this.logEvent({
+      type: HISTORY_TYPES.USER_CHECKOUT,
+      description: `Usuario ${user.email} retiró bicicleta`,
+      user,
+      bicycle,
+      bikerack,
+    });
+  }
 
-    /**
-     * Registrar infracción
-     */
-    async logInfraction(data) {
-        return this.createHistoryRecord({
-            historyType: HISTORY_TYPES.INFRACTION,
-            description: `Infracción detectada`,
-            details: {
-                spaceCode: data.spaceCode,
-                exceededHours: data.exceededHours,
-                estimatedHours: data.estimatedHours,
-                reservationCode: data.reservationCode,
-                reason: data.reason || 'Tiempo excedido'
-            },
-            userId: data.userId,
-            bicycleId: data.bicycleId,
-            bikerackId: data.bikerackId,
-            spaceId: data.spaceId,
-            reservationId: data.reservationId,
-            guardId: data.guardId,
-            ipAddress: data.ipAddress,
-            userAgent: data.userAgent
-        });
-    }
+  async logReservationCreate(user, reservation) {
+    return this.logEvent({
+      type: HISTORY_TYPES.RESERVATION_CREATE,
+      description: `Reserva #${reservation.id} creada`,
+      user,
+      reservation,
+    });
+  }
 
-    // ================================================
-    // MÉTODOS PARA CONSULTAR HISTORIAL
-    // ================================================
+  async logReservationCancel(user, reservation) {
+    return this.logEvent({
+      type: HISTORY_TYPES.RESERVATION_CANCEL,
+      description: `Reserva #${reservation.id} cancelada`,
+      user,
+      reservation,
+    });
+  }
+// ==========================================
+  //  WRAPPERS PARA GUARDIAS
+  // ==========================================
 
-    /**
-     * Obtener historial con filtros
-     */
-    async getHistory(filters = {}) {
-        try {
-            const {
-                startDate,
-                endDate,
-                historyType,
-                userId,
-                guardId,
-                bicycleId,
-                bikerackId,
-                reservationId,
-                assignmentId,
-                page = 1,
-                limit = 50,
-                search
-            } = filters;
+  // Cuando se crea un guardia (el que acabamos de arreglar)
+  async logGuardCreation(adminId, guard, req) {
+    return this.logEvent({
+      historyType: HISTORY_TYPES.GUARD_CREATED,
+      description: `Administrador creó al guardia: ${guard.user.names} ${guard.user.lastName}`,
+      userId: adminId,
+      guardId: guard.id,
+      details: { 
+        email: guard.user.email,
+        guardNumber: guard.guardNumber 
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+  }
 
-            const skip = (page - 1) * limit;
-            
-            const query = this.historyRepository.createQueryBuilder('history')
-                .leftJoinAndSelect('history.user', 'user')
-                .leftJoinAndSelect('history.guard', 'guard')
-                .leftJoinAndSelect('history.bicycle', 'bicycle')
-                .leftJoinAndSelect('history.bikerack', 'bikerack')
-                .leftJoinAndSelect('history.reservation', 'reservation')
-                .leftJoinAndSelect('history.space', 'space')
-                .leftJoinAndSelect('history.assignment', 'assignment')
-                .orderBy('history.timestamp', 'DESC');
+  async getAdminManagementHistory(page = 1, limit = 20) {
+  const managementTypes = [
+        "user_registration_request", // Texto directo o HISTORY_TYPES.TU_CONSTANTE
+        "user_status_change",
+        "bicycle_register"           // Nota: En tu Entity pusiste register, no registration
+    ];
 
-            // Aplicar filtros
-            if (startDate && endDate) {
-                query.andWhere('DATE(history.timestamp) BETWEEN :startDate AND :endDate', {
-                    startDate,
-                    endDate
-                });
-            } else if (startDate) {
-                query.andWhere('DATE(history.timestamp) >= :startDate', { startDate });
-            } else if (endDate) {
-                query.andWhere('DATE(history.timestamp) <= :endDate', { endDate });
-            }
+    const [data, total] = await this.historyRepository.findAndCount({
+        where: {
+            type: In(managementTypes)  
+        },
+        relations: ["user", "guard"],
+        order: { created_at: "DESC" },  
+        skip: (page - 1) * limit,
+        take: limit
+    });
 
-            if (historyType) query.andWhere('history.historyType = :historyType', { historyType });
-            if (userId) query.andWhere('history.userId = :userId', { userId });
-            if (guardId) query.andWhere('history.guardId = :guardId', { guardId });
-            if (bicycleId) query.andWhere('history.bicycleId = :bicycleId', { bicycleId });
-            if (bikerackId) query.andWhere('history.bikerackId = :bikerackId', { bikerackId });
-            if (reservationId) query.andWhere('history.reservationId = :reservationId', { reservationId });
-            if (assignmentId) query.andWhere('history.assignmentId = :assignmentId', { assignmentId });
-
-            if (search) {
-                query.andWhere(
-                    '(history.description LIKE :search OR user.names LIKE :search OR user.lastName LIKE :search)',
-                    { search: `%${search}%` }
-                );
-            }
-
-            // Obtener datos paginados
-            const [data, total] = await query
-                .skip(skip)
-                .take(limit)
-                .getManyAndCount();
-
-            // Formatear respuesta
-            const formattedData = data.map(item => ({
-                id: item.id,
-                timestamp: item.timestamp,
-                historyType: item.historyType,
-                description: item.description,
-                details: item.details,
-                user: item.user ? {
-                    id: item.user.id,
-                    names: item.user.names,
-                    lastName: item.user.lastName,
-                    email: item.user.email,
-                    role: item.user.role
-                } : null,
-                guard: item.guard ? {
-                    id: item.guard.id,
-                    names: item.guard.names,
-                    lastName: item.guard.lastName,
-                    role: item.guard.role
-                } : null,
-                bicycle: item.bicycle ? {
-                    id: item.bicycle.id,
-                    brand: item.bicycle.brand,
-                    model: item.bicycle.model,
-                    color: item.bicycle.color
-                } : null,
-                bikerack: item.bikerack ? {
-                    id: item.bikerack.id,
-                    name: item.bikerack.name,
-                    location: item.bikerack.location
-                } : null,
-                reservation: item.reservation ? {
-                    id: item.reservation.id,
-                    reservationCode: item.reservation.reservationCode,
-                    status: item.reservation.status
-                } : null,
-                space: item.space ? {
-                    id: item.space.id,
-                    spaceCode: item.space.spaceCode
-                } : null,
-                assignment: item.assignment ? {
-                    id: item.assignment.id,
-                    startTime: item.assignment.startTime,
-                    endTime: item.assignment.endTime
-                } : null,
-                date: item.timestamp ? new Date(item.timestamp).toISOString().split('T')[0] : null,
-                time: item.timestamp ? new Date(item.timestamp).toTimeString().split(' ')[0] : null
-            }));
-
-            return {
-                data: formattedData,
-                meta: {
-                    total,
-                    page,
-                    limit,
-                    totalPages: Math.ceil(total / limit)
-                },
-                filters
-            };
-        } catch (error) {
-            console.error('Error obteniendo historial:', error);
-            throw error;
+  return {
+        data,
+        pagination: {
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
         }
-    }
+    };
+}
+async getAdminAccountHistory(page = 1, limit = 20) {
+    return await this.historyRepository.find({
+        where: {
+            historyType: Not(In(['user_login', 'user_logout', 'session_expired']))
+        },
+        relations: ["user", "guard"], // Para ver quién hizo qué
+        order: { createdAt: "DESC" },
+        skip: (page - 1) * limit,
+        take: limit
+    });
+}
+  // Cuando se asigna un guardia a un punto/bicicletero
+  async logGuardAssignment(adminId, guardId, bikerackId, req) {
+    return this.logEvent({
+      historyType: HISTORY_TYPES.GUARD_ASSIGNMENT,
+      description: `Guardia asignado a punto de control`,
+      userId: adminId,
+      guardId: guardId,
+      bikerackId: bikerackId,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+  }
+  
+async getBicycleOccupancyHistory(page = 1, limit = 20) {
+    const occupancyTypes = [
+        "user_checkin",         // Cuando entra al bicicletero
+        "reservation_activate", // Cuando la reserva se vuelve activa
+        "reservation_create"    // Cuando aparta el lugar
+    ];
 
-    /**
-     * Obtener historial específico de usuario
-     */
-    async getUserHistory(userId, filters = {}) {
-        return this.getHistory({
-            ...filters,
-            userId
-        });
-    }
+    const [data, total] = await this.historyRepository.findAndCount({
+        where: {
+            type: In(occupancyTypes)
+        },
+        relations: ["user", "bikerack", "bicycle"], 
+        order: { created_at: "DESC" },
+        skip: (page - 1) * limit,
+        take: limit
+    });
 
-    /**
-     * Obtener historial específico de guardia
-     */
-    async getGuardHistory(guardId, filters = {}) {
-        return this.getHistory({
-            ...filters,
-            guardId
-        });
-    }
+    return {
+        data,
+        pagination: { total, page, totalPages: Math.ceil(total / limit) }
+    };
+}
+//BICICLETAS SPACES HISTORY
+async getBikerackUsageHistory(page = 1, limit = 20) {
+    const usageTypes = ['user_checkin', 'user_checkout', 'infraction'];
 
-    /**
-     * Obtener historial específico de bicicleta
-     */
-    async getBicycleHistory(bicycleId, filters = {}) {
-        return this.getHistory({
-            ...filters,
-            bicycleId
-        });
-    }
+    const [data, total] = await this.historyRepository.findAndCount({
+        where: {
+            type: In(usageTypes)
+        },
+        relations: ["user", "bikerack", "space"], 
+        order: { created_at: "DESC" },
+        skip: (page - 1) * limit,
+        take: limit
+    });
 
-    /**
-     * Obtener historial específico de bicicletero
-     */
-    async getBikerackHistory(bikerackId, filters = {}) {
-        return this.getHistory({
-            ...filters,
-            bikerackId
-        });
-    }
+    return {
+        data: data.map(event => ({
+            id: event.id,
+            fecha: event.created_at,
+            usuario: event.user ? `${event.user.names} ${event.user.lastName}` : 'N/A',
+            bicicletero: event.bikerack ? event.bikerack.name : 'N/A',
+            lugar: event.space ? event.space.spaceCode : 'N/A', 
+            tipo: event.type,
+            detalles: event.description
+        })),
+        pagination: { total, page, totalPages: Math.ceil(total / limit) }
+    };
+}
 
-    /**
-     * Obtener estadísticas del historial
-     */
-    async getHistoryStatistics(startDate, endDate) {
-        try {
-            const query = this.historyRepository.createQueryBuilder('history')
-                .select([
-                    'DATE(history.timestamp) as date',
-                    'history.historyType as type',
-                    'COUNT(*) as count'
-                ])
-                .where('DATE(history.timestamp) BETWEEN :startDate AND :endDate', {
-                    startDate,
-                    endDate
-                })
-                .groupBy('DATE(history.timestamp), history.historyType')
-                .orderBy('date', 'DESC');
-
-            const dailyStats = await query.getRawMany();
-
-            return {
-                period: {
-                    startDate,
-                    endDate
-                },
-                summary: {
-                    totalEvents: dailyStats.reduce((sum, item) => sum + parseInt(item.count), 0),
-                },
-                dailyStatistics: dailyStats
-            };
-        } catch (error) {
-            console.error('Error obteniendo estadísticas:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Exportar historial
-     */
-    async exportHistory(filters = {}) {
-        try {
-            const result = await this.getHistory({ ...filters, limit: 10000 });
-            
-            const summary = {
-                totalEvents: result.meta.total,
-                startDate: filters.startDate,
-                endDate: filters.endDate,
-                exportedAt: new Date().toISOString(),
-                exportedBy: 'Sistema Bicicletero UBB'
-            };
-
-            return {
-                exportInfo: summary,
-                filtersApplied: filters,
-                data: result.data
-            };
-        } catch (error) {
-            console.error('Error exportando historial:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Obtener actividad reciente
-     */
-    async getRecentActivity(limit = 20) {
-        try {
-            const query = this.historyRepository.createQueryBuilder('history')
-                .leftJoinAndSelect('history.user', 'user')
-                .leftJoinAndSelect('history.guard', 'guard')
-                .leftJoinAndSelect('history.bicycle', 'bicycle')
-                .leftJoinAndSelect('history.bikerack', 'bikerack')
-                .orderBy('history.timestamp', 'DESC')
-                .take(limit);
-
-            const activities = await query.getMany();
-
-            return activities.map(activity => ({
-                id: activity.id,
-                timestamp: activity.timestamp,
-                type: activity.historyType,
-                description: activity.description,
-                user: activity.user ? `${activity.user.names} ${activity.user.lastName}` : null,
-                guard: activity.guard ? `${activity.guard.names} ${activity.guard.lastName}` : null,
-                bikerack: activity.bikerack?.name,
-                timeAgo: this.getTimeAgo(activity.timestamp)
-            }));
-        } catch (error) {
-            console.error('Error obteniendo actividad reciente:', error);
-            throw error;
-        }
-    }
-
-    // ================================================
-    // MÉTODOS AUXILIARES
-    // ================================================
-
-    /**
-     * Obtener tiempo transcurrido en formato legible
-     */
-    getTimeAgo(timestamp) {
-        const now = new Date();
-        const past = new Date(timestamp);
-        const diffMs = now - past;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMins / 60);
-        const diffDays = Math.floor(diffHours / 24);
-
-        if (diffMins < 1) return 'hace unos segundos';
-        if (diffMins < 60) return `hace ${diffMins} min${diffMins !== 1 ? 's' : ''}`;
-        if (diffHours < 24) return `hace ${diffHours} hora${diffHours !== 1 ? 's' : ''}`;
-        return `hace ${diffDays} día${diffDays !== 1 ? 's' : ''}`;
-    }
+  // Reporte de incidentes (Robos, daños, etc.)
+  async logIncident(userId, guardId, description, details, req) {
+    return this.logEvent({
+      historyType: HISTORY_TYPES.INCIDENT_REPORT,
+      description: `INCIDENTE: ${description}`,
+      userId: userId,
+      guardId: guardId,
+      details: details, // Aquí puedes meter fotos, nivel de gravedad, etc.
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+  }
 }
 
 
-// Crear instancia
-const historyService = new HistoryService();
 
-// Exportar todo
-export {
-    HISTORY_TYPES,
-    historyService
-};
 
-// Exportar métodos individualmente para compatibilidad
-export const createHistoryRecord = historyService.createHistoryRecord.bind(historyService);
-export const logEvent = historyService.logEvent.bind(historyService);
-export const logUserCheckIn = historyService.logUserCheckIn.bind(historyService);
-export const logUserCheckOut = historyService.logUserCheckOut.bind(historyService);
-export const logInfraction = historyService.logInfraction.bind(historyService);
-export const getHistory = historyService.getHistory.bind(historyService);
-export const getUserHistory = historyService.getUserHistory.bind(historyService);
-export const getGuardHistory = historyService.getGuardHistory.bind(historyService);
-export const getBicycleHistory = historyService.getBicycleHistory.bind(historyService);
-export const getBikerackHistory = historyService.getBikerackHistory.bind(historyService);
-export const getHistoryStatistics = historyService.getHistoryStatistics.bind(historyService);
-export const exportHistory = historyService.exportHistory.bind(historyService);
-export const getRecentActivity = historyService.getRecentActivity.bind(historyService);
 
-// Exportar por defecto la instancia completa
-export default historyService;
+export default new HistoryService();

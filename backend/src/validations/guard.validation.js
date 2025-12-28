@@ -3,6 +3,8 @@ import Joi from 'joi';
 
 export const validateCreateGuard = (data) => {
     const schema = Joi.object({
+
+        userId: Joi.number().integer().optional(),
         // Datos personales OBLIGATORIOS
         names: Joi.string().min(2).max(100).required(),
         lastName: Joi.string().min(2).max(100).required(),

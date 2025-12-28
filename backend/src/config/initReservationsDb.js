@@ -1,87 +1,112 @@
 /*//! ARCHIVO TEMPORAL POR QUE AÚN NO IMPLEMENTO EL SISTEMA PARA CREAR RESERVAS
 'use strict';
 import { AppDataSource } from './configDb.js';
-import {
-  ReservationEntity,
-  RESERVATION_STATUS,
-} from '../entities/ReservationEntity.js';
+import { ReservationEntity } from '../entities/ReservationEntity.js';
 import { SpaceEntity } from '../entities/SpaceEntity.js';
 import { UserEntity } from '../entities/UserEntity.js';
 import { BicycleEntity } from '../entities/BicycleEntity.js';
+import { createHistoryEvent } from '../helpers/historyHelper.js';
 
 export async function createReservations() {
   try {
-    const reservationRepository = AppDataSource.getRepository(ReservationEntity);
-    const spaceRepository = AppDataSource.getRepository(SpaceEntity);
-    const userRepository = AppDataSource.getRepository(UserEntity);
-    const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
-
-    const count = await reservationRepository.count();
-    if (count > 0) return;
-
-    //* para buscar espacios libres
-    const spaces = await spaceRepository.find({
-      where: { status: 'Libre' },
-      take: 3,
-    });
-
-    //* para buscar usuarios y bicicletas existentes
-    const users = await userRepository.find({ take: 2 });
-    const bicycles = await bicycleRepository.find({ take: 2 });
-
-    //* para verificar que hay suficientes datos para crear reservas
-    if (spaces.length === 0 || users.length === 0 || bicycles.length === 0) {
-      console.log('No hay suficientes datos para crear reservas de prueba');
+    const reservationRepo = AppDataSource.getRepository(ReservationEntity);
+    const spaceRepo = AppDataSource.getRepository(SpaceEntity);
+    const userRepo = AppDataSource.getRepository('User');
+    const bicycleRepo = AppDataSource.getRepository('Bicycle');
+    
+    const count = await reservationRepo.count();
+    if (count > 0) {
+      console.log(`✅ Ya existen ${count} reservas`);
       return;
     }
 
-    const reservations = [
-      {
-        reservationCode: 'RES-001',
-        dateTimeReservation: new Date(),
-        estimatedHours: 4,
-        expirationTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
-        status: RESERVATION_STATUS.PENDING,
-        space: spaces[0],
-        user: users[0],
-        bicycle: bicycles[0],
-      },
-      {
-        reservationCode: 'RES-002',
-        dateTimeReservation: new Date(),
-        estimatedHours: 6,
-        expirationTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
-        status: RESERVATION_STATUS.PENDING,
-        space: spaces[1],
-        user: users[1],
-        bicycle: bicycles[1],
-      },
-      {
-        reservationCode: 'RES-003',
-        dateTimeReservation: new Date(),
-        estimatedHours: 3,
-        expirationTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
-        status: RESERVATION_STATUS.PENDING,
-        space: spaces[2],
-        user: users[0],
-        bicycle: bicycles[0],
-      },
-    ];
+    // Buscar datos para crear reservas
+    const users = await userRepo.find({ 
+      where: { role: 'user' }, 
+      take: 3 
+    });
+    const bicycles = await bicycleRepo.find({ 
+      relations: ['user'],
+      take: 3 
+    });
+    const spaces = await spaceRepo.find({ 
+      where: { status: 'free' }, 
+      take: 3 
+    });
 
-    console.log('Creando reservas...');
-
-    for (const reservation of reservations) {
-      await reservationRepository.save(
-        reservationRepository.create(reservation)
-      );
-      console.log(
-        `Reserva ${reservation.reservationCode} creada exitosamente!`
-      );
+    if (users.length === 0 || bicycles.length === 0 || spaces.length === 0) {
+      console.log('⚠️  No hay suficientes datos para crear reservas');
+      return;
     }
 
-    console.log('Todas las reservas creadas exitosamente!');
+    console.log(`📅 Creando ${Math.min(users.length, spaces.length)} reservas...`);
+
+    const reservations = [];
+    for (let i = 0; i < Math.min(users.length, spaces.length); i++) {
+      const user = users[i];
+      const bicycle = bicycles[i % bicycles.length];
+      const space = spaces[i];
+
+      // Crear reserva
+      const reservation = reservationRepo.create({
+        reservationCode: `RES-${Date.now().toString().slice(-6)}-${i+1}`,
+        dateTimeReservation: new Date(),
+        estimatedHours: 3,
+        expirationTime: new Date(Date.now() + 3 * 60 * 60 * 1000),
+        status: 'Activa',
+        checkInTime: new Date(),
+        space: space,
+        user: user,
+        bicycle: bicycle,
+      });
+      
+      const savedReservation = await reservationRepo.save(reservation);
+      reservations.push(savedReservation);
+      
+      // Actualizar espacio
+      space.status = 'occupied';
+      await spaceRepo.save(space);
+      
+      console.log(`   ✅ ${user.names} → ${space.spaceCode}`);
+      
+      // ===== CREAR EVENTO DE HISTORIAL =====
+      await createHistoryEvent(user, space, savedReservation);
+    }
+
+    console.log(`📊 ${reservations.length} reservas creadas con historial`);
+    
   } catch (error) {
-    console.error('Error al crear reservas:', error);
+    console.error('❌ Error al crear reservas:', error.message);
+  }
+}
+
+// Función para crear evento de historial
+async function createHistoryEvent(user, space, reservation) {
+  try {
+    const historyRepo = AppDataSource.getRepository('History');
+    
+    const historyEvent = historyRepo.create({
+      historyType: 'check_in',
+      description: `✅ ${user.names} realizó check-in`,
+      details: {
+        user_email: user.email,
+        space_code: space.spaceCode,
+        bikerack: space.bikerack?.name || 'Desconocido',
+        reservation_code: reservation.reservationCode,
+        estimated_hours: reservation.estimatedHours
+      },
+      user: user,
+      space: space,
+      bikerack: space.bikerack,
+      reservation: reservation,
+      timestamp: new Date()
+    });
+    
+    await historyRepo.save(historyEvent);
+    console.log(`   📝 Historial creado para ${user.names}`);
+    
+  } catch (error) {
+    console.log(`   ⚠️  No se pudo crear historial: ${error.message}`);
   }
 }
 

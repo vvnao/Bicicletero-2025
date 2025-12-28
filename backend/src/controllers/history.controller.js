@@ -1,81 +1,113 @@
 // controllers/history.controller.js
 'use strict';
 
-import HistoryService from '../services/history.service.js';
+import historyService from '../services/history.service.js';
 import { getRequestInfo } from '../utils/requestInfo.js';
 import { handleSuccess, handleErrorClient, handleErrorServer } from '../Handlers/responseHandlers.js';
 
 export class HistoryController {
     constructor() {
-        this.historyService = HistoryService;
+        this.historyService = historyService;
+
+        // 🔑 BINDEAR MÉTODOS
+       this.getHistory = this.getHistory.bind(this);
+       this.getBicycleUsage = this.getBicycleUsage.bind(this);
+       this.getManagementMovements = this.getManagementMovements.bind(this);
+        this.getAllUserHistory = this.getAllUserHistory.bind(this);
+        this.getSpecificUserHistory = this.getSpecificUserHistory.bind(this);
+        this.getGuardsHistory = this.getGuardsHistory.bind(this);
+        this.getSpecificGuardHistory = this.getSpecificGuardHistory.bind(this);
+        this.getAllBicycleHistory = this.getAllBicycleHistory.bind(this);
+        this.getSpecificBicycleHistory = this.getSpecificBicycleHistory.bind(this);
+        this.getStatistics = this.getStatistics.bind(this);
+        this.getRecentActivity = this.getRecentActivity.bind(this);
+        this.exportHistory = this.exportHistory.bind(this);
+        this.cleanHistory = this.cleanHistory.bind(this);
+        this.createHistoryRecord = this.createHistoryRecord.bind(this);
     }
 
     /**
      * Obtener historial completo con filtros
      */
-    async getHistory(req, res) {
-        try {
-            if (!['admin', 'guardia'].includes(req.user.role)) {
-                return handleErrorClient(res, 403, 'No tiene permisos para ver el historial');
-            }
-
-            const filters = {
-                startDate: req.query.startDate,
-                endDate: req.query.endDate,
-                historyType: req.query.historyType,
-                userId: req.query.userId ? parseInt(req.query.userId) : undefined,
-                guardId: req.query.guardId ? parseInt(req.query.guardId) : undefined,
-                bicycleId: req.query.bicycleId ? parseInt(req.query.bicycleId) : undefined,
-                bikerackId: req.query.bikerackId ? parseInt(req.query.bikerackId) : undefined,
-                reservationId: req.query.reservationId ? parseInt(req.query.reservationId) : undefined,
-                assignmentId: req.query.assignmentId ? parseInt(req.query.assignmentId) : undefined,
-                search: req.query.search,
-                page: req.query.page ? parseInt(req.query.page) : 1,
-                limit: req.query.limit ? parseInt(req.query.limit) : 50
-            };
-
-            const result = await this.historyService.getHistory(filters);
-            return handleSuccess(res, 200, 'Historial obtenido exitosamente', result);
-        } catch (error) {
-            console.error('Error en getHistory:', error);
-            return handleErrorServer(res, 500, 'Error al obtener historial', error.message);
+   async getHistory(req, res) {
+    try {
+        console.log('📋 [getHistory CONTROLADOR] Iniciando...');
+        console.log('📋 Usuario:', req.user.email, 'Rol:', req.user.role);
+        
+        if (!['admin', 'guardia'].includes(req.user.role)) {
+            console.log('❌ Usuario sin permisos');
+            return handleErrorClient(res, 403, 'No tiene permisos para ver el historial');
         }
-    }
 
+        const filters = {
+            startDate: req.query.startDate,
+            endDate: req.query.endDate,
+            historyType: req.query.historyType,
+            userId: req.query.userId ? parseInt(req.query.userId) : undefined,
+            guardId: req.query.guardId ? parseInt(req.query.guardId) : undefined,
+            bicycleId: req.query.bicycleId ? parseInt(req.query.bicycleId) : undefined,
+            bikerackId: req.query.bikerackId ? parseInt(req.query.bikerackId) : undefined,
+            reservationId: req.query.reservationId ? parseInt(req.query.reservationId) : undefined,
+            assignmentId: req.query.assignmentId ? parseInt(req.query.assignmentId) : undefined,
+            search: req.query.search,
+            page: req.query.page ? parseInt(req.query.page) : 1,
+            limit: req.query.limit ? parseInt(req.query.limit) : 50
+        };
 
-    /**
-     * Obtener historial completo con filtros
-     */
-    async getHistory(req, res) {
-        try {
-            if (!['admin', 'guardia'].includes(req.user.role)) {
-                return handleErrorClient(res, 403, 'No tiene permisos para ver el historial');
-            }
+        console.log('📋 Filtros procesados:', JSON.stringify(filters, null, 2));
 
-            const filters = {
-                startDate: req.query.startDate,
-                endDate: req.query.endDate,
-                historyType: req.query.historyType,
-                userId: req.query.userId ? parseInt(req.query.userId) : undefined,
-                guardId: req.query.guardId ? parseInt(req.query.guardId) : undefined,
-                bicycleId: req.query.bicycleId ? parseInt(req.query.bicycleId) : undefined,
-                bikerackId: req.query.bikerackId ? parseInt(req.query.bikerackId) : undefined,
-                reservationId: req.query.reservationId ? parseInt(req.query.reservationId) : undefined,
-                assignmentId: req.query.assignmentId ? parseInt(req.query.assignmentId) : undefined,
-                search: req.query.search,
-                page: req.query.page ? parseInt(req.query.page) : 1,
-                limit: req.query.limit ? parseInt(req.query.limit) : 50
-            };
-
-            const result = await this.historyService.getHistory(filters);
-            return handleSuccess(res, 200, 'Historial obtenido exitosamente', result);
-        } catch (error) {
-            console.error('Error en getHistory:', error);
-            return handleErrorServer(res, 500, 'Error al obtener historial', error.message);
+        console.log('📋 Llamando a historyService.getHistory()...');
+        const result = await this.historyService.getHistory(filters);
+        
+        console.log('📋 Resultado del servicio:', {
+            resultExists: !!result,
+            resultType: typeof result,
+            resultKeys: result ? Object.keys(result) : 'result is null/undefined',
+            hasData: result?.data !== undefined,
+            dataIsArray: Array.isArray(result?.data),
+            dataLength: result?.data?.length || 0,
+            hasPagination: result?.pagination !== undefined
+        });
+        
+        if (!result) {
+            console.log('❌ El servicio devolvió null/undefined');
+            return handleSuccess(res, 200, 'Historial obtenido exitosamente', {
+                data: [],
+                pagination: {
+                    page: 1,
+                    limit: 50,
+                    total: 0,
+                    totalPages: 0
+                }
+            });
         }
-    }
 
-   /**
+        console.log('✅ Enviando respuesta al cliente');
+        return handleSuccess(res, 200, 'Historial obtenido exitosamente', result);
+    } catch (error) {
+        console.error('❌ [getHistory CONTROLADOR] Error:', error.message);
+        console.error('❌ Stack:', error.stack);
+        return handleErrorServer(res, 500, 'Error al obtener historial', error.message);
+    }
+}
+
+async getManagementMovements(req, res) {
+  try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+
+        // Llamamos al servicio con los nombres de columna correctos
+        const result = await this.historyService.getAdminManagementHistory(page, limit);
+        
+        return handleSuccess(res, 200, "Movimientos de gestión obtenidos", result);
+    } catch (error) {
+        // Esto te ayudará a ver si hay otro nombre de columna mal en la consola
+        console.error("Detalle del error en el controlador:", error);
+        return handleErrorServer(res, 500, "Error al obtener movimientos", error.message);
+    }
+}
+
+/**
      * Obtener TODOS los registros del historial (sin filtros)
      */
     async getAllHistory(req, res) {
@@ -150,32 +182,41 @@ export class HistoryController {
         }
     }
 
+    async getRegistrationHistory(req, res) {
+    try {
+        // Solo traemos eventos que afectan el ciclo de vida del usuario
+        const result = await this.historyService.getHistory({
+            historyType: HISTORY_GROUPS.USER_MANAGEMENT,
+            page: req.query.page || 1,
+            limit: 20
+        });
+
+        return handleSuccess(res, 200, 'Historial de registros y cuentas obtenido', result);
+    } catch (error) {
+        return handleErrorServer(res, 500, 'Error al filtrar historial de usuarios', error.message);
+    }
+} 
+
  /**
      * Historial de TODOS los guardias (general)
      */
-    async getAllGuardHistory(req, res) {
-        try {
-            if (!['admin', 'guardia'].includes(req.user.role)) {
-                return handleErrorClient(res, 403, 'No tiene permisos para ver el historial general de guardias');
-            }
+async getGuardsHistory(req, res) {
+    try {
+        const filters = {
+            ...req.query,
+            onlyGuards: true 
+        };
 
-            const filters = {
-                page: req.query.page ? parseInt(req.query.page) : 1,
-                limit: req.query.limit ? parseInt(req.query.limit) : 50,
-                search: req.query.search,
-                startDate: req.query.startDate,
-                endDate: req.query.endDate
-            };
-
-            // Obtener historial sin filtro específico de guardia
-            const result = await this.historyService.getHistory(filters);
-            return handleSuccess(res, 200, 'Historial general de guardias obtenido', result);
-        } catch (error) {
-            console.error('Error en getAllGuardHistory:', error);
-            return handleErrorServer(res, 500, 'Error al obtener historial general de guardias', error.message);
-        }
+        const result = await historyService.getHistory(filters);
+        
+        return res.status(200).json({
+            success: true,
+            ...result
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
-
+}
      /**
      * Historial de guardia específico
      */
@@ -261,11 +302,12 @@ export class HistoryController {
                 limit: req.query.limit ? parseInt(req.query.limit) : 50,
                 search: req.query.search,
                 startDate: req.query.startDate,
-                endDate: req.query.endDate
+                endDate: req.query.endDate,
+                historyType: req.query.historyType // Permitir filtrar por tipo
             };
 
-            // Obtener historial sin filtro específico de bicicletero
-            const result = await this.historyService.getHistory(filters);
+            // Obtener historial específico de bicicleteros
+            const result = await this.historyService.getBikerackHistory(null, filters);
             return handleSuccess(res, 200, 'Historial general de bicicleteros obtenido', result);
         } catch (error) {
             console.error('Error en getAllBikerackHistory:', error);
@@ -276,10 +318,16 @@ export class HistoryController {
     /**
      * Historial de bicicletero específico
      */
-    async getSpecificBikerackHistory(req, res) {
+     async getSpecificBikerackHistory(req, res) {
         try {
             const { bikerackId } = req.params;
-            const filters = req.query;
+            const filters = {
+                page: req.query.page ? parseInt(req.query.page) : 1,
+                limit: req.query.limit ? parseInt(req.query.limit) : 50,
+                startDate: req.query.startDate,
+                endDate: req.query.endDate,
+                search: req.query.search
+            };
 
             if (!['admin', 'guardia'].includes(req.user.role)) {
                 return handleErrorClient(res, 403, 'No tiene permisos');
@@ -321,6 +369,19 @@ export class HistoryController {
         }
     }
 
+    async getBicycleUsage(req, res) {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+
+        // Llamamos al servicio que configuramos antes
+        const result = await this.historyService.getBikerackUsageHistory(page, limit);
+        
+        return handleSuccess(res, 200, "Historial de uso de espacios obtenido", result);
+    } catch (error) {
+        return handleErrorServer(res, 500, "Error al obtener historial de ocupación", error.message);
+    }
+}
     /**
      * Obtener actividad reciente
      */

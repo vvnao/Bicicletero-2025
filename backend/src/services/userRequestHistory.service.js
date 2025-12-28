@@ -5,10 +5,11 @@ const userRequestHistoryRepo = AppDataSource.getRepository(UserRequestHistoryEnt
 
 export async function getUserRequestHistory(filters = {}) {
     try {
+        const historyRepository = AppDataSource.getRepository(UserRequestHistoryEntity);
         return await userRequestHistoryRepo.find({
         where: filters,
         relations: ["user", "reviewedBy"],
-        order: { timestamp: "DESC" },
+        order: { createdAt: "DESC" },
         });
     } catch (error) {
         throw new Error(`Error al obtener historial de solicitudes: ${error.message}`);

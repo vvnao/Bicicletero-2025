@@ -1,137 +1,204 @@
+// backend/src/middleware/auth.middleware.js
+'use strict';
+
 import jwt from 'jsonwebtoken';
-import { handleErrorClient } from '../Handlers/responseHandlers.js';
 
-export function authMiddleware(req, res, next) {
-    const authHeader = req.headers["authorization"];
-
-    if (!authHeader) {
-        return handleErrorClient(res, 401, "Acceso denegado. No se proporcionó token.");
-    }
-
-    const token = authHeader.split(" ")[1];
-
-    if (!token) {
-        return handleErrorClient(res, 401, "Acceso denegado. Token malformado.");
-    }
-
+// 1. MIDDLEWARE DE AUTENTICACIÓN BÁSICO
+const authMiddleware = (req, res, next) => {
     try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('🔍 Verificando autenticación...');
         
-        // Normalizar la estructura del usuario
-        req.user = {
-        // Intentar obtener el ID de diferentes maneras
-        id: payload.id || payload.userId || payload.sub || payload.user?.id,
+        const authHeader = req.headers.authorization;
         
-        // Intentar obtener el rol
-        role: payload.role || payload.user?.role,
-        
-        // Intentar obtener el email
-        email: payload.email || payload.user?.email,
-        
-        // Mantener el payload completo por si acaso
-        _raw: payload
-        };
-        
-        console.log(' Usuario normalizado:', {
-        id: req.user.id,
-        role: req.user.role,
-        email: req.user.email
-        });
-        
-        // Verificar que al menos tengamos un ID
-        if (!req.user.id) {
-        console.error(' JWT no contiene ID:', payload);
-        return handleErrorClient(res, 401, "Token no contiene información de usuario válida.");
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            console.log('❌ No hay token en el header');
+            return res.status(401).json({
+                success: false,
+                message: 'Acceso denegado. No se proporcionó token.'
+            });
         }
+
+        const token = authHeader.split(' ')[1];
+        console.log('📨 Token recibido:', token.substring(0, 20) + '...');
+        
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret-key');
+        
+        req.user = decoded;
+        console.log(`✅ Usuario autenticado: ${decoded.email || decoded.id} (rol: ${decoded.role})`);
         
         next();
     } catch (error) {
-        console.error('X Error verificando token:', error.message);
-        return handleErrorClient(res, 401, "Token inválido o expirado.", error.message);
-    }
-}
-/**
- * Obtener User Agent
- */
-export function getUserAgent(req) {
-  return req.headers['user-agent'] || 'Desconocido';
-}
-
-/**
- * Extraer info del request para historial
- */
-export function getRequestInfo(req) {
-  return {
-    ipAddress: getClientIp(req),
-    userAgent: getUserAgent(req),
-    userId: req.user?.id,
-    userRole: req.user?.role,
-  };
-}
-
-/**
- * Middleware: Check if user is an Admin
- */
-export const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    return next();
-  }
-  return res.status(403).json({
-    success: false,
-    message: 'Access denied. Admin role required.',
-  });
-};
-
-/**
- * Middleware: Check if user is a Guard
- */
-export const isGuard = (req, res, next) => {
-  // Adjust the role name if your system uses a different term (e.g., 'guardia', 'guard')
-  if (req.user && req.user.role === 'guardia') {
-    return next();
-  }
-  return res.status(403).json({
-    success: false,
-    message: 'Access denied. Guard role required.',
-  });
-};
-
-/**
- * Middleware: Check if user is Admin OR Guard
- */
-export const isAdminOrGuard = (req, res, next) => {
-  if (req.user && (req.user.role === 'admin' || req.user.role === 'guardia')) {
-    return next();
-  }
-  return res.status(403).json({
-    success: false,
-    message: 'Access denied. Admin or Guard role required.',
-  });
-};
-// middleware/ownerOrAdmin.middleware.js - NUEVO ARCHIVO
-export const isOwnerOrAdmin = (paramName = 'id') => {
-    return (req, res, next) => {
-        try {
-            const resourceId = parseInt(req.params[paramName]);
-            const userId = req.user.id;
-            const userRole = req.user.role;
-
-            // Si es admin o el propietario del recurso
-            if (userRole === 'admin' || userId === resourceId) {
-                return next();
-            }
-
-            return res.status(403).json({
+        console.error('❌ Error en autenticación:', error.message);
+        
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
                 success: false,
-                message: "No tienes permisos para acceder a este recurso"
-            });
-
-        } catch (error) {
-            console.error('Error en middleware isOwnerOrAdmin:', error);
-            return res.status(500).json({
-                success: false,
-                message: "Error de permisos"
+                message: 'Token JWT inválido'
             });
         }
+        
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Token expirado'
+            });
+        }
+        
+        return res.status(401).json({
+            success: false,
+            message: 'Error de autenticación'
+        });
+    }
+};
+
+// 2. MIDDLEWARE PARA ADMINISTRADORES
+const isAdmin = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Usuario no autenticado'
+        });
+    }
+    
+    if (req.user.role === 'admin') {
+        console.log(`✅ Usuario es administrador: ${req.user.email || req.user.id}`);
+        next();
+    } else {
+        console.log(`❌ Usuario NO es administrador. Rol: ${req.user.role}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Acceso denegado. Se requiere rol de administrador.'
+        });
+    }
+};
+
+// 3. MIDDLEWARE PARA ADMIN O GUARDIA
+const isAdminOrGuard = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Usuario no autenticado'
+        });
+    }
+    
+    if (req.user.role === 'admin' || req.user.role === 'guardia') {
+        console.log(`✅ Usuario autorizado (admin/guardia): ${req.user.email || req.user.id}`);
+        next();
+    } else {
+        console.log(`❌ Usuario NO autorizado. Rol: ${req.user.role}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Acceso denegado. Se requiere rol de administrador o guardia.'
+        });
+    }
+};
+
+// 4. MIDDLEWARE PARA GUARDIAS
+const isGuard = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Usuario no autenticado'
+        });
+    }
+    
+    if (req.user.role === 'guardia') {
+        console.log(`✅ Usuario es guardia: ${req.user.email || req.user.id}`);
+        next();
+    } else {
+        console.log(`❌ Usuario NO es guardia. Rol: ${req.user.role}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Acceso denegado. Se requiere rol de guardia.'
+        });
+    }
+};
+
+// 5. MIDDLEWARE PARA USUARIOS REGULARES
+const isUser = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Usuario no autenticado'
+        });
+    }
+    
+    if (req.user.role === 'usuario') {
+        console.log(`✅ Usuario regular: ${req.user.email || req.user.id}`);
+        next();
+    } else {
+        console.log(`❌ No es usuario regular. Rol: ${req.user.role}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Acceso denegado. Se requiere rol de usuario.'
+        });
+    }
+};
+
+// 6. MIDDLEWARE isOwnerOrAdmin - PARA QUE EL USUARIO ACCEDA A SU PROPIO PERFIL O SEA ADMIN
+const isOwnerOrAdmin = (idParam = 'id') => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Usuario no autenticado'
+            });
+        }
+        
+        const requestedId = req.params[idParam];
+        const userId = req.user.id;
+        
+        console.log(`🔍 Verificando permisos: UserID=${userId}, RequestedID=${requestedId}, Role=${req.user.role}`);
+        
+        // Si es admin, permite siempre
+        if (req.user.role === 'admin') {
+            console.log('✅ Admin puede acceder a cualquier recurso');
+            return next();
+        }
+        
+        // Si es el dueño del recurso
+        if (userId === requestedId) {
+            console.log('✅ Usuario accediendo a su propio recurso');
+            return next();
+        }
+        
+        console.log(`❌ Acceso denegado. UserID (${userId}) no coincide con RequestedID (${requestedId})`);
+        return res.status(403).json({
+            success: false,
+            message: 'Acceso denegado. Solo puedes acceder a tus propios recursos.'
+        });
     };
+};
+
+// 7. MIDDLEWARE PARA CUALQUIER USUARIO AUTENTICADO
+const isAuthenticated = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Usuario no autenticado'
+        });
+    }
+    next();
+};
+
+// 🔽 EXPORTACIONES - TODAS LAS FUNCIONES QUE NECESITAS 🔽
+export {
+    authMiddleware,
+    isAdmin,
+    isAdminOrGuard,
+    isGuard,
+    isUser,
+    isOwnerOrAdmin,
+    isAuthenticated
+};
+
+// Exportación por defecto también por si acaso
+export default {
+    authMiddleware,
+    isAdmin,
+    isAdminOrGuard,
+    isGuard,
+    isUser,
+    isOwnerOrAdmin,
+    isAuthenticated
 };

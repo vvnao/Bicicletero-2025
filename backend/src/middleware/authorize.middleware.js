@@ -1,4 +1,4 @@
-// middleware/authorize.middleware.js
+
 'use strict';
 
 export const authorize = (allowedRoles = []) => {
