@@ -2,7 +2,7 @@
 'use strict';
 
 import { handleSuccess, handleErrorClient, handleErrorServer } from "../Handlers/responseHandlers.js";
-import reportService from "../services/reports.service.js";
+import reportsService from "../services/reports.service.js";
 
 // Tipos de reporte permitidos
 const ALLOWED_REPORT_TYPES = [

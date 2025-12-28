@@ -9,7 +9,7 @@ import { UserEntity } from "../entities/UserEntity.js";
 import { ReportEntity } from "../entities/ReportEntity.js";
 import ExcelJS from 'exceljs';
 
-class ReportService {
+class ReportsService {
     constructor() {
         this.bikerackRepository = AppDataSource.getRepository(BikerackEntity);
         this.bicycleRepository = AppDataSource.getRepository(BicycleEntity);
@@ -39,7 +39,16 @@ class ReportService {
                 new Date(weekEnd), 
                 bikerackId
             );
-
+            const reportRepository = AppDataSource.getRepository(ReportEntity);
+const newEntry = reportRepository.create({
+    reportType: "Uso Semanal",
+    title: "Reporte de la semana",
+    periodStart: startDate,
+    periodEnd: endDate,
+    data: statsJson, // Aquí guardas los números que se verán en el Dashboard
+    generatedBy: adminId,
+    status: 'generated'
+});
             let savedReport = null;
             
             // 2. Guardar en base de datos solo si se solicita
@@ -926,20 +935,20 @@ async saveToHistory(reportData, adminId) {
 }
 
 // Crear instancia
-const reportService = new ReportService();
+const reportsService = new ReportsService();
 
 // Exportar todo
 export {
-    reportService
+    reportsService
 };
 
 // Exportar métodos individualmente
-export const generateAndSaveWeeklyReport = reportService.generateAndSaveWeeklyReport.bind(reportService);
-export const generateWeeklyUsageReport = reportService.generateWeeklyUsageReport.bind(reportService);
-export const checkCapacityIssues = reportService.checkCapacityIssues.bind(reportService);
-export const generateRedistributionPlan = reportService.generateRedistributionPlan.bind(reportService);
-export const getReportHistory = reportService.getReportHistory.bind(reportService);
-export const generateAuditReport = reportService.generateAuditReport.bind(reportService);
+export const generateAndSaveWeeklyReport = reportsService.generateAndSaveWeeklyReport.bind(reportsService);
+export const generateWeeklyUsageReport = reportsService.generateWeeklyUsageReport.bind(reportsService);
+export const checkCapacityIssues = reportsService.checkCapacityIssues.bind(reportsService);
+export const generateRedistributionPlan = reportsService.generateRedistributionPlan.bind(reportsService);
+export const getReportHistory = reportsService.getReportHistory.bind(reportsService);
+export const generateAuditReport = reportsService.generateAuditReport.bind(reportsService);
 
 // Exportar por defecto
-export default reportService;
+export default reportsService;
