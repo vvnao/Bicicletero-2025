@@ -19,59 +19,43 @@ import { bicycleValidation } from "../validations/bicycle.validation.js";
 
 export async function createBicycle(req, res) {
     try {
-        console.log('🚲 [createBicycle] Iniciando creación de bicicleta...');
+        console.log('[createBicycle] Iniciando creación...');
         
         const { error } = bicycleValidation.validate(req.body);
         if (error) {
-            const mensaje = error.details[0].message;
-            console.log('❌ Validación falló:', mensaje);
-            return handleErrorClient(res, 400, mensaje);
+            return handleErrorClient(res, 400, error.details[0].message);
         }
         
         const userId = req.user?.id;
-        if (!userId) {
-            console.log('❌ Usuario no autenticado');
-            return handleErrorClient(res, 401, "Usuario no autenticado");
+        if (!userId) return handleErrorClient(res, 401, "Usuario no autenticado");
+
+        const bicycleData = { ...req.body };
+
+        if (req.file) {
+            bicycleData.photo = req.file.path;
+        } else if (req.files && req.files['photo']) {
+            bicycleData.photo = req.files['photo'][0].path;
         }
+
+        console.log('🚲 Datos con foto:', bicycleData);
         
-        console.log('🚲 Datos recibidos:', req.body);
-        console.log('🚲 Usuario ID:', userId);
+        const newBicycle = await createBicycleService(bicycleData, userId);
         
-        // 1. Crear la bicicleta (servicio)
-        const newBicycle = await createBicycleService(req.body, userId);
-        console.log('✅ Bicicleta creada ID:', newBicycle.id);
-        
-        // 🟢 2. REGISTRAR EN HISTORIAL (después de crear exitosamente)
         try {
-            console.log('📝 Registrando en historial...');
             await HistoryService.logEvent({
                 historyType: 'bicycle_registration',
-                description: `Nueva bicicleta registrada: ${newBicycle.brand} ${newBicycle.model}`,
-                details: {
-                    bicycleId: newBicycle.id,
-                    brand: newBicycle.brand,
-                    model: newBicycle.model,
-                    color: newBicycle.color,
-                    serialNumber: newBicycle.serialNumber,
-                    userId: userId,
-                    userEmail: req.user.email,
-                    userNames: req.user.names,
-                    timestamp: new Date().toISOString()
-                },
+                description: `Nueva bicicleta: ${newBicycle.brand}`,
+                details: { bicycleId: newBicycle.id, photo: newBicycle.photo },
                 bicycleId: newBicycle.id,
                 userId: userId,
-                ipAddress: req.ip,
-                userAgent: req.headers['user-agent']
+                ipAddress: req.ip
             });
-            console.log('✅ Historial registrado exitosamente');
         } catch (histError) {
-            console.error('⚠️ Error registrando historial (continuando...):', histError);
-            // Continuar aunque falle el historial
+            console.error('Error historial:', histError);
         }
         
         handleSuccess(res, 201, "Bicicleta creada exitosamente", newBicycle);
     } catch (error) {
-        console.error('❌ Error en createBicycle:', error.message);
         handleErrorServer(res, 500, error.message);
     }
 }
@@ -178,29 +162,35 @@ export async function getAllBicycles(req, res) {
 }
 export async function updateBicycles(req, res) {
     try {
-        const userId = req.user.id;
-        const { id } = req.params;
+        const userId = req.user.id; 
+        const { id } = req.params; 
         const { color } = req.body;
+        
+        const data = {};
+        if (color) data.color = color;
 
-        const photo =req.files?.photo && req.files.photo.length > 0? req.files.photo[0].filename: undefined;
-
-        const updatedBike = await updateBicyclesServices(userId, {
-            id,
-            color,
-            photo
-        });
-
-        if (!updatedBike) {
-            return handleErrorClient(res, 404, "Bicicleta no encontrada");
+        if (req.files && req.files['photo']) {
+            data.photo = req.files['photo'][0].path;
+        } else if (req.file) { 
+            data.photo = req.file.path;
         }
 
-        return handleSuccess(res,200,"Perfil de bicicleta actualizado exitosamente",{
-                id: updatedBike.id,
-                color: updatedBike.color,
-                photo: updatedBike.photo
+        const updatedBicycle = await updateBicyclesServices(id, userId, data);
+
+        if (!updatedBicycle) {
+            return handleErrorClient(
+                res, 
+                404, 
+                "Bicicleta no encontrada o no tienes permiso para editarla"
+            );
+        }
+
+        return handleSuccess(res, 200, "Bicicleta actualizada exitosamente", {
+            color: updatedBicycle.color,
+            photo: updatedBicycle.photo,
         });
     } catch (error) {
-        return handleErrorServer(res, 500, "Error del servidor", error);
+        handleErrorServer(res, 500, "Error al actualizar la bicicleta", error);
     }
 }
 

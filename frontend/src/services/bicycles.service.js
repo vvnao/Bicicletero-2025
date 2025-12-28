@@ -73,22 +73,25 @@ export async function deleteBicycles(id) {
 export async function updateBicycles(id, formValues) { 
     try {
         const token = cookies.get('jwt-auth');
-
         const formData = new FormData();
-        formData.append('color', formValues.color);
 
-        if (formValues.photo) {
+        if (formValues.color) {
+            formData.append('color', formValues.color);
+        }
+        if (formValues.photo && formValues.photo instanceof File) {
             formData.append('photo', formValues.photo);
         }
 
         const response = await axios.patch(`/bicycles/${id}`, formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data',
             },
         });
         
-        return response.data;
+        return response.data; 
     } catch (error) {
+        console.error("Error en updateBicycles service:", error);
         throw error.response?.data || { message: "Error al actualizar bicicleta" };
     }
 }

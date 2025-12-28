@@ -4,7 +4,7 @@ import { BicycleEntity } from "../entities/BicycleEntity.js"
 import { UserEntity } from "../entities/UserEntity.js"
 import { ReservationEntity } from "../entities/ReservationEntity.js";
 
-export async function createBicycleService(data, userId, file) {
+export async function createBicycleService(data, userId) {
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
     const userRepository = AppDataSource.getRepository(UserEntity);
 
@@ -24,13 +24,12 @@ export async function createBicycleService(data, userId, file) {
         model: data.model,
         color: data.color,
         serialNumber: data.serialNumber,
-        photo: file ? file.path : null, 
+        photo: data.photo || null, 
         user: user,
     });
     
     const saved = await bicycleRepository.save(newBicycle);
     
-    // ✅ RETORNAR CON RELACIONES CARGADAS
     return await bicycleRepository.findOne({
         where: { id: saved.id },
         relations: ['user']
@@ -44,41 +43,39 @@ export async function getBicyclesServices(userId) {
         where: {
             user: { id: userId }
         },
-        relations: ['user'] // ✅ Cargar relación
+        relations: ['user'] 
     });
 
     return bicycles;
 }
 
-export async function updateBicyclesServices(userId, data) {
-    const { id, color, photo } = data;
+export async function updateBicyclesServices(id, userId, data) {
+    try {
+        const { color, photo } = data;
+        const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 
-    const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
+        const bicycle = await bicycleRepository.findOne({
+            where: {
+                id: id,
+                user: { id: userId }
+            },
+            relations: ['user'] 
+        });
 
-    const bicycle = await bicycleRepository.findOne({
-        where: {
-            id: id,
-            user: {
-                id: userId
-            }
-        },
-        relations: ['user'] // ✅ Cargar relación
-    });
+        if (!bicycle) return null;
 
-    if (!bicycle) return null;
+        if (color !== undefined) bicycle.color = color;
+        if (photo !== undefined) bicycle.photo = photo;
 
-    if (color !== undefined) bicycle.color = color;
-    if (photo !== undefined) bicycle.photo = photo;
-
-    const updated = await bicycleRepository.save(bicycle);
-    
-    // ✅ Recargar con relaciones
-    return await bicycleRepository.findOne({
-        where: { id: updated.id },
-        relations: ['user']
-    });
+        const updated = await bicycleRepository.save(bicycle);
+        
+        return updated;
+        
+    } catch (error) {
+        console.error("Error en updateBicyclesServices:", error);
+        throw error;
+    }
 }
-
 export async function deleteBicyclesServices(userId, bicycleId) {
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 
@@ -87,7 +84,7 @@ export async function deleteBicyclesServices(userId, bicycleId) {
             id: bicycleId,
             user: { id: userId }
         },
-        relations: ['user'] // ✅ Cargar relación antes de eliminar
+        relations: ['user'] 
     });
 
     if (!bicycle) return false;

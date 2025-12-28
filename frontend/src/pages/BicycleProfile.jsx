@@ -1,5 +1,5 @@
 "use strict";
-import { useState} from "react";
+import { useState, useEffect } from "react"; // Añadido useEffect
 import { FiTag, FiSettings, FiDroplet, FiHash, FiUser, FiEdit3, FiChevronRight } from "react-icons/fi";
 import { useGetPrivateBicycles } from "@hooks/bicycles/useGetPrivateBicycles";
 import { useUpdateBicycles } from "@hooks/bicycles/useUpdateBicycles";
@@ -11,15 +11,25 @@ const BicycleProfile = () => {
     
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showZoomModal, setShowZoomModal] = useState(false);
-    
     const [localImages, setLocalImages] = useState({});
 
     const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
     const currentBicycle = bicycles ? bicycles[currentIndex] : null;
 
+    useEffect(() => {
+        if (bicycles) {
+            console.log("Lista de Bicicletas get:", bicycles);
+            if (bicycles[currentIndex]) {
+                console.log("Foto de la bici actual en DB:", bicycles[currentIndex].photo);
+            }
+        }
+    }, [bicycles, currentIndex]);
+
     const formatUrl = (path) => {
         if (!path) return null;
-        return `${API_URL}/${path.replace(/\\/g, "/").replace("src/", "")}`;
+        const formatted = `${API_URL}/${path.replace(/\\/g, "/").replace("src/", "")}`;
+        console.log("url formateada para mostrar:", formatted);
+        return formatted;
     };
 
     const bicycleImageUrl = (currentBicycle && localImages[currentBicycle.id]) 
@@ -67,12 +77,15 @@ const BicycleProfile = () => {
             });
 
             const result = await updateBicycle(currentBicycle.id, formValues);
+            console.log("Respuesta del Servidor update:", result);
 
             if (result.success) {
                 if (formValues.photo) {
+                    const objectUrl = URL.createObjectURL(formValues.photo);
+                    console.log("Generada url local temporal:", objectUrl);
                     setLocalImages(prev => ({
                         ...prev,
-                        [currentBicycle.id]: URL.createObjectURL(formValues.photo)
+                        [currentBicycle.id]: objectUrl
                     }));
                 }
 
@@ -84,8 +97,11 @@ const BicycleProfile = () => {
                     showConfirmButton: false
                 });
 
-                if (refetch) await refetch();
+                if (refetch) {
+                    await refetch();
+                }
             } else {
+                console.error("Error al actualizar:", result.error);
                 Swal.fire('Error', result.error || 'No se pudo actualizar', 'error');
             }
         }
