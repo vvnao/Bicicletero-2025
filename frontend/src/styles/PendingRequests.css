@@ -1,0 +1,542 @@
+/* Contenedor principal - Simple y moderno */
+.pending-requests-container {
+    background: #f8fafc;
+    min-height: 100vh;
+    padding: 24px;
+    font-family: 'Nunito', sans-serif;
+}
+
+/* Header - Moderno minimalista */
+.pending-requests-header {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.pending-requests-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pending-requests-icon-container {
+    background-color: #1e293b;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pending-requests-description {
+    color: #64748b;
+    font-size: 1rem;
+    margin: 8px 0 0 46px;
+}
+
+.pending-requests-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+}
+
+.pending-requests-loading-spinner {
+    animation: spin 1s linear infinite;
+    color: #3b82f6;
+}
+
+.pending-requests-loading p {
+    margin-top: 16px;
+    color: #64748b;
+}
+
+/* Error - Simple y claro */
+.pending-requests-error {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #fca5a5;
+}
+
+/* Empty State - Limpio */
+.pending-requests-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 12px;
+    border: 2px dashed #cbd5e1;
+    margin-top: 20px;
+}
+
+.pending-requests-empty-icon {
+    color: #94a3b8;
+    margin-bottom: 16px;
+}
+
+.pending-requests-empty h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+.pending-requests-empty p {
+    color: #64748b;
+}
+
+/* Lista de usuarios - Tarjetas modernas */
+.pending-user-list {
+    display: grid;
+    gap: 16px;
+}
+
+/* Tarjeta de usuario - Simple y elegante */
+.pending-user-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    transition: box-shadow 0.2s ease;
+}
+
+.pending-user-card:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+
+.pending-user-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.pending-user-info {
+    flex: 1;
+}
+
+.pending-user-name {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+
+.pending-user-email {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+}
+
+.pending-user-tags {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.pending-user-tag {
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: #475569;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.pending-user-bikes {
+    margin-top: 16px;
+    padding: 12px;
+    background: #f0f9ff;
+    border-radius: 8px;
+    border: 1px solid #e0f2fe;
+}
+
+.pending-bikes-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.pending-bikes-title {
+    font-weight: 600;
+    color: #0c4a6e;
+}
+
+.pending-bikes-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pending-bike-item {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #bae6fd;
+    font-size: 0.85rem;
+    color: #0369a1;
+}
+
+/* Acciones - Botones modernos */
+.pending-user-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 16px;
+    margin-top: 16px;
+}
+
+/* Botones - Simple pero modernos */
+.pending-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.pending-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pending-btn-view {
+    background: #3b82f6;
+    color: white;
+}
+
+.pending-btn-view:hover {
+    background: #2563eb;
+}
+
+.pending-btn-approve {
+    background: #10b981;
+    color: white;
+}
+
+.pending-btn-approve:hover {
+    background: #059669;
+}
+
+.pending-btn-reject {
+    background: #ef4444;
+    color: white;
+}
+
+.pending-btn-reject:hover {
+    background: #bd4b4b;
+}
+
+/* Modal - Simple y moderno */
+.pending-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.pending-modal {
+    background: white;
+    padding: 32px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.pending-modal-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: #1e293b;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.pending-modal-section {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.pending-user-detail {
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pending-user-detail strong {
+    color: #334155;
+    font-weight: 600;
+    min-width: 160px;
+    font-family: 'Poppins', sans-serif;
+    color: #3b82f6;
+}
+
+.pending-modal-image {
+    width: 100%;
+    max-width: 350px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 2px solid #e2e8f0;
+    transition: transform 0.2s ease;
+    display: block;
+    margin: 12px auto 0;
+}
+
+.pending-modal-image:hover {
+    transform: scale(1.02);
+}
+
+.pending-modal-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 2px solid #f1f5f9;
+}
+
+.pending-modal-btn {
+    flex: 1;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.pending-modal-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pending-modal-close {
+    width: 100%;
+    padding: 16px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 24px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    transition: background 0.2s ease;
+}
+
+.pending-modal-close:hover {
+    background: #e2e8f0;
+}
+
+.pending-no-bikes {
+    padding: 24px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 2px dashed #cbd5e1;
+    text-align: center;
+    color: #64748b;
+}
+
+.pending-no-bikes svg {
+    margin-bottom: 12px;
+    opacity: 0.5;
+}
+
+/* Modal de rechazo - Simple */
+.reject-modal {
+    background: white;
+    padding: 28px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.reject-modal-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: #1e293b;
+}
+
+.reject-modal-text {
+    color: #64748b;
+    margin-bottom: 20px;
+    font-size: 1rem;
+}
+
+.reject-modal-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1e293b;
+    font-family: 'Poppins', sans-serif;
+}
+
+.reject-modal-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    resize: vertical;
+    margin-bottom: 24px;
+    min-height: 120px;
+}
+
+.reject-modal-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.reject-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.reject-modal-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.reject-modal-cancel {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.reject-modal-cancel:hover {
+    background: #e2e8f0;
+}
+
+.reject-modal-confirm {
+    background: #ef4444;
+    color: white;
+}
+
+.reject-modal-confirm:hover {
+    background: #dc2626;
+}
+
+.reject-modal-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Preview de imagen */
+.image-preview-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+
+.image-preview {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .pending-requests-container {
+        padding: 16px;
+    }
+
+    .pending-user-content {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .pending-user-actions {
+        flex-direction: column;
+    }
+
+    .pending-modal {
+        padding: 24px;
+    }
+
+    .pending-modal-actions {
+        flex-direction: column;
+    }
+
+    .reject-modal-actions {
+        flex-direction: column;
+    }
+
+    .pending-modal-image {
+        max-width: 100%;
+    }
+}
+
+/* Animaciones básicas */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
