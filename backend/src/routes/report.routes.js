@@ -8,8 +8,8 @@ import {
     getReportsHistoryController,
     generateAuditReportController 
 } from '../controllers/reports.controller.js';
-import { authMiddleware, isAdmin, isAdminOrGuard } from '../middleware/auth.middleware.js';
-
+import { authMiddleware, isAdmin, isAdminOrGuard } 
+from '../middleware/auth.middleware.js';
 const router = Router();
 
 // Todas las rutas requieren autenticación

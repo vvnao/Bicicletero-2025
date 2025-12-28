@@ -24,7 +24,6 @@ export const BicycleEntity = new EntitySchema({
             nullable: false,
         },
         serialNumber: {
-            // opcional si se usa para reserva o control
             type: String,
             nullable: true,
             unique: true,
@@ -38,7 +37,7 @@ export const BicycleEntity = new EntitySchema({
         user: {
             target: 'User',
             type: 'many-to-one',
-            joinColumn: true,
+            joinColumn: true,  // ✅ Deja que TypeORM maneje el nombre
             nullable: false,
             onDelete: 'CASCADE',
         },
@@ -52,7 +51,6 @@ export const BicycleEntity = new EntitySchema({
             type: 'one-to-many',
             inverseSide: 'bicycle',
         },
-
         bikerack: {
             type: 'many-to-one',
             target: 'Bikerack',

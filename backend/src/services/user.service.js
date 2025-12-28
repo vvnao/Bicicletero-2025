@@ -1,6 +1,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import { UserEntity } from "../entities/UserEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
+import historyService from "./history.service.js";
 import bcrypt from "bcrypt";
 
 const userRepository = AppDataSource.getRepository(UserEntity);
@@ -60,26 +61,33 @@ export async function createUser(data) {
         return reloaded;
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+   const hashedPassword = await bcrypt.hash(data.password, 10);
+const newUser = userRepository.create({
+    names: data.names,       // 🚩 Asegúrate de pasar cada campo
+    lastName: data.lastName,
+    rut: data.rut,
+    email: data.email,
+    password: hashedPassword, // Usamos la contraseña ya encriptada
+    contact: data.contact,
+    typePerson: data.typePerson,
+    tnePhoto: data.tnePhoto,
+    position: data.position,
+    positionDescription: data.positionDescription,
+    role: "user",
+    requestStatus: "pendiente",
+});
 
-    const newUser = userRepository.create({
-        role: "user",
-        names: data.names,
-        lastName: data.lastName,
-        rut: data.rut,
-        email: data.email,
-        password: hashedPassword,
-        contact: data.contact,
-        typePerson: data.typePerson,
-        tnePhoto: data.tnePhoto,
-        position: data.position,
-        positionDescription: data.positionDescription,
-        requestStatus: "pendiente",
-    });
+const savedUser = await userRepository.save(newUser);
 
-    const savedUser = await userRepository.save(newUser);
 
-    // Si vienen datos de bicicleta, crear y vincular
+await historyService.logEvent({
+    type: "user_register",
+    description: `Nuevo usuario registrado: ${savedUser.names} ${savedUser.lastName}`,
+    userId: savedUser.id,
+    details: { email: savedUser.email, role: savedUser.role }
+});
+   
+    // Si vienen datos de bicicleta
     if (data.bicycle) {
         const { brand, model, color, serialNumber, photo } = data.bicycle;
 
@@ -92,7 +100,16 @@ export async function createUser(data) {
             user: savedUser,
         });
 
-        await bicycleRepository.save(newBicycle);
+        const savedBicycle = await bicycleRepository.save(newBicycle);
+
+        // 🚩 REGISTRO EN EL HISTORIAL: Bicicleta registrada
+        await historyService.logEvent({
+            type: "bicycle_register",
+            description: `Bicicleta ${brand} ${model} registrada para ${savedUser.email}`,
+            userId: savedUser.id,
+            bicycleId: savedBicycle.id,
+            details: { serialNumber }
+        });
     }
 
     return savedUser;

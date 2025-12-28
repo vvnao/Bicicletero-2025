@@ -6,6 +6,7 @@ import { generateRetrievalCode } from '../helpers/spaceManagementEmail.helper.js
 import { getActiveSpaceLog } from '../helpers/spaceDetails.helper.js';
 import { formatRut } from '../helpers/rut.helper.js';
 import { IsNull, LessThan } from 'typeorm';
+import HistoryService from '../services/history.service.js';
 import { sendEmail } from './email.service.js';
 import { emailTemplates } from '../templates/spaceManagementEmail.template.js';
 

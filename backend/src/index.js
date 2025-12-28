@@ -8,7 +8,6 @@ import cors from 'cors';
 import { createBikeracks } from './config/initBikeracksDb.js';
 import { createSpaces } from './config/initSpacesDb.js';
 import { createDefaultUsers } from './config/defaultUsers.js';
-import { createBicycles } from './config/initBicyclesDb.js';
 //import { createDefaultGuards } from './config/defaultGuards.js';
 //import { createReservations } from './config/initReservationsDb.js';
 //import { createDefaultGuardAssignments } from './config/defaultGuardAssignments.js';
@@ -39,7 +38,7 @@ connectDB()
     await createBikeracks();
     await createSpaces();
     await createDefaultUsers();
-    await createBicycles();
+    //await createBicycles();
     //await createReservations();
     //await createDefaultGuards();
     //await createDefaultGuardAssignments();

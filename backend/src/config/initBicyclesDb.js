@@ -1,9 +1,8 @@
 //! ARCHIVO TEMPORAL POR QUE AÚN NO SE IMPLEMENTA EL SISTEMA PARA CREAR BICICLETAS 
-'use strict';
+/*'use strict';
 import { AppDataSource } from './configDb.js';
 import { BicycleEntity } from '../entities/BicycleEntity.js';
 import { UserEntity } from '../entities/UserEntity.js';
-import { createHistoryEvent } from '../helpers/historyHelper.js';
 
 export async function createBicycles() {
   try {
@@ -30,7 +29,7 @@ export async function createBicycles() {
         brand: 'Trek',
         model: 'Marlin 5',
         color: 'Rojo',
-        user: users[1], 
+        user: users[1],  
       },
       {
         brand: 'Specialized',
@@ -43,22 +42,13 @@ export async function createBicycles() {
     for (const bicycle of Bicycles) {
       await bicycleRepository.save(bicycleRepository.create(bicycle));
       console.log(
-        `Bicicleta ${bicycle.brand} ${bicycle.model} creada`
+        `Bicicleta ${bicycle.brand} ${bicycle.model} creada`,
       );
     }
 
     console.log('Todas las bicicletas creadas exitosamente!');
-    
+
   } catch (error) {
     console.error('Error creando bicicletas:', error);
   }
-}
-
-await createHistoryEvent({
-  historyType: 'bicycle_registered', 
-  description: `🚲 ${user.names} registró bicicleta ${bicycle.brand}`,
-  details: { brand: bicycle.brand, serial: bicycle.serialNumber },
-  userId: user.id,
-  bicycleId: bicycle.id,
-  timestamp: new Date()
-});
+}*/

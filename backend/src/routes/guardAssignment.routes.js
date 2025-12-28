@@ -1,6 +1,6 @@
-// routes/guardAssignment.routes.js 
+// routes/guardAssignment.routes.js - VERSIÓN CORRECTA
 import express from 'express';
-import { GuardAssignmentController } from '../controllers/guardAssignment.controller.js';
+import GuardAssignmentController from '../controllers/guardAssignment.controller.js'; // SIN LLAVES
 import { authMiddleware, isAdmin, isAdminOrGuard } from '../middleware/auth.middleware.js';
 
 const router = express.Router();

@@ -1,33 +1,23 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@context/AuthContext";
 
-function ProtectedRoute({ children }) {
-    const { user } = useAuth();
+function ProtectedRoute({ children, allowedRoles = [] }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-    if (!user) {
-        return <Navigate to="/auth/login" replace />;
-    }
+  if (loading) return null;
 
-    // Si el usuario está autenticado pero intenta acceder a una ruta que no corresponde a su rol
-    // lo redirigimos a la ruta correcta
-    const currentPath = window.location.pathname;
-    const userRole = user.data?.role;
+  if (!user) {
+    return <Navigate to="/auth/login" replace />;
+  }
 
-    if (userRole === 'admin' && !currentPath.includes('/home/admin')) {
-        return <Navigate to="/home/admin" replace />;
-    }
+  const role = user.role;
 
-    if (userRole === 'guardia' && !currentPath.includes('/home/guardia')) {
-        return <Navigate to="/home/guardia" replace />;
-    }
+  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    return <Navigate to="/" replace />;
+  }
 
-    // Para otros roles (estudiante, academico, asistente) permitimos acceso a /home
-    if ((userRole === 'estudiante' || userRole === 'academico' || userRole === 'asistente') && 
-        !currentPath.includes('/home/user')) {
-        return <Navigate to="/home/user" replace />;
-    }
-
-    return children;
+  return children;
 }
 
 export default ProtectedRoute;

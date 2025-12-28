@@ -5,6 +5,7 @@ import {
   cancelReservation,
   getUserReservations,
 } from '../services/reservation.service.js';
+import HistoryService from '../services/history.service.js';
 import {
   handleSuccess,
   handleErrorClient,
@@ -12,6 +13,7 @@ import {
 } from '../Handlers/responseHandlers.js';
 import { sendEmail } from '../services/email.service.js';
 import { emailTemplates } from '../templates/reservationEmail.template.js';
+
 ////////////////////////////////////////////////////////////////////////////////////////////
 //! OBTENER LAS BICIS DEL USUARIO PARA QUE PUEDA SELECCIONAR 1 EN LA RESERVA
 export async function getUserBicyclesForReservation(req, res) {
@@ -67,6 +69,8 @@ export async function createReservation(req, res) {
       hours,
       parseInt(bicycleId)
     );
+
+      await HistoryService.logReservationCreated(reservation);
 
     await sendEmail(
       reservation.user.email,

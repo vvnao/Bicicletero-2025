@@ -1,4 +1,6 @@
 import ReactDOM from 'react-dom/client';
+
+import './styles/animations.css';
 import {createBrowserRouter,RouterProvider,Navigate} from 'react-router-dom';
 import Login from '@pages/Login';
 import Home from '@pages/Home';

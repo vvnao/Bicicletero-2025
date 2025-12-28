@@ -1,5 +1,5 @@
 // src/config/initSystem.js
-'use strict';
+/*'use strict';
 
 import { AppDataSource, connectDB } from './configDb.js';
 
@@ -92,4 +92,4 @@ async function showSystemStats() {
   } catch (error) {
     console.error('⚠️  Error obteniendo estadísticas:', error.message);
   }
-}
+}*/

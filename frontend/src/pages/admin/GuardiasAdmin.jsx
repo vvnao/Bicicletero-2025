@@ -1,9 +1,11 @@
-// frontend/src/pages/admin/GuardiasAdmin.jsx (CORREGIDO)
+// frontend/src/pages/admin/GuardiasAdmin.jsx (VERSIÓN CORREGIDA)
 import { useState, useEffect } from 'react';
 import LayoutAdmin from "../../components/admin/LayoutAdmin";
 import { apiService } from '../../services/api.service';
-import GuardForm from '../../components/admin/GuardForm';
+import GuardForm from '../../components/admin/GuardForm';  
 import AssignmentForm from '../../components/admin/AssignmentForm';
+import { Alert } from '../../components/admin/common/Alert';
+import { ConfirmModal } from '../../components/admin/common/ConfirmModal'; 
 import { getToken } from '../../services/auth.service';
 
 const GuardiasAdmin = () => {
@@ -25,12 +27,6 @@ const GuardiasAdmin = () => {
         fetchData();
     }, [refresh]);
 
-    useEffect(() => {
-        console.log(' - Datos de asignaciones:', assignments);
-        console.log(' - Primera asignación:', assignments[0]);
-        console.log(' - Datos de guardias:', guardias[0]);
-    }, [assignments, guardias]);
-
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -38,99 +34,57 @@ const GuardiasAdmin = () => {
             
             console.log('🔄 Iniciando fetchData...');
             
+            // Cargar datos en paralelo
             const [guardsRes, bikeracksRes, assignmentsRes] = await Promise.allSettled([
                 apiService.getGuards(token),
                 apiService.getBikeracks(token),
                 apiService.getGuardAssignments(token)
             ]);
 
-            console.log('📊 Resultados Promise.allSettled:');
-            console.log('   Guards:', guardsRes);
-            console.log('   Bikeracks:', bikeracksRes);
-            console.log('   Assignments:', assignmentsRes);
+            console.log('📊 Resultados Promise.allSettled:', { guardsRes, bikeracksRes, assignmentsRes });
 
-            // GUARDIAS
-            if (guardsRes.status === 'fulfilled') {
-                const guardsData = guardsRes.value;
-                console.log('👮 Datos crudos de guardias:', guardsData);
-                
-                if (guardsData.success && Array.isArray(guardsData.data)) {
-                    console.log(`✅ ${guardsData.data.length} guardias recibidos`);
-                    setGuardias(guardsData.data);
-                    
-                    // Depurar primer guardia
-                    if (guardsData.data.length > 0) {
-                        console.log('🔍 Primer guardia:', guardsData.data[0]);
-                    }
-                } else {
-                    console.warn('⚠️ Guardias no en formato esperado');
-                    setGuardias([]);
-                }
+            // PROCESAR GUARDIAS
+            if (guardsRes.status === 'fulfilled' && guardsRes.value?.success) {
+                const guardsData = Array.isArray(guardsRes.value.data) ? guardsRes.value.data : [];
+                console.log(`✅ ${guardsData.length} guardias cargados`);
+                setGuardias(guardsData);
             } else {
-                console.error('❌ Error en guards:', guardsRes.reason);
+                console.error('❌ Error en guards:', guardsRes.reason || guardsRes.value?.message);
                 setGuardias([]);
             }
 
-            // BIKERACKS
-            if (bikeracksRes.status === 'fulfilled') {
-                const bikeracksData = bikeracksRes.value;
-                if (bikeracksData.success && Array.isArray(bikeracksData.data)) {
-                    console.log(`✅ ${bikeracksData.data.length} bicicleteros recibidos`);
-                    setBikeracks(bikeracksData.data);
-                } else {
-                    console.warn('⚠️ Bicicleteros no en formato esperado');
-                    setBikeracks([]);
+            // PROCESAR BICICLETEROS
+            if (bikeracksRes.status === 'fulfilled' && bikeracksRes.value?.success) {
+                const bikeracksData = Array.isArray(bikeracksRes.value.data) ? bikeracksRes.value.data : [];
+                console.log(`✅ ${bikeracksData.length} bicicleteros cargados`);
+                if (bikeracksData.length > 0) {
+                    console.log('🔍 Primer bicicletero:', bikeracksData[0]);
                 }
+                setBikeracks(bikeracksData);
             } else {
-                console.error('❌ Error en bikeracks:', bikeracksRes.reason);
+                console.error('❌ Error en bikeracks:', bikeracksRes.reason || bikeracksRes.value?.message);
                 setBikeracks([]);
             }
 
-            // ASIGNACIONES
-            if (assignmentsRes.status === 'fulfilled') {
-                const assignmentsData = assignmentsRes.value;
-                console.log('📅 Datos crudos de asignaciones:', assignmentsData);
-                
-                let processedAssignments = [];
-                
-                if (assignmentsData.success) {
-                    // Caso 1: assignmentsData.data es un array directo
-                    if (Array.isArray(assignmentsData.data)) {
-                        console.log('✅ Asignaciones en data directo');
-                        processedAssignments = assignmentsData.data;
-                    }
-                    // Caso 2: assignmentsData.data tiene propiedad assignments
-                    else if (assignmentsData.data && assignmentsData.data.assignments) {
-                        console.log('✅ Asignaciones en data.assignments');
-                        processedAssignments = assignmentsData.data.assignments;
-                    }
-                    // Caso 3: assignmentsData.data tiene propiedad data (nested)
-                    else if (assignmentsData.data && assignmentsData.data.data) {
-                        console.log('✅ Asignaciones en data.data');
-                        processedAssignments = assignmentsData.data.data;
-                    }
-                    // Caso 4: assignmentsData.data es el objeto directo
-                    else if (assignmentsData.data && typeof assignmentsData.data === 'object') {
-                        console.log('✅ Asignaciones es objeto directo');
-                        processedAssignments = [assignmentsData.data];
-                    }
+            // PROCESAR ASIGNACIONES
+            if (assignmentsRes.status === 'fulfilled' && assignmentsRes.value?.success) {
+                const assignmentsData = Array.isArray(assignmentsRes.value.data) ? assignmentsRes.value.data : [];
+                console.log(`✅ ${assignmentsData.length} asignaciones cargadas`);
+                if (assignmentsData.length > 0) {
+                    console.log('🔍 Primera asignación:', assignmentsData[0]);
                 }
-                
-                console.log(`📊 ${processedAssignments.length} asignaciones procesadas`);
-                console.log('🔍 Primera asignación procesada:', processedAssignments[0]);
-                
-                setAssignments(processedAssignments);
+                setAssignments(assignmentsData);
             } else {
-                console.error('❌ Error en assignments:', assignmentsRes.reason);
+                console.error('❌ Error en assignments:', assignmentsRes.reason || assignmentsRes.value?.message);
                 setAssignments([]);
             }
-
+     
         } catch (err) {
-            console.error('🔥 Error general en fetchData:', err);
+            console.error('❌ Error general en fetchData:', err);
             setError('Error al cargar los datos');
         } finally {
             setLoading(false);
-            console.log('🏁 fetchData completado');
+            console.log('✅ fetchData completado');
         }
     };
 
@@ -174,23 +128,32 @@ const GuardiasAdmin = () => {
     };
 
     const handleUpdateAssignment = async (assignmentData, assignmentId) => {
-    try {
-        const response = await apiService.updateAssignment(assignmentId, assignmentData, token);
-        
-        if (response.success) {
-            alert('✅ Asignación actualizada exitosamente');
-            setShowAssignmentForm(false);
-            setSelectedGuardia(null);
-            setAssignmentToEdit(null);
-            setRefresh(prev => !prev);
-        } else {
-            alert(`❌ Error: ${response.message}`);
+        try {
+            const response = await fetch(`http://localhost:3000/api/guard-assignments/${assignmentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(assignmentData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('✅ Asignación actualizada exitosamente');
+                setShowAssignmentForm(false);
+                setSelectedGuardia(null);
+                setAssignmentToEdit(null);
+                setRefresh(prev => !prev);
+            } else {
+                alert(`❌ Error: ${result.message}`);
+            }
+        } catch (err) {
+            console.error('Error updating assignment:', err);
+            alert('❌ Error al actualizar la asignación');
         }
-    } catch (err) {
-        console.error('Error updating assignment:', err);
-        alert('❌ Error al actualizar la asignación');
-    }
-};
+    };
 
     const handleToggleAvailability = async (guardId, isAvailable) => {
         try {
@@ -213,43 +176,24 @@ const GuardiasAdmin = () => {
 
     const getGuardAssignments = (guardId) => {
         console.log(`\n=== BUSCANDO ASIGNACIONES PARA GUARDIA ${guardId} ===`);
-        console.log('📊 Total assignments en estado:', assignments.length);
         
         if (assignments.length === 0) {
             console.log('⚠️ No hay asignaciones en el estado');
             return [];
         }
         
-        const filtered = assignments.filter((a, index) => {
-            console.log(`\n🔍 Analizando asignación ${index + 1}/${assignments.length}:`);
-            console.log('   ID asignación:', a.id);
-            console.log('   Objeto completo:', a);
-            
-            // Extraer guardId de todas las formas posibles
-            const possibleGuardIds = [
-                a.guardId,
-                a.guard?.id,
-                a.guard?.user?.id,
-                a.guardId?.toString(),
-                a.guard?.id?.toString()
-            ].filter(id => id !== undefined);
-            
-            console.log('   Posibles guardIds encontrados:', possibleGuardIds);
-            
-            // Comparar
-            const match = possibleGuardIds.some(possibleId => 
-                parseInt(possibleId) === parseInt(guardId)
-            );
-            
-            console.log(`   ¿Coincide con ${guardId}? ${match ? '✅ SÍ' : '❌ NO'}`);
+        const filtered = assignments.filter(a => {
+            // Normalizar el guardId de la asignación
+            const assignmentGuardId = a.guardId || a.guard?.id;
+            const match = parseInt(assignmentGuardId) === parseInt(guardId);
             return match;
         });
         
-        console.log(`\n🎯 RESULTADO: ${filtered.length} asignaciones encontradas para guardia ${guardId}`);
+        console.log(`🎯 RESULTADO: ${filtered.length} asignaciones encontradas`);
         return filtered;
     };
 
-    // ESTILOS (MANTENIENDO EL ESTILO ORIGINAL)
+    // ESTILOS
     const styles = {
         container: {
             padding: '25px',
@@ -288,11 +232,7 @@ const GuardiasAdmin = () => {
             boxShadow: '0 8px 25px rgba(0,0,0,0.08)',
             overflow: 'hidden',
             transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-            border: '1px solid #eaeaea',
-            '&:hover': {
-                transform: 'translateY(-5px)',
-                boxShadow: '0 12px 30px rgba(0,0,0,0.12)'
-            }
+            border: '1px solid #eaeaea'
         },
         cardHeader: {
             background: 'linear-gradient(135deg, #4361ee 0%, #3a56d4 100%)',
@@ -334,10 +274,7 @@ const GuardiasAdmin = () => {
             color: '#6c757d',
             transition: 'all 0.3s ease',
             borderBottom: '3px solid transparent',
-            fontSize: '14px',
-            '&:hover': {
-                color: '#4361ee'
-            }
+            fontSize: '14px'
         },
         activeTab: {
             color: '#4361ee',
@@ -386,10 +323,7 @@ const GuardiasAdmin = () => {
             fontWeight: '500',
             transition: 'all 0.3s ease',
             fontSize: '14px',
-            marginTop: '10px',
-            '&:hover': {
-                opacity: 0.9
-            }
+            marginTop: '10px'
         },
         buttonPrimary: {
             backgroundColor: '#4361ee',
@@ -456,10 +390,7 @@ const GuardiasAdmin = () => {
             border: 'none',
             fontSize: '24px',
             cursor: 'pointer',
-            color: '#6c757d',
-            '&:hover': {
-                color: '#e74c3c'
-            }
+            color: '#6c757d'
         },
         emptyState: {
             gridColumn: '1 / -1', 
@@ -475,11 +406,6 @@ const GuardiasAdmin = () => {
     const CardGuardia = ({ guardia }) => {
         const activeTab = activeCards[guardia.id] || 'informacion';
         const guardAssignments = getGuardAssignments(guardia.id);
-        
-        console.log(`👤 Renderizando CardGuardia para ${guardia.id}:`, {
-            guardia,
-            guardAssignments
-        });
 
         const handleTabClick = (tab) => {
             setActiveCards(prev => ({
@@ -488,31 +414,20 @@ const GuardiasAdmin = () => {
             }));
         };
 
-        // Formatear horarios para mostrar
         const formatSchedule = (assignments) => {
-            if (!assignments || assignments.length === 0) {
-                return [];
-            }
+            if (!assignments || assignments.length === 0) return [];
             
             const daysMap = {
                 0: 'domingo', 1: 'lunes', 2: 'martes', 3: 'miércoles',
                 4: 'jueves', 5: 'viernes', 6: 'sábado'
             };
             
-            return assignments.map(a => {
-                const dayNumber = a.dayOfWeek;
-                const dayName = daysMap[dayNumber] || `Día ${dayNumber}`;
-                
-                const schedule = {
-                    dia: dayName,
-                    horario: `${a.startTime || '??:??'} - ${a.endTime || '??:??'}`,
-                    bicicletero: a.bikerack?.name || a.bikerackName || 'Sin nombre',
-                    id: a.id
-                };
-                
-                console.log(`📅 Horario formateado:`, schedule);
-                return schedule;
-            });
+            return assignments.map(a => ({
+                dia: daysMap[a.dayOfWeek] || `Día ${a.dayOfWeek}`,
+                horario: `${a.startTime || '??:??'} - ${a.endTime || '??:??'}`,
+                bicicletero: a.bikerack?.name || 'Sin nombre',
+                id: a.id
+            }));
         };
 
         const guardSchedule = formatSchedule(guardAssignments);
@@ -582,10 +497,6 @@ const GuardiasAdmin = () => {
                                         {guardia.isAvailable ? '✅ Disponible' : '❌ No disponible'}
                                     </span>
                                 </div>
-                                <div style={styles.infoItem}>
-                                    <span style={styles.infoLabel}>Asignaciones:</span>
-                                    <span style={styles.infoValue}>{guardAssignments.length}</span>
-                                </div>
                             </div>
                         )}
 
@@ -597,7 +508,6 @@ const GuardiasAdmin = () => {
                                             <div 
                                                 key={schedule.id || index} 
                                                 style={{
-                                                    ...styles.infoItem,
                                                     backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white',
                                                     padding: '10px',
                                                     borderRadius: '8px',
@@ -606,7 +516,6 @@ const GuardiasAdmin = () => {
                                                     cursor: 'pointer'
                                                 }}
                                                 onClick={() => {
-                                                    // Buscar la asignación completa por ID
                                                     const fullAssignment = assignments.find(a => a.id === schedule.id);
                                                     if (fullAssignment) {
                                                         setSelectedGuardia(guardia);
@@ -631,8 +540,7 @@ const GuardiasAdmin = () => {
                                                     <span style={{ 
                                                         marginLeft: 'auto',
                                                         fontSize: '12px',
-                                                        color: '#3498db',
-                                                        cursor: 'pointer'
+                                                        color: '#3498db'
                                                     }}>
                                                         ✏️ Editar
                                                     </span>
@@ -640,13 +548,9 @@ const GuardiasAdmin = () => {
                                                 <div style={{ 
                                                     fontSize: '14px', 
                                                     color: '#495057',
-                                                    marginTop: '5px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '5px'
+                                                    marginTop: '5px'
                                                 }}>
-                                                    <span>📍</span>
-                                                    <span>{schedule.bicicletero}</span>
+                                                    📍 {schedule.bicicletero}
                                                 </div>
                                             </div>
                                         ))}
@@ -654,22 +558,17 @@ const GuardiasAdmin = () => {
                                 ) : (
                                     <div style={{ 
                                         textAlign: 'center', 
-                                        color: '#6c757d', 
                                         padding: '20px',
                                         backgroundColor: '#f8f9fa',
                                         borderRadius: '8px'
                                     }}>
-                                        <div style={{ fontSize: '48px', marginBottom: '10px' }}>📅</div>
-                                        <h4 style={{ marginBottom: '10px' }}>Sin asignaciones</h4>
-                                        <p style={{ fontSize: '14px' }}>
-                                            Este guardia no tiene horarios asignados aún.
-                                        </p>
+                                        <div style={{ fontSize: '48px' }}>📅</div>
+                                        <h4>Sin asignaciones</h4>
                                         <button 
                                             style={{ 
                                                 ...styles.button, 
                                                 ...styles.buttonPrimary,
                                                 width: 'auto',
-                                                padding: '8px 16px',
                                                 marginTop: '15px'
                                             }}
                                             onClick={() => {
@@ -700,18 +599,13 @@ const GuardiasAdmin = () => {
 
                     <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                         <button 
-                            style={{ 
-                                ...styles.button, 
-                                ...styles.buttonPrimary,
-                                flex: 1
-                            }}
+                            style={{ ...styles.button, ...styles.buttonPrimary, flex: 1 }}
                             onClick={() => {
-                                console.log('📝 Asignando horario a:', guardia);
                                 setSelectedGuardia(guardia);
                                 setShowAssignmentForm(true);
                             }}
                         >
-                            <span style={styles.icon}>📅</span> Asignar Horario
+                            📅 Asignar Horario
                         </button>
                         <button 
                             style={{ 
@@ -736,7 +630,6 @@ const GuardiasAdmin = () => {
                 <div style={styles.container}>
                     <div style={styles.loading}>
                         <h2>Cargando datos...</h2>
-                        <p>Por favor espere...</p>
                     </div>
                 </div>
             </LayoutAdmin>
@@ -762,17 +655,9 @@ const GuardiasAdmin = () => {
                         ))
                     ) : (
                         <div style={styles.emptyState}>
-                            <h3 style={{ color: '#6c757d', marginBottom: '15px' }}>No hay guardias registrados</h3>
-                            <p style={{ marginBottom: '20px' }}>
-                                Comienza agregando tu primer guardia haciendo clic en el botón "Agregar Nuevo Guardia"
-                            </p>
+                            <h3>No hay guardias registrados</h3>
                             <button 
-                                style={{ 
-                                    ...styles.button, 
-                                    ...styles.buttonPrimary,
-                                    width: 'auto',
-                                    padding: '10px 20px'
-                                }}
+                                style={{ ...styles.button, ...styles.buttonPrimary, width: 'auto' }}
                                 onClick={() => setShowGuardForm(true)}
                             >
                                 + Agregar Primer Guardia
@@ -783,12 +668,7 @@ const GuardiasAdmin = () => {
 
                 <div style={{ marginTop: '40px', textAlign: 'center' }}>
                     <button 
-                        style={{ 
-                            ...styles.button, 
-                            ...styles.buttonPrimary, 
-                            width: '200px', 
-                            marginRight: '10px' 
-                        }}
+                        style={{ ...styles.button, ...styles.buttonPrimary, width: '200px' }}
                         onClick={() => setShowGuardForm(true)}
                     >
                         + Agregar Nuevo Guardia
@@ -796,7 +676,6 @@ const GuardiasAdmin = () => {
                 </div>
             </div>
 
-            {/* Modal para crear guardia */}
             {showGuardForm && (
                 <div style={styles.modalOverlay}>
                     <div style={styles.modal}>
@@ -817,66 +696,15 @@ const GuardiasAdmin = () => {
                 </div>
             )}
 
-            {/* Modal para asignar/editar horario */}
             {showAssignmentForm && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(0,0,0,0.7)',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    zIndex: 1000,
-                    backdropFilter: 'blur(3px)'
-                }}>
-                    <div style={{
-                        background: 'white',
-                        borderRadius: '15px',
-                        padding: '30px',
-                        maxWidth: '500px',
-                        width: '90%',
-                        maxHeight: '85vh',
-                        overflowY: 'auto',
-                        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-                        position: 'relative'
-                    }}>
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: '20px',
-                            position: 'sticky',
-                            top: 0,
-                            background: 'white',
-                            paddingBottom: '10px',
-                            zIndex: 1
-                        }}>
-                            <h2 style={{
-                                fontSize: '24px',
-                                fontWeight: '600',
-                                color: '#272e4b',
-                                margin: 0
-                            }}>
-                                {assignmentToEdit ? '✏️ Editar Asignación' : '📅 Nueva Asignación'} - {selectedGuardia?.user?.names}
+                <div style={styles.modalOverlay}>
+                    <div style={styles.modal}>
+                        <div style={styles.modalHeader}>
+                            <h2 style={styles.modalTitle}>
+                                {assignmentToEdit ? '✏️ Editar' : '📅 Nueva'} Asignación - {selectedGuardia?.user?.names}
                             </h2>
                             <button 
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    fontSize: '24px',
-                                    cursor: 'pointer',
-                                    color: '#6c757d',
-                                    width: '30px',
-                                    height: '30px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    borderRadius: '50%',
-                                    transition: 'all 0.2s ease'
-                                }}
+                                style={styles.closeButton}
                                 onClick={() => {
                                     setShowAssignmentForm(false);
                                     setSelectedGuardia(null);
@@ -887,23 +715,21 @@ const GuardiasAdmin = () => {
                             </button>
                         </div>
                         
-                       <AssignmentForm 
-    guardId={selectedGuardia?.id}
-    bikeracks={bikeracks}
-    onSubmit={assignmentToEdit ? 
-        (data) => handleUpdateAssignment(data, assignmentToEdit.id) : 
-        handleCreateAssignment}
-    onCancel={() => {
-        setShowAssignmentForm(false);
-        setSelectedGuardia(null);
-        setAssignmentToEdit(null);
-    }}
-    existingAssignments={assignments}
-    assignmentToEdit={assignmentToEdit}
-    onAssignmentUpdated={() => {
-        setRefresh(prev => !prev);
-    }}
-/>
+                        <AssignmentForm 
+                            guardId={selectedGuardia?.id}
+                            bikeracks={bikeracks}
+                            onSubmit={assignmentToEdit ? 
+                                (data) => handleUpdateAssignment(data, assignmentToEdit.id) : 
+                                handleCreateAssignment}
+                            onCancel={() => {
+                                setShowAssignmentForm(false);
+                                setSelectedGuardia(null);
+                                setAssignmentToEdit(null);
+                            }}
+                            existingAssignments={assignments}
+                            assignmentToEdit={assignmentToEdit}
+                            onAssignmentUpdated={() => setRefresh(prev => !prev)}
+                        />
                     </div>
                 </div>
             )}

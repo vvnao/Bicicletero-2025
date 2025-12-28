@@ -95,6 +95,8 @@ export const uploadIncidenceEvidence = uploadEvidence.fields([
 //* middleware para una sola evidencia
 export const uploadSingleEvidence = uploadEvidence.single('evidence');
 
+
+
 export const handleEvidenceUploadError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {

@@ -1,5 +1,5 @@
 // src/config/initHistory.js
-'use strict';
+/*'use strict';
 
 import { AppDataSource } from './configDb.js';
 import { createHistoryEvent } from '../helpers/historyHelper.js';
@@ -112,4 +112,4 @@ export async function createInitialHistory() {
   } catch (error) {
     console.error('❌ Error creando historial inicial:', error.message);
   }
-}
+}*/

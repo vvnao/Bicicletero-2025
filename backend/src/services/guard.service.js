@@ -97,7 +97,7 @@ export class GuardService {
 
         // 7. Crear perfil de guardia
         const guard = queryRunner.manager.create(GuardEntity, {
-            userId: savedUser.id,
+            user: savedUser,
             guardNumber: nextGuardNumber,
             phone: guardData.phone,
             address: guardData.address,
@@ -121,7 +121,6 @@ export class GuardService {
             relations: ['user'],
             select: {
                 id: true,
-                userId: true,
                 guardNumber: true,
                 phone: true,
                 address: true,
@@ -160,14 +159,18 @@ export class GuardService {
             }
         };
 
-    } catch (error) {
+  } catch (error) {
+    //  SOLO hacer rollback si la transacción está activa
+    if (queryRunner.isTransactionActive) {
         await queryRunner.rollbackTransaction();
-        console.error('Error en createGuard:', error);
-        throw error;
-    } finally {
-        await queryRunner.release();
     }
+    
+    console.error('ERROR REAL EN CREATEGUARD:', error); // Esto te dirá qué falló realmente
+    throw error;
+} finally {
+    await queryRunner.release();
 }
+  }
     /**
      * Obtener todos los guardias con información de usuario
      */

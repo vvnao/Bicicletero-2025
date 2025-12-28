@@ -1,38 +1,22 @@
 // routes/guard.routes.js
-import express from 'express';
-import GuardController from '../controllers/guard.controller.js';
-import { authMiddleware, isAdmin, isAdminOrGuard, isOwnerOrAdmin } from '../middleware/auth.middleware.js';
+import { Router } from 'express';
+import guardController from '../controllers/guard.controller.js';
+import { authMiddleware, isAdmin, isAdminOrGuard } from '../middleware/auth.middleware.js';
 
-const router = express.Router();
+const router = Router();
 
-// Middleware de autenticación global
+// Aplicar middleware de autenticación a todas las rutas
 router.use(authMiddleware);
 
-// 1. CREAR GUARDIA - SOLO ADMIN
-router.post('/', isAdmin, GuardController.createGuard);
-
-// 2. OBTENER TODOS LOS GUARDIAS - ADMIN Y GUARDIA
-router.get('/', isAdminOrGuard, GuardController.getAllGuards);
-
-// 3. OBTENER GUARDIAS DISPONIBLES - ADMIN Y GUARDIA
-router.get('/available', isAdminOrGuard, GuardController.findAvailableGuards);
-
-// 4. OBTENER GUARDIA POR ID - ADMIN Y GUARDIA (solo su propio perfil)
-router.get('/:id', isOwnerOrAdmin('id'), GuardController.getGuardById);
-
-// 5. ACTUALIZAR GUARDIA - ADMIN (todo) o GUARDIA (solo campos permitidos)
-router.put('/:id', isOwnerOrAdmin('id'), GuardController.updateGuard);
-
-// 6. DESACTIVAR GUARDIA - SOLO ADMIN
-router.patch('/:id/deactivate', isAdmin, GuardController.deactivateGuard);
-
-// 7. ACTIVAR GUARDIA - SOLO ADMIN
-router.patch('/:id/activate', isAdmin, GuardController.activateGuard);
-
-// 8. OBTENER ESTADÍSTICAS - ADMIN Y GUARDIA (solo su propio perfil)
-router.get('/:id/stats', isOwnerOrAdmin('id'), GuardController.getGuardStats);
-
-// 9. CAMBIAR DISPONIBILIDAD - ADMIN y el propio guardia
-router.patch('/:id/availability', isOwnerOrAdmin('id'), GuardController.toggleAvailability);
+// Rutas
+router.post('/', isAdmin, guardController.createGuard);
+router.get('/', isAdminOrGuard, guardController.getAllGuards);
+router.get('/:id', isAdminOrGuard, guardController.getGuardById);
+router.put('/:id', isAdminOrGuard, guardController.updateGuard);
+router.patch('/:id/toggle-availability', isAdminOrGuard, guardController.toggleAvailability);
+router.patch('/:id/deactivate', isAdmin, guardController.deactivateGuard);
+router.patch('/:id/activate', isAdmin, guardController.activateGuard);
+router.get('/:id/stats', isAdminOrGuard, guardController.getGuardStats);
+router.get('/available/find', isAdminOrGuard, guardController.findAvailableGuards);
 
 export default router;

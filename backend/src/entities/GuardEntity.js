@@ -1,4 +1,3 @@
-
 import { EntitySchema } from 'typeorm';
 
 export const GuardEntity = new EntitySchema({
@@ -10,15 +9,16 @@ export const GuardEntity = new EntitySchema({
             type: 'int',
             generated: 'increment',
         },
-        userId: {
-            type: 'int',
-            nullable: false,
-            name: 'user_id'
-        },
-           guardNumber: { // ⬅️ DEBE ESTAR DEFINIDO
+        // ❌ ELIMINAR userId - la relación lo crea automáticamente
+        // userId: {
+        //     type: 'int',
+        //     nullable: false,
+        //     name: 'user_id'
+        // },
+        guardNumber: {
             type: 'int',
             unique: true,
-            nullable: true, // ⬅️ Temporalmente nullable
+            nullable: true,
             name: 'guard_number'
         },
         phone: {
@@ -85,10 +85,11 @@ export const GuardEntity = new EntitySchema({
             target: 'User',
             type: 'many-to-one',
             joinColumn: { 
-                name: 'user_id',
+                name: 'user_id',  // ✅ TypeORM creará esta columna
                 referencedColumnName: 'id'
             },
             inverseSide: 'guard',
+            nullable: false
         },
         assignments: {
             target: 'GuardAssignment',

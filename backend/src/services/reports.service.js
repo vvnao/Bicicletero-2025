@@ -4,9 +4,10 @@
 import { AppDataSource } from "../config/configDb.js";
 import { BikerackEntity } from "../entities/BikerackEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
-import { HistoryEntity } from "../entities/HistoryEntity.js";
+import HistoryEntity, { HISTORY_TYPES } from "../entities/HistoryEntity.js";
 import { UserEntity } from "../entities/UserEntity.js";
 import { ReportEntity } from "../entities/ReportEntity.js";
+import ExcelJS from 'exceljs';
 
 class ReportService {
     constructor() {
@@ -538,43 +539,7 @@ class ReportService {
         return check;
     }
 
-    generateAuditRecommendations(auditResults) {
-        const { issues } = auditResults;
-
-        // Recomendaciones basadas en problemas encontrados
-        if (issues.some(i => i.type === 'SOBRECAPACIDAD')) {
-            auditResults.recommendations.push({
-                priority: 'ALTA',
-                action: 'Redistribuir bicicletas',
-                details: 'Hay bicicleteros sobrecargados'
-            });
-        }
-
-        if (issues.some(i => i.type === 'CHECKIN_SIN_CHECKOUT')) {
-            auditResults.recommendations.push({
-                priority: 'ALTA',
-                action: 'Resolver check-ins pendientes',
-                details: 'Hay bicicletas sin check-out registrado'
-            });
-        }
-
-        if (issues.some(i => i.type === 'INCONSISTENCIA_INVENTARIO')) {
-            auditResults.recommendations.push({
-                priority: 'MEDIA',
-                action: 'Auditoría física de inventario',
-                details: 'Diferencias en registros vs realidad'
-            });
-        }
-
-        // Si todo está bien
-        if (auditResults.summary.issuesFound === 0) {
-            auditResults.recommendations.push({
-                priority: 'BAJA',
-                action: 'Continuar operación normal',
-                details: 'Sistema funcionando correctamente'
-            });
-        }
-    }
+   
 
     // ================================================
     // 4. DETECCIÓN DE SOBRECAPACIDAD
@@ -790,6 +755,78 @@ class ReportService {
         }
     }
 
+    async exportToExcel(reportData) {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Reporte de Uso');
+
+    // 1. Estilo de Títulos
+    sheet.mergeCells('A1:E1');
+    const titleCell = sheet.getCell('A1');
+    titleCell.value = `REPORTE SEMANAL: ${reportData.title}`;
+    titleCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2D3E50' } };
+    titleCell.alignment = { horizontal: 'center' };
+
+    sheet.mergeCells('A2:E2');
+    sheet.getCell('A2').value = `Período: ${reportData.period}`;
+
+    // 2. Encabezados de la Tabla
+    const headerRow = sheet.addRow(['Fecha', 'Check-ins', 'Check-outs', 'Usuarios Únicos', 'Bicicleteros']);
+    headerRow.eachCell((cell) => {
+        cell.font = { bold: true };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEEEEE' } };
+        cell.border = { bottom: { style: 'thin' } };
+    });
+
+    // 3. Insertar Datos Diarios (Viene de tu dailyStats)
+    reportData.dailyStats.forEach(day => {
+        sheet.addRow([
+            day.date,
+            day.checkins,
+            day.checkouts,
+            day.uniqueUsers,
+            day.uniqueBikeracks
+        ]);
+    });
+
+    // 4. Espacio y Resumen Final
+    sheet.addRow([]);
+    const summaryHeader = sheet.addRow(['RESUMEN TOTAL']);
+    summaryHeader.getCell(1).font = { bold: true, size: 12 };
+
+    sheet.addRow(['Total Eventos', reportData.summary.totalEvents]);
+    sheet.addRow(['Total Check-ins', reportData.summary.totalCheckins]);
+    sheet.addRow(['Usuarios Únicos en la Semana', reportData.summary.uniqueUsers]);
+
+    // Ajustar ancho de columnas automáticamente
+    sheet.columns.forEach(column => {
+        column.width = 20;
+    });
+
+    // 5. Generar el Buffer (para enviar al frontend)
+    const buffer = await workbook.xlsx.writeBuffer();
+    return buffer;
+}
+
+
+
+async saveToHistory(reportData, adminId) {
+        try {
+            const historyRepo = AppDataSource.getRepository(ReportHistoryEntity);
+            const newEntry = historyRepo.create({
+                reportType: reportData.type,
+                dateRange: `${reportData.start} - ${reportData.end}`,
+                generatedBy: { id: adminId },
+                format: reportData.format,
+                createdAt: new Date()
+            });
+            return await historyRepo.save(newEntry);
+        } catch (error) {
+            console.error("Error al guardar historial:", error);
+        }
+    }
+
+
     // ================================================
     // 6. HISTORIAL DE REPORTES
     // ================================================
@@ -886,38 +923,6 @@ class ReportService {
         return date.toISOString().split('T')[0];
     }
 
-    generateUsageRecommendations(dailyStats, bikerackStats) {
-        const recommendations = [];
-
-        if (dailyStats.length === 0) {
-            return ['No hay datos de uso en el período analizado'];
-        }
-
-        // Analizar días con más actividad
-        const maxDay = dailyStats.reduce((max, day) => 
-            day.total > max.total ? day : max, dailyStats[0]);
-        
-        const minDay = dailyStats.reduce((min, day) => 
-            day.total < min.total ? day : min, dailyStats[0]);
-
-        if (maxDay.total > minDay.total * 3) {
-            recommendations.push(`Días de alta demanda: ${maxDay.date} (${maxDay.total} movimientos)`);
-        }
-
-        // Analizar distribución por bicicletero
-        const totalMovements = bikerackStats.reduce((sum, b) => sum + b.total, 0);
-        
-        if (totalMovements > 0) {
-            const topBikerack = bikerackStats[0];
-            const topPercentage = Math.round((topBikerack.total / totalMovements) * 100);
-            
-            if (topPercentage > 50) {
-                recommendations.push(`El bicicletero "${topBikerack.name}" concentra el ${topPercentage}% de la actividad`);
-            }
-        }
-
-        return recommendations.length > 0 ? recommendations : ['Patrón de uso estable y distribuido'];
-    }
 }
 
 // Crear instancia
