@@ -1,5 +1,5 @@
 "use strict";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom"; 
 import { FiTag, FiSettings, FiDroplet, FiHash, FiUser, FiEdit3, FiChevronRight, FiPlusCircle } from "react-icons/fi";
 import { useGetPrivateBicycles } from "@hooks/bicycles/useGetPrivateBicycles";
@@ -33,6 +33,11 @@ const BicycleProfile = () => {
     const bicycleColor = (currentBicycle && localColors[currentBicycle.id])
         ? localColors[currentBicycle.id]
         : currentBicycle?.color;
+
+    const getInitial = () => {
+        if (currentBicycle?.brand) return currentBicycle.brand.charAt(0).toUpperCase();
+        return "B";
+    };
 
     const handleEditClick = async () => {
         if (!currentBicycle) return;
@@ -85,29 +90,32 @@ const BicycleProfile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-blue p-4 md:p-10 text-white font-sans">
+        <div className="min-h-screen p-4 md:p-10 text-white font-sans">
             {showZoomModal && bicycleImageUrl && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4" onClick={() => setShowZoomModal(false)}>
-                    <img src={bicycleImageUrl} className="max-w-full max-h-full rounded-xl object-contain animate-in zoom-in duration-300" alt="Bicycle Zoom" />
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4" onClick={() => setShowZoomModal(false)}>
+                    <img 
+                        src={bicycleImageUrl} 
+                        className="max-w-full max-h-full rounded-xl object-contain animate-in zoom-in duration-300" 
+                        alt="Bicycle Zoom" 
+                    />
                 </div>
             )}
 
             {isLoading ? (
-                <div className="flex justify-center items-center h-64"><p className="animate-pulse">Cargando...</p></div>
+                <div className="flex justify-center items-center h-64">
+                    <p className="animate-pulse text-blue-400 font-bold">Cargando tus bicicletas...</p>
+                </div>
             ) : !hasBicycles ? (
-                <div className="max-w-2xl mx-auto mt-20 text-center space-y-8"> 
-                    
+                <div className="max-w-2xl mx-auto mt-20 text-center space-y-8">
                     <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] p-12 border border-white/10 shadow-2xl">
                         <div className="w-24 h-24 bg-[#3b82f6]/20 text-[#3b82f6] rounded-full flex items-center justify-center mx-auto mb-6">
                             <FiPlusCircle size={48} />
                         </div>
-                        
-                        <h2 className="text-3xl font-bold mb-2 text-white">No hay bicicletas aún</h2>
+                        <h2 className="text-3xl font-bold mb-2">No hay bicicletas aún</h2>
                         <p className="text-gray-400 mb-8">Parece que todavía no has registrado ninguna bicicleta en tu perfil.</p>
-                        
                         <Link 
                             to="/home/user/addBicycles"
-                            className="inline-flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-4 px-8 rounded-2xl transition-colors shadow-lg shadow-blue-500/20"
+                            className="inline-flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
                         >
                             Registrar primera bicicleta
                         </Link>
@@ -117,18 +125,30 @@ const BicycleProfile = () => {
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/10 p-8 flex flex-col items-center">
-                            <div className="w-48 h-48 rounded-full border-4 border-[#3b82f6]/30 overflow-hidden bg-[#1a1f37] mb-6 shadow-xl">
+                            
+                            <div className="w-48 h-48 rounded-full border-4 border-[#3b82f6]/30 overflow-hidden bg-[#1a1f37] mb-6 shadow-xl flex items-center justify-center">
                                 {bicycleImageUrl ? (
                                     <img src={bicycleImageUrl} className="w-full h-full object-cover" alt="Bicycle" />
                                 ) : (
-                                    <div className="flex items-center justify-center h-full text-white/10"><FiSettings size={60} /></div>
+                                    <div className="flex items-center justify-center w-full h-full bg-grey">
+                                        <span className="text-7xl font-black text-white drop-shadow-md">
+                                            {getInitial()}
+                                        </span>
+                                    </div>
                                 )}
                             </div>
+
                             <h2 className="text-3xl font-bold text-center">{currentBicycle.brand}</h2>
                             <p className="text-[#3b82f6] text-sm font-bold uppercase tracking-widest mt-1 mb-8">{currentBicycle.model}</p>
                             
                             <div className="w-full space-y-3">
-                                <button onClick={() => setShowZoomModal(true)} className="w-full py-3 bg-[#3b82f6] rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#2563eb] transition-all">
+                                <button 
+                                    onClick={() => bicycleImageUrl && setShowZoomModal(true)} 
+                                    disabled={!bicycleImageUrl}
+                                    className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+                                        bicycleImageUrl ? 'bg-[#3b82f6] hover:bg-[#2563eb]' : 'bg-gray-600 opacity-50 cursor-not-allowed'
+                                    }`}
+                                >
                                     <FiUser /> Ver Foto
                                 </button>
                                 <button onClick={handleEditClick} disabled={isUpdating} className="w-full py-3 bg-white/5 border border-white/10 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
@@ -143,7 +163,10 @@ const BicycleProfile = () => {
                                     <p className="text-[10px] uppercase text-white/50 font-bold tracking-tighter">Bicicleta actual</p>
                                     <p className="font-bold text-lg">{currentIndex + 1} / {bicycles.length}</p>
                                 </div>
-                                <button onClick={() => setCurrentIndex((prev) => (prev + 1) % bicycles.length)} className="p-3 bg-[#3b82f6]/20 text-[#3b82f6] rounded-xl hover:bg-[#3b82f6]/40 transition-all">
+                                <button 
+                                    onClick={() => setCurrentIndex((prev) => (prev + 1) % bicycles.length)} 
+                                    className="p-3 bg-[#3b82f6]/20 text-[#3b82f6] rounded-xl hover:bg-[#3b82f6]/40 transition-all"
+                                >
                                     <FiChevronRight size={24} />
                                 </button>
                             </div>
