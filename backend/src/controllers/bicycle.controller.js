@@ -12,11 +12,14 @@ export async function createBicycle(req, res) {
             const mensaje = error.details[0].message;
             return handleErrorClient(res, 400, mensaje);
         }
+
         const userId = req.user?.id;
         if (!userId) {
             return handleErrorClient(res, 401, "Usuario no autenticado");
         }
-        const newBicycle = await createBicycleService(req.body, userId);
+
+        const newBicycle = await createBicycleService(req.body, userId, req.files?.photo?.[0]);
+
         handleSuccess(res, 201, "Bicicleta creada exitosamente", newBicycle);
     } catch (error) {
         handleErrorServer(res, 500, error.message);

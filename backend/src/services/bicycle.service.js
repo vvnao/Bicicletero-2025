@@ -3,36 +3,30 @@ import { AppDataSource } from "../config/configDb.js"
 import { BicycleEntity } from "../entities/BicycleEntity.js"
 import { UserEntity } from "../entities/UserEntity.js"
 
-export async function createBicycleService(data, userId){
+export async function createBicycleService(data, userId, file) {
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
     const userRepository = AppDataSource.getRepository(UserEntity);
 
     const user = await userRepository.findOneBy({ id: userId });
-    if(!user){
-        throw new Error("Usuario no encontrado");
-    }
+    if (!user) throw new Error("Usuario no encontrado");
 
-    const count = await bicycleRepository.count({
-        where: { user: { id: userId } }
-    });
-    if (count >= 3) {
-        throw new Error("Ya tiene el máximo de 3 bicicletas registradas");
-    }
+    const count = await bicycleRepository.count({ where: { user: { id: userId } } });
+    if (count >= 3) throw new Error("Ya tiene el máximo de 3 bicicletas registradas");
 
     if (data.serialNumber) {
         const existing = await bicycleRepository.findOneBy({ serialNumber: data.serialNumber });
-        if (existing) {
-            throw new Error("Ya existe una bicicleta con ese número de serie");
-        }
+        if (existing) throw new Error("Ya existe una bicicleta con ese número de serie");
     }
+
     const newBicycle = bicycleRepository.create({
         brand: data.brand,
         model: data.model,
         color: data.color,
         serialNumber: data.serialNumber,
-        photo: data.photo || null,
+        photo: file ? file.path : null, 
         user: user,
     });
+
     return await bicycleRepository.save(newBicycle);
 }
 export async function getBicyclesServices(userId) {

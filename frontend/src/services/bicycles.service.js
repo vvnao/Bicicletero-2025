@@ -1,15 +1,18 @@
 import axios from './root.service.js';
 import cookies from 'js-cookie';
 
-export async function createBicycle(formValues){
-    try{
-        const token = cookies.get('jwt-auth');
-        const response = await axios.post('/bicycles', formValues,{
-            headers: { Authorization: `Bearer ${token}`}
+export async function createBicycle(formData) {
+    try {
+        const token = cookies.get("jwt-auth");
+        const response = await axios.post("/bicycles", formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "multipart/form-data", 
+            },
         });
         return response.data;
     } catch (error) {
-        return error.response?.data || { message: 'Error al crear bicicleta' };
+        return error.response?.data || { message: "Error al crear bicicleta" };
     }
 }
 export async function getBicycles() {
