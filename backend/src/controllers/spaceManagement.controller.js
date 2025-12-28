@@ -25,7 +25,6 @@ export async function occupyWithReservation(req, res) {
     await sendEmail(
       result.user.email,
       'Ingreso Confirmado - Bicicletero UBB',
-      `Tu bicicleta está en espacio ${result.space.spaceCode}`,
       emailTemplates.checkinStandard(result.user, result.space, {
         reservationCode: result.reservation.reservationCode,
         estimatedHours: result.reservation.estimatedHours,
@@ -83,13 +82,11 @@ export async function occupyWithoutReservation(req, res) {
     await sendEmail(
       result.user.email,
       'Ingreso Confirmado - Bicicletero UBB',
-      `Tu bicicleta está en espacio ${result.space.spaceCode}`,
       emailTemplates.checkinStandard(result.user, result.space, {
         retrievalCode: result.retrievalCode,
         estimatedHours: estimatedHours,
       })
     );
-    console.log('Correo enviado');
 
     handleSuccess(res, 200, 'Espacio ocupado exitosamente sin reserva', result);
   } catch (error) {
@@ -129,10 +126,7 @@ export async function liberateSpaceController(req, res) {
     }
 
     if (result.user?.email) {
-      await sendEmail(result.user.email, subject, null, emailHtml);
-      console.log(
-        `Correo enviado (${result.isInfraction ? 'Infracción' : 'Estándar'})`
-      );
+      await sendEmail(result.user.email, subject, emailHtml);
     }
 
     handleSuccess(res, 200, 'Espacio liberado exitosamente', result);

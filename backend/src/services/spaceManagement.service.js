@@ -342,7 +342,6 @@ export async function checkTimeExceededSpaces() {
         await sendEmail(
           log.user.email,
           'Alerta: Tiempo de uso excedido - UBB',
-          null,
           emailHtml
         );
       }

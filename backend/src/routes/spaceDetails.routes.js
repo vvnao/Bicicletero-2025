@@ -1,6 +1,9 @@
 'use strict';
 import { Router } from 'express';
-import { getSpaceDetails } from '../controllers/spaceDetails.controller.js';
+import {
+  getSpaceDetails,
+  getUserByRut,
+} from '../controllers/spaceDetails.controller.js';
 
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/authorize.middleware.js';
@@ -14,5 +17,7 @@ router.get(
   authorize(['admin', 'guardia', 'user']),
   getSpaceDetails
 );
+
+router.get('/user/:rut', authorize(['admin', 'guardia']), getUserByRut);
 
 export default router;

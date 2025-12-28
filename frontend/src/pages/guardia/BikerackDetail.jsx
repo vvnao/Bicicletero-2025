@@ -1,15 +1,18 @@
-import { useEffect, useState, useCallback } from 'react'; 
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getBikerackDetail } from '@services/bikerack.service';
+import SpaceModal from './SpaceModal';
 import '@styles/BikerackDetail.css';
 
 const BikerackDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSpaceId, setSelectedSpaceId] = useState(null);
 
   const fetchInfo = useCallback(
     async (showLoading = false) => {
@@ -17,7 +20,7 @@ const BikerackDetail = () => {
       setIsRefreshing(true);
       try {
         const result = await getBikerackDetail(id);
-        setData(result); 
+        setData(result);
       } catch (error) {
         console.error('Error cargando detalle', error);
       } finally {
@@ -33,6 +36,18 @@ const BikerackDetail = () => {
     const interval = setInterval(() => fetchInfo(false), 60000);
     return () => clearInterval(interval);
   }, [fetchInfo]);
+
+  //! para el modal
+  const handleOpenModal = (spaceId) => {
+    setSelectedSpaceId(spaceId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedSpaceId(null);
+    fetchInfo(false);
+  };
 
   if (loading)
     return <div className='loading-screen'>Cargando mapa de espacios...</div>;
@@ -75,12 +90,21 @@ const BikerackDetail = () => {
             key={space.id}
             className={`space-box status-${space.status
               .toLowerCase()
-              .replace(/\s+/g, '-')}`} 
+              .replace(/\s+/g, '-')}`}
+            onClick={() => handleOpenModal(space.id)}
           >
             {space.spaceCode}
           </div>
         ))}
       </div>
+
+      //! modal
+      {isModalOpen && (
+        <SpaceModal
+          spaceId={selectedSpaceId}
+          onClose={handleCloseModal}
+        />
+      )}
 
       <footer className='legend'>
         <p>
