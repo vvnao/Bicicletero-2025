@@ -2,6 +2,7 @@
 import { AppDataSource } from "../config/configDb.js"
 import { BicycleEntity } from "../entities/BicycleEntity.js"
 import { UserEntity } from "../entities/UserEntity.js"
+import { ReservationEntity } from "../entities/ReservationEntity.js";
 
 export async function createBicycleService(data, userId, file) {
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);

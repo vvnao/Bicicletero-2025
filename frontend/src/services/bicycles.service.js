@@ -42,10 +42,31 @@ export async function getBicyclesByUserId(id) {
     try {
         const token = localStorage.getItem('token');
         const response = await axios.get(`/bicycles/user/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
+            data: { id: id }
         });
         return response.data;
     } catch (error) {
         return error.response?.data || { message: 'Error al obtener bicicleta del usuario' };
+    }
+}
+
+export async function deleteBicycles(id) {
+    try {
+        const token = cookies.get('jwt-auth');
+        
+        const response = await axios.delete('/bicycles', {
+            headers: { 
+                Authorization: `Bearer ${token}` 
+            },
+            data: { id } 
+        });
+
+        return { ok: true, data: response.data };
+
+    } catch (error) {
+        return { 
+            ok: false, 
+            error: error.response?.data?.message || 'Error al eliminar bicicleta' };
     }
 }

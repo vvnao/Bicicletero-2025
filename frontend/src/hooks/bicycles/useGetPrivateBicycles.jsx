@@ -1,6 +1,6 @@
-"use strict"
+"use strict";
 import { useState, useEffect } from "react";
-import {  getBicycles } from "../../services/bicycles.service.js";
+import { getBicycles } from "../../services/bicycles.service.js";
 
 export const useGetPrivateBicycles = () =>{
     const [bicycles, setBicycles] = useState([]);
@@ -29,5 +29,5 @@ export const useGetPrivateBicycles = () =>{
         fetchBicycles();
     }, []);
 
-    return { bicycles, isLoading, error };
+    return { bicycles, isLoading, error, fetchBicycles };
 }

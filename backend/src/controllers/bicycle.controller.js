@@ -20,9 +20,9 @@ export async function createBicycle(req, res) {
 
         const newBicycle = await createBicycleService(req.body, userId, req.files?.photo?.[0]);
 
-        handleSuccess(res, 201, "Bicicleta creada exitosamente", newBicycle);
+        return handleSuccess(res, 201, "Bicicleta creada exitosamente", newBicycle);
     } catch (error) {
-        handleErrorServer(res, 500, error.message);
+        return handleErrorServer(res, 500, error.message);
     }
 }
 export async function getBicycles(req, res) {
@@ -32,7 +32,7 @@ export async function getBicycles(req, res) {
         const bicycles = await getBicyclesServices(userId);
 
         if (!bicycles || bicycles.length === 0) {
-            handleSuccess(res, 200, "El usuario no tiene bicicletas registradas", bicycles);
+            return handleSuccess(res, 200, "El usuario no tiene bicicletas registradas", bicycles);
         }
         const SeeBicycles = bicycles.map(({ user, ...bike }) => bike);
         return handleSuccess(res, 200, "Bicicleta(s) obtenida(s) exitosamente", SeeBicycles);
@@ -45,11 +45,11 @@ export async function getAllBicycles(req, res) {
         const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
         const bicycles = await bicycleRepository.find();
         if (!bicycles) {
-            handleSuccess(res, 200, "No hay bicicletas registradas", bicycles);
+            return handleSuccess(res, 200, "No hay bicicletas registradas", bicycles);
         }
-        handleSuccess(res, 200, "Bicicletas obtenidas exitosamente", bicycles);
+        return handleSuccess(res, 200, "Bicicletas obtenidas exitosamente", bicycles);
     } catch (error) {
-        handleErrorServer(res, 500, "Error del servidor", error);
+        return handleErrorServer(res, 500, "Error del servidor", error);
     }
 }
 export async function deleteBicycles(req, res) {
@@ -82,7 +82,7 @@ export async function updateBicycles(req, res) {
             photo: updatedBike.photo,
         });
     } catch (error) {
-        handleErrorServer(res, 500, "Error del servidor", error);
+        return handleErrorServer(res, 500, "Error del servidor", error);
     }
 }
 

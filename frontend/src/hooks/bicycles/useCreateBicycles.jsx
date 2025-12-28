@@ -12,13 +12,10 @@ export const useCreateBicycles = (refreshBicycles) => {
 
         try {
             const response = await createBicycle(data);
-
-            if (response && (response.status === "success" || response.data || response.id || response._id)) {
-                
+            if (response && (response.status === "success" || response.data)) {
                 if (refreshBicycles) await refreshBicycles();
-                
                 setIsCreating(false);
-                return { ok: true }; 
+                return { ok: true, data: response.data || response }; 
             } else {
                 const errorMessage = response?.message || "Error al crear bicicleta";
                 setCreateError(errorMessage);
@@ -26,16 +23,12 @@ export const useCreateBicycles = (refreshBicycles) => {
                 return { ok: false, error: errorMessage };
             }
         } catch (error) {
-            const msg = "Error de conexión con el servidor";
+            const msg = error.response?.data?.message || "Error de conexión con el servidor";
             setCreateError(msg);
             setIsCreating(false);
             return { ok: false, error: msg };
         }
     };
 
-    return {
-        create,
-        isCreating,
-        createError,
-    };
+    return { create, isCreating, createError };
 };
