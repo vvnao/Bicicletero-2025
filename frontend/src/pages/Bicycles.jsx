@@ -17,7 +17,6 @@ const Bicycles = () => {
         if (bicycles) setLocalBicycles(bicycles);
     }, [bicycles]);
 
-    // Función para manejar el borrado
     const handleDeleteBike = async (bike) => {
         const id = bike?._id || bike?.id;
         
@@ -82,7 +81,6 @@ const Bicycles = () => {
 
             const result = await create(data);
             if (result.ok) {
-                // Sincronizamos con el servidor para obtener el objeto completo con su ID real
                 fetchBicycles();
                 Swal.fire("Éxito", "Bicicleta registrada correctamente", "success");
             } else {
