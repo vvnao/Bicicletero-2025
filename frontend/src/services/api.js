@@ -1,10 +1,11 @@
+
 const API_URL = 'http://localhost:3000/api';
 
+// Helper para manejar fetch con error handling
 const handleResponse = async (response) => {
     const contentType = response.headers.get('content-type');
     
     if (!response.ok) {
-        // Si es error HTTP, intentar obtener mensaje del backend
         if (contentType && contentType.includes('application/json')) {
             const errorData = await response.json();
             throw new Error(errorData.message || `HTTP ${response.status}`);
@@ -13,13 +14,10 @@ const handleResponse = async (response) => {
         }
     }
     
-   
-
     if (contentType && contentType.includes('application/json')) {
         return await response.json();
     } else {
         const text = await response.text();
-        if (!text) return { success: false, message: "Respuesta vacía del servidor" }; // Evita objetos vacíos
         try {
             return JSON.parse(text);
         } catch {
@@ -37,12 +35,10 @@ const createFetchConfig = (method = 'GET', body = null, token = null) => {
         }
     };
     
-    // Agregar token si existe
     if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
     }
     
-    // Agregar body si existe
     if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
         config.body = JSON.stringify(body);
     }
@@ -54,8 +50,7 @@ export const apiService = {
     // ========== GUARDIAS ==========
     async getGuards(token) {
         try {
-            console.log(' [GET GUARDS] Iniciando petición...');
-            console.log(' Token recibido:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+            console.log('🔵 [GET GUARDS] Iniciando petición...');
             
             const response = await fetch(`${API_URL}/guards`, {
                 method: 'GET',
@@ -66,13 +61,12 @@ export const apiService = {
                 }
             });
             
-            
             const result = await handleResponse(response);
-            console.log(' getGuards response:', result);
+            console.log('🔵 [GET GUARDS] Respuesta:', result);
             return result;
             
         } catch (error) {
-            console.error(' Error en getGuards:', error);
+            console.error('❌ Error en getGuards:', error);
             return { 
                 success: false, 
                 message: error.message || 'Error de conexión', 
@@ -83,33 +77,34 @@ export const apiService = {
 
     async createGuard(guardData, token) {
         try {
-            console.log(' Creando guardia...');
+            console.log('🔵 Creando guardia...');
             const response = await fetch(`${API_URL}/guards`, createFetchConfig('POST', guardData, token));
             return await handleResponse(response);
         } catch (error) {
-            console.error('Error en createGuard:', error);
+            console.error('❌ Error en createGuard:', error);
             return { success: false, message: error.message || 'Error de conexión' };
         }
     },
 
     async toggleGuardAvailability(id, isAvailable, token) {
         try {
-            console.log('Cambiando disponibilidad...');
+            console.log('🔵 Cambiando disponibilidad...');
             const response = await fetch(
                 `${API_URL}/guards/${id}/availability`, 
                 createFetchConfig('PATCH', { isAvailable }, token)
             );
             return await handleResponse(response);
         } catch (error) {
-            console.error('Error en toggleGuardAvailability:', error);
+            console.error('❌ Error en toggleGuardAvailability:', error);
             return { success: false, message: error.message || 'Error de conexión' };
         }
     },
 
     // ========== BICICLETEROS ==========
     async getBikeracks(token) {
-        console.log(' Llamando a GET /api/bikeracks');
-        console.log(' Token usado:', token ? 'PRESENTE' : 'AUSENTE');
+        console.log('🟢 [GET BIKERACKS] Iniciando petición...');
+        console.log('🟢 URL:', `${API_URL}/bikeracks`);
+        console.log('🟢 Token presente:', !!token);
         
         try {
             const response = await fetch(`${API_URL}/bikeracks`, {
@@ -121,58 +116,63 @@ export const apiService = {
                 }
             });
             
-            console.log('- Response status:', response.status);
-            console.log('- Response ok:', response.ok);
+            console.log('🟢 Response status:', response.status);
+            console.log('🟢 Response ok:', response.ok);
+            console.log('🟢 Response headers:', Object.fromEntries(response.headers.entries()));
             
             if (response.status === 401) {
-                console.error('❌ ERROR 401: Token inválido o expirado');
+                console.error('❌ ERROR 401: Token inválido');
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('user');
                 return { 
                     success: false, 
-                    message: 'Sesión expirada. Por favor, inicia sesión nuevamente.',
+                    message: 'Sesión expirada',
                     data: [] 
                 };
             }
             
-            const result = await handleResponse(response);
-            console.log(' Datos crudos de bikeracks:', result);
+            // Obtener el texto crudo primero
+            const textData = await response.text();
+            console.log('🟢 Texto crudo de respuesta:', textData);
             
-            // Verificar estructura de respuesta
-            if (result && result.success !== undefined) {
-                if (result.success && Array.isArray(result.data)) {
-                    console.log(` ${result.data.length} bicicleteros recibidos`);
-                    return result;
-                } else {
-                    console.warn(' Backend retornó success:false:', result.message);
-                    return result;
-                }
-            } else {
-                console.warn('⚠️Estructura inesperada de respuesta:', result);
-                return { 
-                    success: false, 
-                    message: 'Formato de respuesta inválido del servidor',
-                    data: [] 
+            // Intentar parsearlo
+            let result;
+            try {
+                result = JSON.parse(textData);
+                console.log('🟢 JSON parseado:', result);
+            } catch (parseError) {
+                console.error('❌ Error parseando JSON:', parseError);
+                return {
+                    success: false,
+                    message: 'Respuesta inválida del servidor',
+                    data: []
                 };
             }
+            
+            // Analizar estructura
+            console.log('🟢 Tipo de resultado:', typeof result);
+            console.log('🟢 Es array?:', Array.isArray(result));
+            console.log('🟢 Keys:', Object.keys(result));
+            console.log('🟢 result.success:', result.success);
+            console.log('🟢 result.data:', result.data);
+            console.log('🟢 Tipo de result.data:', typeof result.data);
+            console.log('🟢 result.data es array?:', Array.isArray(result.data));
+            
+            // Si result.data existe, mostrar su contenido
+            if (result.data) {
+                console.log('🟢 Contenido de result.data:', result.data);
+                console.log('🟢 Primer elemento:', result.data[0]);
+            }
+            
+            return result;
             
         } catch (error) {
-            console.error(' Error crítico en getBikeracks:', error);
-            
-            // Si es error de autenticación, limpiar localStorage
-            if (error.message.includes('401') || error.message.includes('token')) {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('user');
-                return { 
-                    success: false, 
-                    message: 'Sesión expirada. Por favor, inicia sesión nuevamente.',
-                    data: [] 
-                };
-            }
+            console.error('❌ Error crítico en getBikeracks:', error);
+            console.error('❌ Stack:', error.stack);
             
             return {
                 success: false,
-                message: error.message || 'Error de conexión con el servidor',
+                message: error.message || 'Error de conexión',
                 data: []
             };
         }
@@ -185,7 +185,7 @@ export const apiService = {
                 ? `/guard-assignments/guard/${guardId}`
                 : '/guard-assignments';
                 
-            console.log(` Llamando: ${endpoint}`);
+            console.log('🟡 [GET ASSIGNMENTS] Llamando:', endpoint);
             
             const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'GET',
@@ -195,13 +195,36 @@ export const apiService = {
                 }
             });
             
-            const result = await handleResponse(response);
-            console.log(' Respuesta de asignaciones:', result);
+            console.log('🟡 Response status:', response.status);
+            
+            // Obtener texto crudo
+            const textData = await response.text();
+            console.log('🟡 Texto crudo:', textData);
+            
+            // Parsear
+            let result;
+            try {
+                result = JSON.parse(textData);
+                console.log('🟡 JSON parseado:', result);
+            } catch (parseError) {
+                console.error('❌ Error parseando assignments:', parseError);
+                return { success: false, message: 'Error parseando respuesta', data: [] };
+            }
+            
+            // Analizar estructura
+            console.log('🟡 Estructura de assignments:');
+            console.log('  - Tipo:', typeof result);
+            console.log('  - Es array?:', Array.isArray(result));
+            console.log('  - Keys:', Object.keys(result));
+            console.log('  - result.success:', result.success);
+            console.log('  - result.data:', result.data);
+            console.log('  - Tipo result.data:', typeof result.data);
+            console.log('  - result.data es array?:', Array.isArray(result.data));
             
             return result;
             
         } catch (error) {
-            console.error(' Error en getGuardAssignments:', error);
+            console.error('❌ Error en getGuardAssignments:', error);
             return { 
                 success: false, 
                 message: error.message || 'Error de conexión', 
@@ -225,7 +248,7 @@ export const apiService = {
             );
             return await handleResponse(response);
         } catch (error) {
-            console.error('Error checking availability:', error);
+            console.error('❌ Error checking availability:', error);
             return { 
                 success: false, 
                 message: error.message || 'Error de conexión',
@@ -236,7 +259,7 @@ export const apiService = {
 
     async deleteAssignment(assignmentId, token) {
         try {
-            console.log(` Eliminando: ${assignmentId}`);
+            console.log('🔵 Eliminando asignación:', assignmentId);
             const response = await fetch(`${API_URL}/guard-assignments/${assignmentId}`, {
                 method: 'DELETE',
                 headers: {
@@ -248,7 +271,7 @@ export const apiService = {
             return await handleResponse(response);
             
         } catch (error) {
-            console.error('Error deleting assignment:', error);
+            console.error('❌ Error deleting assignment:', error);
             return { 
                 success: false, 
                 message: error.message || 'Error de conexión' 
@@ -258,7 +281,7 @@ export const apiService = {
 
     async createAssignment(assignmentData, token) {
         try {
-            console.log('  Creando asignación...');
+            console.log('🔵 Creando asignación:', assignmentData);
             const response = await fetch(`${API_URL}/guard-assignments`, {
                 method: 'POST',
                 headers: {
@@ -271,7 +294,30 @@ export const apiService = {
             return await handleResponse(response);
             
         } catch (error) {
-            console.error('Error en createAssignment:', error);
+            console.error('❌ Error en createAssignment:', error);
+            return { 
+                success: false, 
+                message: error.message || 'Error de conexión' 
+            };
+        }
+    },
+
+    async updateAssignment(assignmentId, assignmentData, token) {
+        try {
+            console.log('🔵 Actualizando asignación:', assignmentId, assignmentData);
+            const response = await fetch(`${API_URL}/guard-assignments/${assignmentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(assignmentData)
+            });
+            
+            return await handleResponse(response);
+            
+        } catch (error) {
+            console.error('❌ Error en updateAssignment:', error);
             return { 
                 success: false, 
                 message: error.message || 'Error de conexión' 
@@ -282,7 +328,7 @@ export const apiService = {
     // ========== AUTH ==========
     async validateToken(token) {
         try {
-            console.log(' Validando token...');
+            console.log('🔵 Validando token...');
             const response = await fetch(`${API_URL}/auth/validate`, {
                 method: 'GET',
                 headers: {
@@ -294,7 +340,7 @@ export const apiService = {
             return await handleResponse(response);
             
         } catch (error) {
-            console.error('Error validating token:', error);
+            console.error('❌ Error validating token:', error);
             return { 
                 success: false, 
                 message: 'Token inválido o expirado' 
