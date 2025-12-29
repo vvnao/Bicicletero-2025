@@ -3,10 +3,10 @@ import apiService from './api.service.js';
 import { getToken } from './auth.service';
 
 // AÑADE ESTA LÍNEA (sin process.env):
-const API_URL = 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const HistoryService = {
-  // Corresponde a http://localhost:3000/api/history/occupancy
+
   getOccupancyHistory: async (page = 1, limit = 10) => {
     const token = getToken();
     const endpoint = `history/occupancy?page=${page}&limit=${limit}`;
@@ -18,7 +18,6 @@ const HistoryService = {
     return await response.json();
   },
 
-  // Corresponde a http://localhost:3000/api/history/guards
   getGuardsHistory: async (page = 1, limit = 10) => {
     const token = getToken();
     const endpoint = `history/guards?page=${page}&limit=${limit}`;
