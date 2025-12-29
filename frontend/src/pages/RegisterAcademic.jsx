@@ -27,7 +27,7 @@ export default function RegisterAcademic() {
     const [errorMessage, setErrorMessage] = useState('');
     const [errors, setErrors] = useState([]);
 
-    const colorIcono = "#3e4856";
+    const colorIcono = "#fcfcfcff";
 
     const handleChange = (e) =>
         setFormData({ ...formData, [e.target.name]: e.target.value });

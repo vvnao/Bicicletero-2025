@@ -214,12 +214,12 @@ const handleDeleteIncidence = async (incidenceId) => {
           <div className='filter-group'>
             <label>Fecha desde</label>
             <DatePicker
-              selected={filters.startDate}
-              onChange={(date) => handleFilterChange('startDate', date)}
-              dateFormat='dd/MM/yyyy'
-              placeholderText='DD/MM/AAAA'
-              className='filter-input'
-            />
+  selected={filters.startDate}
+  onChange={(date) => handleFilterChange('startDate', date)}
+  dateFormat='dd/MM/yyyy'
+  placeholderText='DD/MM/AAAA'
+  className='datepicker-default' // <- Nueva clase
+/>
           </div>
 
           <div className='filter-group'>
@@ -232,6 +232,7 @@ const handleDeleteIncidence = async (incidenceId) => {
               className='filter-input'
             />
           </div>
+          
 
           <div className='filter-group'>
             <label>Tipo</label>
