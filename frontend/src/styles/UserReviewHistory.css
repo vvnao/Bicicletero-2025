@@ -562,7 +562,8 @@
 .user-modal p strong {
     color: #334155;
     font-weight: 700;
-    min-width: 180px;
+    min-width: 200px;
+    margin-right: 12px;
     display: inline-block;
     font-family: 'Poppins', sans-serif;
     font-size: 1rem;

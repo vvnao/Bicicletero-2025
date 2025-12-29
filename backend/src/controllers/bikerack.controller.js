@@ -274,7 +274,7 @@ export async function storeBicycleInBikerack(req, res) {
 //* REMOVER BICICLETA DEL BICICLETERO
 export async function removeBicycleFromBikerack(req, res) {
   try {
-    const { bicycleId, userId, bikerackId } = req.body; // Necesitamos el bikerackId para el historial
+    const { bicycleId, userId, bikerackId } = req.body; 
 
     if (!bicycleId || !userId) {
       return res.status(400).json({

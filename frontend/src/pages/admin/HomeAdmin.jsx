@@ -3,6 +3,9 @@ import LayoutAdmin from "../../components/admin/LayoutAdmin";
 import dashboardService from "../../services/dashboard.service";
 import ChartComponent from "../../components/admin/ChartComponent";
 
+// Importar la imagen
+import AdminImage from "../../assets/Admin.png";
+
 function HomeAdmin() {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -270,11 +273,11 @@ function HomeAdmin() {
   return (
     <LayoutAdmin>
       <div className="p-6">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        {/* Header con Bienvenida */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h1>
-            <p className="text-gray-500 text-sm mt-1">Vista general del sistema de bicicleteros</p>
+            <h1 className="text-3xl font-bold text-white">Dashboard Administrativo</h1>
+            <p className="text-white text-sm mt-1">Vista general del sistema de bicicleteros</p>
           </div>
           <button
             onClick={loadDashboard}
@@ -285,23 +288,51 @@ function HomeAdmin() {
           </button>
         </div>
 
-        {/* Tarjetas de Métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          {/* Inconsistencias */}
-          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-center">
-              <div className="rounded-full bg-red-100 p-3 mr-4">
-                <span className="text-red-600 text-2xl">⚠️</span>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 font-medium">Inconsistencias</p>
-                <p className="text-3xl font-bold text-red-600 mt-1">
-                  {metrics.inconsistencies || 0}
-                </p>
+        {/* Rectángulo de Bienvenida con PNG */}
+        <div className="mb-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg overflow-hidden">
+          <div className="flex flex-col md:flex-row items-center p-6 md:p-8">
+            <div className="flex-1 text-white">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3">¡Bienvenido, Administrador!</h2>
+              <p className="text-blue-100 mb-4 max-w-2xl">
+                Estás viendo el panel de control principal del sistema de bicicleteros. 
+                Aquí puedes monitorear en tiempo real la ocupación, actividad, incidentes 
+                y el desempeño general del sistema.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <span className="bg-blue-500 bg-opacity-30 px-3 py-1 rounded-full text-sm font-medium">
+                  📊 {capacity.length} Bicicleteros
+                </span>
               </div>
             </div>
+          <div className="mt-6 md:mt-0 md:ml-8 flex-shrink-0 w-full md:w-auto">
+ {/* Usando clase personalizada */}
+<div className="relative">
+  <div className="w-full h-full flex items-center justify-center">
+    <img 
+  src={AdminImage} 
+  alt="Administrador Sistema Bicicleteros"
+  className="imagen-personalizada drop-shadow-lg"
+  onError={(e) => {
+    e.target.style.display = 'none';
+    e.target.parentElement.innerHTML = `
+      <div class="bg-white bg-opacity-10 rounded-lg backdrop-blur-sm border border-white border-opacity-20 imagen-personalizada flex items-center justify-center">
+        <div class="text-center p-4">
+          <span class="text-8xl mb-4 block">👨‍💼</span>
+          <p class="text-white font-semibold text-lg">Panel de</p>
+          <p class="text-white font-bold text-2xl">Administración</p>
+        </div>
+      </div>
+    `;
+  }}
+/>
+  </div>
+</div>
+</div>
           </div>
+        </div>
 
+        {/* Tarjetas de Métricas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           {/* Ingresos Hoy */}
           <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-center">
@@ -342,6 +373,23 @@ function HomeAdmin() {
                 <p className="text-sm text-gray-600 font-medium">Bicicletas Activas</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">
                   {summaryToday.activos || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Nueva tarjeta: Ocupación Promedio */}
+          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center">
+              <div className="rounded-full bg-purple-100 p-3 mr-4">
+                <span className="text-purple-600 text-2xl">📈</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 font-medium">Ocupación Promedio</p>
+                <p className="text-3xl font-bold text-purple-600 mt-1">
+                  {capacity.length > 0 
+                    ? Math.round(capacity.reduce((sum, bike) => sum + (bike.porcentaje || 0), 0) / capacity.length) 
+                    : 0}%
                 </p>
               </div>
             </div>

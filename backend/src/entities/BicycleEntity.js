@@ -37,7 +37,7 @@ export const BicycleEntity = new EntitySchema({
         user: {
             target: 'User',
             type: 'many-to-one',
-            joinColumn: true,  // ✅ Deja que TypeORM maneje el nombre
+            joinColumn: true,  
             nullable: false,
             onDelete: 'CASCADE',
         },

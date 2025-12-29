@@ -388,8 +388,7 @@ async getGuardsHistory(req, res) {
     }
 }
     /**
-     * Obtener actividad reciente
-     */
+     * Obtener actividad reciente*/
     async getRecentActivity(req, res) {
         try {
             if (!['admin', 'guardia'].includes(req.user.role)) {

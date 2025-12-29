@@ -204,63 +204,6 @@ function BicicletasAdmin() {
         return `Acción ${accion.type || 'desconocida'}`;
     };
 
-    // Datos de ejemplo
-    const getDatosEjemplo = () => {
-        return [
-            {
-                id: 1,
-                name: 'BICICLETERO NORTE',
-                icono: iconoCentral,
-                capacidad: 12,
-                occupied: 12,
-                free: 0,
-                occupationPercentage: 100,
-                status: 'Lleno',
-                ubicacion: 'Entrada sur, frente a biblioteca',
-                colorContenedor: '#3c84f6',
-                colorSombra: '#1d51a5ff'
-            },
-            {
-                id: 2,
-                name: 'BICICLETERO SUR',
-                icono: iconoSur,
-                capacidad: 8,
-                occupied: 5,
-                free: 3,
-                occupationPercentage: 63,
-                status: 'Activo',
-                ubicacion: 'Estacionamiento central',
-                colorContenedor: '#32bb94',
-                colorSombra: '#208367ff'
-            },
-            {
-                id: 3,
-                name: 'BICICLETERO ESTE',
-                icono: iconoEste,
-                capacidad: 20,
-                occupied: 15,
-                free: 5,
-                occupationPercentage: 75,
-                status: 'Activo',
-                ubicacion: 'Ubicación por definir',
-                colorContenedor: '#ffde69',
-                colorSombra: '#b19b4dff'
-            },
-            {
-                id: 4,
-                name: 'BICICLETERO CENTRAL',
-                icono: iconoNorte,
-                capacidad: 10,
-                occupied: 8,
-                free: 2,
-                occupationPercentage: 80,
-                status: 'Activo',
-                ubicacion: 'Entrada principal norte del campus',
-                colorContenedor: '#fd7452',
-                colorSombra: '#b85138ff'
-            }
-        ];
-    };
 
     // Manejar selección
     const handleSeleccionarBicicletero = (bicicletero) => {

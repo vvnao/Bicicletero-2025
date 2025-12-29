@@ -4,9 +4,9 @@ import jwt from "jsonwebtoken";
 import { findUserByEmail } from "./user.service.js";
 import guardServiceInstance from "./guard.service.js";
 
-// CARGAR DOTENV - Esto es crítico
+
 import dotenv from 'dotenv';
-dotenv.config(); // ← AÑADE ESTA LÍNEA
+dotenv.config(); 
 
 console.log(' [AUTH] JWT_SECRET:', process.env.JWT_SECRET ? 'PRESENTE' : 'AUSENTE');
 
@@ -51,13 +51,13 @@ export async function loginUser(email, password) {
     });
   }
 
-  // DEBUG: Verificar que JWT_SECRET esté disponible
+
   if (!process.env.JWT_SECRET) {
     console.error(' [AUTH] JWT_SECRET NO DEFINIDO');
     throw new Error('Error de configuración del servidor');
   }
 
-  // Crear payload del token
+
   const payload = { 
     id: user.id, 
     email: user.email, 
@@ -69,7 +69,7 @@ export async function loginUser(email, password) {
   console.log(' [AUTH] JWT_SECRET longitud:', process.env.JWT_SECRET.length);
 
   // Generar token JWT
-  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5d" });
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
 
   console.log(' [AUTH] Token generado (primeros 50 chars):', token.substring(0, 50) + '...');
 

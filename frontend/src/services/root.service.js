@@ -12,7 +12,7 @@ const instance = axios.create({
   withCredentials: true, // permite enviar cookies si el backend las usa
 });
 
-// 🔐 INTERCEPTOR ÚNICO → AGREGA JWT A TODAS LAS REQUESTS
+
 instance.interceptors.request.use(
   (config) => {
     const token = cookies.get('jwt-auth');

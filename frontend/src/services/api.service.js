@@ -1,7 +1,5 @@
-// frontend/src/services/api.service.js - VERSIÓN CORREGIDA
 const API_URL = 'http://localhost:3000/api';
 
-// Helper para manejar fetch con error handling
 const handleResponse = async (response) => {
     const contentType = response.headers.get('content-type');
     
@@ -15,7 +13,7 @@ const handleResponse = async (response) => {
         }
     }
     
-    // ... resto de tu lógica de !response.ok ...
+   
 
     if (contentType && contentType.includes('application/json')) {
         return await response.json();

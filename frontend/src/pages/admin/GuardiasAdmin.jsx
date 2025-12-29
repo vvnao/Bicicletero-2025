@@ -32,7 +32,7 @@ const GuardiasAdmin = () => {
             setLoading(true);
             setError(null);
             
-            console.log('🔄 Iniciando fetchData...');
+            console.log(' Iniciando fetchData...');
             
             // Cargar datos en paralelo
             const [guardsRes, bikeracksRes, assignmentsRes] = await Promise.allSettled([
@@ -41,28 +41,28 @@ const GuardiasAdmin = () => {
                 apiService.getGuardAssignments(token)
             ]);
 
-            console.log('📊 Resultados Promise.allSettled:', { guardsRes, bikeracksRes, assignmentsRes });
+            console.log('Resultados Promise.allSettled:', { guardsRes, bikeracksRes, assignmentsRes });
 
             // PROCESAR GUARDIAS
             if (guardsRes.status === 'fulfilled' && guardsRes.value?.success) {
                 const guardsData = Array.isArray(guardsRes.value.data) ? guardsRes.value.data : [];
-                console.log(`✅ ${guardsData.length} guardias cargados`);
+                console.log(` ${guardsData.length} guardias cargados`);
                 setGuardias(guardsData);
             } else {
-                console.error('❌ Error en guards:', guardsRes.reason || guardsRes.value?.message);
+                console.error(' Error en guards:', guardsRes.reason || guardsRes.value?.message);
                 setGuardias([]);
             }
 
             // PROCESAR BICICLETEROS
             if (bikeracksRes.status === 'fulfilled' && bikeracksRes.value?.success) {
                 const bikeracksData = Array.isArray(bikeracksRes.value.data) ? bikeracksRes.value.data : [];
-                console.log(`✅ ${bikeracksData.length} bicicleteros cargados`);
+                console.log(`${bikeracksData.length} bicicleteros cargados`);
                 if (bikeracksData.length > 0) {
-                    console.log('🔍 Primer bicicletero:', bikeracksData[0]);
+                    console.log(' Primer bicicletero:', bikeracksData[0]);
                 }
                 setBikeracks(bikeracksData);
             } else {
-                console.error('❌ Error en bikeracks:', bikeracksRes.reason || bikeracksRes.value?.message);
+                console.error(' Error en bikeracks:', bikeracksRes.reason || bikeracksRes.value?.message);
                 setBikeracks([]);
             }
 
@@ -75,12 +75,12 @@ const GuardiasAdmin = () => {
                 }
                 setAssignments(assignmentsData);
             } else {
-                console.error('❌ Error en assignments:', assignmentsRes.reason || assignmentsRes.value?.message);
+                console.error(' Error en assignments:', assignmentsRes.reason || assignmentsRes.value?.message);
                 setAssignments([]);
             }
      
         } catch (err) {
-            console.error('❌ Error general en fetchData:', err);
+            console.error(' Error general en fetchData:', err);
             setError('Error al cargar los datos');
         } finally {
             setLoading(false);
@@ -197,22 +197,22 @@ const GuardiasAdmin = () => {
     const styles = {
         container: {
             padding: '25px',
-            backgroundColor: '#f5f7fa',
+            backgroundColor: '#242d4b',
             minHeight: 'calc(100vh - 80px)'
         },
         header: {
-            color: '#272e4b',
+            color: '#ffffffff',
             marginBottom: '10px',
             fontSize: '32px',
             fontWeight: '700'
         },
         subtitle: {
-            color: '#6c757d',
+            color: '#ffffffff',
             marginBottom: '30px',
             fontSize: '18px'
         },
         sectionTitle: {
-            color: '#272e4b',
+            color: '#ebedf5ff',
             marginBottom: '20px',
             fontSize: '22px',
             fontWeight: '600',

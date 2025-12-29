@@ -97,38 +97,7 @@ class DashboardService {
         }
     }
 
-    /**
-     * Obtiene asignación de guardias por zona
-     */
-    async getGuardiasPorZona() {
-        try {
-            return [
-                { 
-                    bikerackId: 1, 
-                    bikerackName: 'Bicicletero A', 
-                    guards: ['Juan Pérez', 'María González'] 
-                },
-                { 
-                    bikerackId: 2, 
-                    bikerackName: 'Bicicletero B', 
-                    guards: ['Pedro Sánchez'] 
-                },
-                { 
-                    bikerackId: 3, 
-                    bikerackName: 'Bicicletero C', 
-                    guards: ['Ana Torres', 'Luis Ramírez'] 
-                },
-                { 
-                    bikerackId: 4, 
-                    bikerackName: 'Bicicletero D', 
-                    guards: ['Carlos Díaz', 'Rosa Morales'] 
-                }
-            ];
-        } catch (error) {
-            console.error('Error al obtener guardias:', error);
-            return [];
-        }
-    }
+    
 
     /**
      * Obtiene actividad reciente por hora
@@ -136,7 +105,7 @@ class DashboardService {
     async getActividadReciente() {
         try {
             const horasDelDia = [];
-            for (let i = 6; i <= 20; i++) { // Solo horario de operación 6am-8pm
+            for (let i = 6; i <= 20; i++) { //! Solo horario de operación 6am-8pm
                 horasDelDia.push({
                     hora: `${i.toString().padStart(2, '0')}:00`,
                     ingresos: Math.floor(Math.random() * 15) + 5,
@@ -165,7 +134,7 @@ class DashboardService {
             console.log('📊 Incidentes encontrados:', incidentes);
 
             if (incidentes.length === 0) {
-                // Datos de ejemplo si no hay incidentes
+                //* Datos de ejemplo si no hay incidentes
                 return [
                     { tipo: 'Robo', cantidad: 0 },
                     { tipo: 'Daño', cantidad: 0 },

@@ -117,7 +117,7 @@ const NavBarAdmin = ({ sidebarHover }) => {
                             color: 'rgba(255, 255, 255, 0.5)',
                             textAlign: 'right'
                         }}>
-                            admin@ubb.cl
+                            
                         </div>
                     </div>
                     
@@ -136,7 +136,7 @@ const NavBarAdmin = ({ sidebarHover }) => {
                         border: '2px solid rgba(255, 255, 255, 0.15)',
                         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
                     }}>
-                        AU
+                      
                     </div>
                     
                     {/* Flecha dropdown sutil */}
@@ -145,7 +145,7 @@ const NavBarAdmin = ({ sidebarHover }) => {
                         color: 'rgba(255, 255, 255, 0.4)',
                         marginLeft: '4px'
                     }}>
-                        ▼
+                        
                     </div>
                 </div>
             </div>

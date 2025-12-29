@@ -14,28 +14,28 @@ export const getDashboardSummary = async (req, res) => {
     const spaceLogsRepo = AppDataSource.getRepository('SpaceLog');
     const incidencesRepo = AppDataSource.getRepository('Incidence');
 
-    // Ingresos hoy (checkins del día actual)
+    //! Ingresos hoy (checkins del día actual)
     const ingresosHoy = await spaceLogsRepo
       .createQueryBuilder('log')
       .where('DATE(log.actualCheckin) = CURRENT_DATE')
       .andWhere('log.action = :action', { action: 'checkin' })
       .getCount();
 
-    // Salidas hoy (checkouts del día actual)
+    //! Salidas hoy (checkouts del día actual)
     const salidasHoy = await spaceLogsRepo
       .createQueryBuilder('log')
       .where('DATE(log.actualCheckout) = CURRENT_DATE')
       .andWhere('log.action = :action', { action: 'checkout' })
       .getCount();
 
-    // Activos (espacios ocupados actualmente - checkin sin checkout)
+    //! Activos (espacios ocupados actualmente - checkin sin checkout)
     const activos = await spaceLogsRepo
       .createQueryBuilder('log')
       .where('log.actualCheckin IS NOT NULL')
       .andWhere('log.actualCheckout IS NULL')
       .getCount();
 
-    // Inconsistencias (infracciones activas - tiempo excedido)
+    // !Inconsistencias (infracciones activas - tiempo excedido)
     const inconsistencias = await spaceLogsRepo
       .createQueryBuilder('log')
       .where('log.actualCheckout IS NULL') // Aún no ha salido
@@ -43,7 +43,7 @@ export const getDashboardSummary = async (req, res) => {
       .andWhere('log.infractionStart < NOW()') // La fecha de infracción ya pasó
       .getCount();
 
-    // Total de incidencias
+    //! Total de incidencias
     const totalIncidencias = await incidencesRepo.count();
 
     const metrics = {
@@ -56,7 +56,7 @@ export const getDashboardSummary = async (req, res) => {
       }
     };
 
-    console.log('✅ Métricas obtenidas:', metrics);
+    console.log('Métricas obtenidas:', metrics);
 
     // ========================================
     // 2. CAPACIDAD DE BICICLETEROS
@@ -92,7 +92,7 @@ export const getDashboardSummary = async (req, res) => {
       });
     }
 
-    console.log('✅ Capacidad obtenida:', capacity.length, 'bicicleteros');
+    console.log('Capacidad obtenida:', capacity.length, 'bicicleteros');
 
     // ========================================
     // 3. GUARDIAS POR ZONA
@@ -127,7 +127,7 @@ export const getDashboardSummary = async (req, res) => {
       });
     }
 
-    console.log('✅ Guardias obtenidos:', guards.length, 'zonas');
+    console.log('Guardias obtenidos:', guards.length, 'zonas');
 
     // ========================================
     // 4. ACTIVIDAD RECIENTE (últimas 15 horas con datos)
@@ -150,7 +150,7 @@ export const getDashboardSummary = async (req, res) => {
       salidas: parseInt(row.salidas) || 0
     }));
 
-    console.log('✅ Actividad obtenida:', activity.length, 'registros de horas');
+    console.log('Actividad obtenida:', activity.length, 'registros de horas');
 
     // ========================================
     // 5. TIPOS DE INCIDENCIAS

@@ -37,7 +37,6 @@ export async function createBicycleService(data, userId){
     
     const saved = await bicycleRepository.save(newBicycle);
     
-    // ✅ RETORNAR CON RELACIONES CARGADAS
     return await bicycleRepository.findOne({
         where: { id: saved.id },
         relations: ['user']
@@ -51,7 +50,7 @@ export async function getBicyclesServices(userId) {
         where: {
             user: { id: userId }
         },
-        relations: ['user'] // ✅ Cargar relación
+        relations: ['user'] 
     });
 
     return bicycles;
@@ -69,7 +68,7 @@ export async function updateBicyclesServices(userId, data) {
                 id: userId
             }
         },
-        relations: ['user'] // ✅ Cargar relación
+        relations: ['user'] 
     });
 
     if (!bicycle) return null;
@@ -78,8 +77,7 @@ export async function updateBicyclesServices(userId, data) {
     if (photo !== undefined) bicycle.photo = photo;
 
     const updated = await bicycleRepository.save(bicycle);
-    
-    // ✅ Recargar con relaciones
+  
     return await bicycleRepository.findOne({
         where: { id: updated.id },
         relations: ['user']
@@ -94,7 +92,7 @@ export async function deleteBicyclesServices(userId, bicycleId) {
             id: bicycleId,
             user: { id: userId }
         },
-        relations: ['user'] // ✅ Cargar relación antes de eliminar
+        relations: ['user'] 
     });
 
     if (!bicycle) return false;

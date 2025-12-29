@@ -12,13 +12,13 @@ export const dashboardService = {
      */
     async getDashboardData() {
         try {
-            console.log('🔄 [Service] Llamando a /dashboard/summary');
-            console.log('🔄 [Service] URL completa:', axios.defaults.baseURL + '/dashboard/summary');
+            console.log(' [Service] Llamando a /dashboard/summary');
+            console.log(' [Service] URL completa:', axios.defaults.baseURL + '/dashboard/summary');
             
             const response = await axios.get('/dashboard/summary');
             
-            console.log('📦 [Service] Response status:', response.status);
-            console.log('📦 [Service] Response data:', response.data);
+            console.log(' [Service] Response status:', response.status);
+            console.log(' [Service] Response data:', response.data);
             
             // Validar la estructura de respuesta
             if (!response.data) {
@@ -29,22 +29,22 @@ export const dashboardService = {
             
             // Si el backend devuelve { status, message, data }
             if (result.status === 'Success' && result.data) {
-                console.log('✅ [Service] Datos obtenidos correctamente');
+                console.log(' [Service] Datos obtenidos correctamente');
                 return result.data;
             }
             
             // Si el backend devuelve directamente el objeto de datos
             if (result.metrics || result.capacity) {
-                console.log('✅ [Service] Datos obtenidos directamente');
+                console.log(' [Service] Datos obtenidos directamente');
                 return result;
             }
             
             throw new Error(result.message || 'Formato de respuesta inesperado');
             
         } catch (error) {
-            console.error('❌ [Service] Error completo:', error);
-            console.error('❌ [Service] Error response:', error.response);
-            console.error('❌ [Service] Error message:', error.message);
+            console.error(' [Service] Error completo:', error);
+            console.error(' [Service] Error response:', error.response);
+            console.error(' [Service] Error message:', error.message);
             
             // Mensajes de error más específicos
             if (error.response) {

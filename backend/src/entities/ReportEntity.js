@@ -99,7 +99,6 @@ export const ReportEntity = new EntitySchema({
             type: 'many-to-one',
             joinColumn: { 
                 name: 'generated_by'
-                // NO PONGAS referencedColumnName aquí - por defecto es 'id'
             },
             nullable: false,
             eager: false
@@ -109,7 +108,6 @@ export const ReportEntity = new EntitySchema({
             type: 'many-to-one',
             joinColumn: { 
                 name: 'reviewed_by'
-                // NO PONGAS referencedColumnName aquí
             },
             nullable: true,
             eager: false
@@ -119,7 +117,6 @@ export const ReportEntity = new EntitySchema({
             type: 'many-to-one',
             joinColumn: { 
                 name: 'executed_by'
-                // NO PONGAS referencedColumnName aquí
             },
             nullable: true,
             eager: false
@@ -129,7 +126,7 @@ export const ReportEntity = new EntitySchema({
             type: 'many-to-one',
             joinColumn: { 
                 name: 'bikerack_id'
-                // NO PONGAS referencedColumnName aquí
+                
             },
             nullable: true,
             eager: false
