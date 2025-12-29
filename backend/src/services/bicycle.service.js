@@ -11,7 +11,12 @@ export async function createBicycleService(data, userId) {
     const user = await userRepository.findOneBy({ id: userId });
     if (!user) throw new Error("Usuario no encontrado");
 
-    const count = await bicycleRepository.count({ where: { user: { id: userId } } });
+    const count = await bicycleRepository.count({ 
+    where: { 
+        user: { id: userId },
+        active: true,
+    } 
+});
     if (count >= 3) throw new Error("Ya tiene el máximo de 3 bicicletas registradas");
 
     if (data.serialNumber) {
@@ -40,11 +45,12 @@ export async function getBicyclesServices(userId) {
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 
     const bicycles = await bicycleRepository.find({
-        where: {
-            user: { id: userId }
-        },
-        relations: ['user'] 
-    });
+    where: {
+        user: { id: userId },
+        active: true,
+    },
+    relations: ['user'],
+});
 
     return bicycles;
 }
@@ -75,8 +81,7 @@ export async function updateBicyclesServices(id, userId, data) {
         console.error("Error en updateBicyclesServices:", error);
         throw error;
     }
-}
-export async function deleteBicyclesServices(userId, bicycleId) {
+}export async function deleteBicyclesServices(userId, bicycleId) {
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 
     const bicycle = await bicycleRepository.findOne({
@@ -84,10 +89,11 @@ export async function deleteBicyclesServices(userId, bicycleId) {
             id: bicycleId,
             user: { id: userId }
         },
-        relations: ['user'] 
+        relations: ['user'],
     });
 
     if (!bicycle) return false;
 
-    return await bicycleRepository.remove(bicycle);
+    bicycle.active = false;
+    return await bicycleRepository.save(bicycle);
 }

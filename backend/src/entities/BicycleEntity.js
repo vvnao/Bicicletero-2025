@@ -32,6 +32,10 @@ export const BicycleEntity = new EntitySchema({
             type: 'varchar',
             nullable: true,
         },
+        active: {
+            type: Boolean,
+            default: true,
+        },
     },
     relations: {
         user: {
