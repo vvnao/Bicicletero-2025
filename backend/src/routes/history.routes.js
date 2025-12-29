@@ -18,6 +18,8 @@ router.get('/', historyController.getHistory);
 router.get('/user/:userId', historyController.getSpecificUserHistory);
 router.get('/guard/:guardId', historyController.getSpecificGuardHistory);
 router.get('/bicycle/:bicycleId', historyController.getSpecificBicycleHistory);
+
+// Esta es la ruta que usará tu componente de React para la tabla de cada bicicletero
 router.get('/bikerack/:bikerackId', historyController.getSpecificBikerackHistory);
 
 // 3. Estadísticas y Actividad Reciente

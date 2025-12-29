@@ -3,6 +3,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import HistoryEntity, { HISTORY_TYPES } from "../entities/HistoryEntity.js";
 import { Between, LessThan } from "typeorm"; // Importamos utilidades de TypeORM
+
 import { Not, In } from "typeorm";
 
 class HistoryService {
@@ -27,7 +28,7 @@ async getHistory(filters = {}) {
         search,
         startDate,
         endDate,
-        onlyGuards = false // 🚩 Nueva bandera para separar historiales
+        onlyGuards = false 
     } = filters;
 
     const queryBuilder = this.historyRepository
@@ -366,6 +367,46 @@ async getBicycleOccupancyHistory(page = 1, limit = 20) {
         pagination: { total, page, totalPages: Math.ceil(total / limit) }
     };
 }
+
+// ==========================================
+  //  MÉTODOS ESPECÍFICOS PARA BICICLETEROS
+  // ==========================================
+
+  /**
+   * Obtener historial filtrado por un bicicletero
+   */
+  async getBikerackHistory(bikerackId, filters = {}) {
+    // Reutilizamos el método principal pasando el ID del bicicletero en los filtros
+    return await this.getHistory({
+      ...filters,
+      bikerackId: bikerackId
+    });
+  }
+
+  /**
+   * Método para registrar eventos (LogEvent)
+   * Este es el que usaremos en bikerack.controller.js
+   */
+  async logEvent(data) {
+    try {
+      const newRecord = this.historyRepository.create({
+        type: data.historyType,
+        description: data.description,
+        user: data.userId ? { id: data.userId } : null,
+        guard: data.guardId ? { id: data.guardId } : null,
+        bicycle: data.bicycleId ? { id: data.bicycleId } : null,
+        bikerack: data.bikerackId ? { id: data.bikerackId } : null,
+        space: data.spaceId ? { id: data.spaceId } : null,
+        details: data.details || {}
+      });
+
+      return await this.historyRepository.save(newRecord);
+    } catch (error) {
+      console.error("Error al guardar en historial:", error);
+      // No lanzamos error para no romper la ejecución principal del controlador
+      return null;
+    }
+  }
 //BICICLETAS SPACES HISTORY
 async getBikerackUsageHistory(page = 1, limit = 20) {
     const usageTypes = ['user_checkin', 'user_checkout', 'infraction'];

@@ -6,6 +6,8 @@ import Bikerack from "../entities/BikerackEntity.js";
 import { SpaceEntity } from "../entities/SpaceEntity.js";
 import { ReservationEntity, RESERVATION_STATUS } from "../entities/ReservationEntity.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
+import historyService from '../services/history.service.js';
+import { HISTORY_TYPES } from '../entities/HistoryEntity.js';
 
 import {
   getBikeracksSummary,
@@ -232,33 +234,47 @@ export async function listBikeracksWithGuards(req, res) {
 //* GUARDAR BICICLETA EN BICICLETERO
 export async function storeBicycleInBikerack(req, res) {
   try {
-    const { bikerackId, bicycleId, userId } = req.body;
+    const { bikerackId, bicycleId, userId, spaceId } = req.body;
 
-    if (!bikerackId || !bicycleId || !userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Se requieren bikerackId, bicycleId y userId'
+    // 1. Ejecutar tu lógica interna original
+    const result = await storeBicycleInternal(bikerackId, bicycleId, userId);
+
+    // 2. Registro en historial
+    try {
+      // Importante: Guardamos el guardProfile aquí ADENTRO donde 'req' sí existe
+      const guardProfile = await AppDataSource.getRepository("Guard").findOne({ 
+          where: { user: { id: req.user.id } } 
       });
+
+      await historyService.logEvent({
+        historyType: HISTORY_TYPES.BICYCLE_REGISTER,
+        description: `Bicicleta ingresada al bicicletero`,
+        userId: userId,
+        bicycleId: bicycleId,
+        bikerackId: bikerackId,
+        spaceId: spaceId || null,
+        guardId: guardProfile ? guardProfile.id : null, 
+        details: { method: 'manual_store' }
+      });
+    } catch (hError) {
+      console.error('Error en log historial:', hError.message);
     }
 
-    const result = await storeBicycleInternal(bikerackId, bicycleId, userId);
     return res.status(200).json({
       success: true,
       message: result.message,
       data: result.bicycle
     });
+
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 }
 
 //* REMOVER BICICLETA DEL BICICLETERO
 export async function removeBicycleFromBikerack(req, res) {
   try {
-    const { bicycleId, userId } = req.body;
+    const { bicycleId, userId, bikerackId } = req.body; // Necesitamos el bikerackId para el historial
 
     if (!bicycleId || !userId) {
       return res.status(400).json({
@@ -268,6 +284,23 @@ export async function removeBicycleFromBikerack(req, res) {
     }
 
     const result = await removeBicycleInternal(bicycleId, userId);
+
+    // --- NUEVO: REGISTRO EN EL HISTORIAL ---
+    try {
+      await historyService.logEvent({
+        historyType: HISTORY_TYPES.BICYCLE_REMOVE,
+        description: `Bicicleta retirada del bicicletero`,
+        userId: userId,
+        bicycleId: bicycleId,
+        bikerackId: bikerackId || null, 
+        guardId: req.user?.id || null,
+        details: { method: 'manual_remove' }
+      });
+    } catch (hError) {
+      console.error('Error silencioso al registrar historial:', hError);
+    }
+    // ---------------------------------------
+
     return res.status(200).json({
       success: true,
       message: result.message,

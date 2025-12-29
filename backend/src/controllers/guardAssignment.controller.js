@@ -5,6 +5,7 @@ import { GuardEntity } from '../entities/GuardEntity.js';
 import { BikerackEntity } from '../entities/BikerackEntity.js';
 import { validateCreateAssignment } from '../validations/guardAssignment.validation.js';
 import HistoryService from '../services/history.service.js';
+import { Not } from "typeorm";
 
 
 export class GuardAssignmentController {
@@ -198,46 +199,44 @@ export class GuardAssignmentController {
             });
         }
 
-        // 9. Crear la asignación
-            console.log('💾 Creando asignación...');
-            const newAssignment = this.assignmentRepository.create({
-                guardId,
-                bikerackId,
-                dayOfWeek: dayNumber,
-                startTime,
-                endTime,
-                schedule: `${startTime}-${endTime}`,
-                workDays: this.getDayName(dayNumber),
-                maxHoursPerWeek: maxHours,
-                effectiveFrom: value.effectiveFrom || new Date(),
-                effectiveUntil: value.effectiveUntil || null,
-                status: 'activo',
-                assignedBy: req.user.id
-            });
-        await this.assignmentRepository.save(newAssignment);
-        console.log(' Asignación guardada con ID:', newAssignment.id);
+       // 9. Crear la asignación
+    console.log('💾 Creando asignación...');
+    const newAssignment = this.assignmentRepository.create({
+        guardId,
+        bikerackId,
+        dayOfWeek: dayNumber,
+        startTime,
+        endTime,
+        schedule: `${startTime}-${endTime}`,
+        workDays: this.getDayName(dayNumber),
+        maxHoursPerWeek: maxHours,
+        effectiveFrom: value.effectiveFrom || new Date(),
+        effectiveUntil: value.effectiveUntil || null,
+        status: 'activo',
+        // CORRECCIÓN: Usamos el ID del usuario logueado o el ID 1 como respaldo
+        assignedBy: req.user?.id || 1 
+    });
 
+    await this.assignmentRepository.save(newAssignment);
+    console.log('✅ Asignación guardada con ID:', newAssignment.id);
+
+    // Registro en el Historial
+    try {
         await this.historyService.logEvent({
-                historyType: 'guard_assignment',
-                description: `Guardia asignado a bicicletero ${bikerack.name}`,
-                details: {
-                    assignmentId: newAssignment.id,
-                    guardId: newAssignment.guardId,
-                    guardName: `${guard.user?.names} ${guard.user?.lastName}`,
-                    bikerackId: newAssignment.bikerackId,
-                    bikerackName: bikerack.name,
-                    dayOfWeek: newAssignment.dayOfWeek,
-                    schedule: `${newAssignment.startTime} - ${newAssignment.endTime}`,
-                    assignedBy: req.user.id
-                },
-                assignmentId: newAssignment.id,
-                guardId: newAssignment.guardId,
-                bikerackId: newAssignment.bikerackId,
-                userId: req.user.id,
-                ipAddress: req.ip,
-                userAgent: req.headers['user-agent']
-            });
-
+            historyType: 'guard_assignment',
+            description: `Guardia asignado a bicicletero ${bikerack.name}`,
+            assignmentId: newAssignment.id,
+            guardId: newAssignment.guardId,
+            bikerackId: newAssignment.bikerackId,
+            userId: req.user?.id || 1, // Quien realizó la acción
+            details: {
+                schedule: `${newAssignment.startTime} - ${newAssignment.endTime}`,
+                day: this.getDayName(dayNumber)
+            }
+        });
+    } catch (hError) {
+        console.error('⚠️ Error al registrar historial (no crítico):', hError.message);
+    }
         // 10. Obtener con relaciones
         const assignmentWithRelations = await this.assignmentRepository.findOne({
             where: { id: newAssignment.id },
