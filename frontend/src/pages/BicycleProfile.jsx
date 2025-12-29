@@ -54,7 +54,7 @@ const BicycleProfile = () => {
             html: `
                 <div class="flex flex-col gap-4 text-left p-2">
                     <div class="flex flex-col gap-1">
-                        <label class="text-xs font-bold text-gray-400">COLOR PRIMARIO</label>
+                        <label class="text-xs font-bold text-gray-400">COLOR</label>
                         <input id="swal-color" class="w-full p-2 rounded bg-[#1a1f37] border border-slate-600 text-white" value="${bicycleColor || ''}">
                     </div>
                     <div class="flex flex-col gap-1">
@@ -107,7 +107,7 @@ const BicycleProfile = () => {
                 </div>
             ) : !hasBicycles ? (
                 <div className="max-w-2xl mx-auto mt-20 text-center space-y-8">
-                    <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] p-12 border border-white/10 shadow-2xl">
+                    <div className="bg-[#272e4b] backdrop-blur-xl rounded-[2.5rem] p-12 border border-white/10 shadow-2xl">
                         <div className="w-24 h-24 bg-[#3b82f6]/20 text-[#3b82f6] rounded-full flex items-center justify-center mx-auto mb-6">
                             <FiPlusCircle size={48} />
                         </div>

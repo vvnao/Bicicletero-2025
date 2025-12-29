@@ -92,8 +92,8 @@ const Bicycles = () => {
     return (
         <div className="flex flex-col min-h-screen bg-[#272e4b] p-8">
             <div className="max-w-6xl mx-auto w-full">
-                <div className="flex justify-between items-center mb-8 p-6 bg-white rounded-2xl shadow-xl">
-                    <h2 className="text-3xl font-bold text-[#1e40af]">Mis bicicletas</h2>
+                <div className="flex justify-between items-center mb-8 p-6 ">
+                    <h2 className="text-4xl font-bold text-white">Mis bicicletas</h2>
                     <button
                         onClick={handleAddBicycles}
                         disabled={isCreating}

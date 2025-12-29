@@ -115,8 +115,8 @@ const PrivateProfile = () => {
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             {/*Datos usuario*/}
-                            <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-lg border-l-8 border-[#3b82f6]">
-                                <h3 className="text-xl font-bold text-gray-800 mb-6 border-b pb-2">Datos personales</h3>
+                            <div className="lg:col-span-2 bg-[#323955] p-8 rounded-2xl shadow-lg">
+                                <h3 className="text-xl font-bold text-white mb-6 border-b pb-2">Datos personales</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-4">
                                     <DetailField label="Nombres" value={data?.names} />
                                     <DetailField label="Apellidos" value={data?.lastName} />
@@ -202,8 +202,8 @@ const PrivateProfile = () => {
 
 const DetailField = ({ label, value }) => (
     <div className="flex flex-col">
-        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</span>
-        <span className="text-gray-800 font-medium text-lg truncate">{value || "No especificado"}</span>
+        <span className="text-xs font-bold text-white uppercase tracking-widest mb-1">{label}</span>
+        <span className="text-gray-400 font-medium text-lg truncate">{value || "No especificado"}</span>
     </div>
 );
 

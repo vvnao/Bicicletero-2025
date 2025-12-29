@@ -211,9 +211,9 @@ const BikerackRow = ({rack,bicycles,activeReservation,onReserved,onCancel,}) => 
             Reservas de Bicicleteros
         </h1>
 
-        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-lg p-6">
             <table className="min-w-full">
-            <thead className="bg-gray-50 text-gray-400 text-xs font-bold uppercase">
+            <thead className="bg-gray-100">
                 <tr>
                 <th className="px-6 py-4 text-left">Bicicletero</th>
                 <th className="px-6 py-4 text-left">Estado</th>
