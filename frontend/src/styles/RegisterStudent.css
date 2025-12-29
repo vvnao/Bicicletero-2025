@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Nunito:wght@300;400;600;700&display=swap');
 
-.file-btn {
+.register-file-btn {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -17,16 +17,16 @@
   margin-top: 8px;
 }
 
-.file-btn:hover {
+.register-file-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(163, 193, 255, 0.15);
 }
 
-.file-btn input {
+.register-file-btn input {
   display: none;
 }
 
-.file-name {
+.register-file-name {
   font-family: 'Nunito', sans-serif;
   font-size: 15px;
   font-weight: 600;
@@ -37,23 +37,23 @@
 
 
 @media (max-width: 1024px) {
-  .file-btn {
+  .register-file-btn {
     font-size: 15px;
     padding: 10px 14px;
   }
 
-  .file-name {
+  .register-file-name {
     font-size: 14px;
   }
 }
 
 @media (max-width: 768px) {
-  .file-btn {
+  .register-file-btn {
     font-size: 14px;
     padding: 8px 12px;
   }
 
-  .file-name {
+  .register-file-name {
     font-size: 12px;
   }
 }

@@ -88,190 +88,274 @@ export default function RegisterAcademic() {
     };
 
     return (
-        <>
-            <div className='register-background' style={{ backgroundImage: `url(${fondoAcademico})` }}></div>
+      <>
+        <div
+          className='register-background'
+          style={{ backgroundImage: `url(${fondoAcademico})` }}
+        ></div>
 
-            <div className='register-container'>
-                <button className="icon-back" onClick={() => navigate("/auth/register")}>
-                    <ArrowLeft size={26} color="white" />
-                </button>
+        <div className='register-container'>
+          <button
+            className='icon-back'
+            onClick={() => navigate('/auth/register')}
+          >
+            <ArrowLeft
+              size={26}
+              color='white'
+            />
+          </button>
 
-                <h2 className='register-title'>Solicitud de Registro</h2>
+          <h2 className='register-title'>Solicitud de Registro</h2>
 
-                <form onSubmit={handleSubmit}>
-                    {loading && <div className="loading-message">Cargando...</div>}
-                    {successMessage && <div className="success-message">{successMessage}</div>}
-                    {(errorMessage || errors.length > 0) && (
-                        <div className="error-message error-box">
-                            <strong>{errorMessage}</strong>
+          <form onSubmit={handleSubmit}>
+            {loading && <div className='loading-message'>Cargando...</div>}
+            {successMessage && (
+              <div className='success-message'>{successMessage}</div>
+            )}
+            {(errorMessage || errors.length > 0) && (
+              <div className='error-message error-box'>
+                <strong>{errorMessage}</strong>
 
-                            {errors.length > 0 && (
-                                <ul className="error-list">
-                                    {errors.map((e, i) => (
-                                        <li key={i}>{e}</li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    )}
-
-                    <div className='form-group'>
-                        <label className='form-label'>NOMBRES</label>
-                        <div className="input-wrapper">
-                            <User size={20} color={colorIcono} className="input-icon" />
-                            <input
-                                name='names'
-                                placeholder='Valentina Lucía'
-                                onChange={handleChange}
-                                className='form-input'
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className='form-group'>
-                        <label className='form-label'>APELLIDOS</label>
-                        <div className="input-wrapper">
-                            <User size={20} color={colorIcono} className="input-icon" />
-                            <input
-                                name='lastName'
-                                placeholder='Martínez López'
-                                onChange={handleChange}
-                                className='form-input'
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className='form-group'>
-                        <label className='form-label'>RUT</label>
-                        <div className="input-wrapper">
-                            <IdCard size={20} color={colorIcono} className="input-icon" />
-                            <input
-                                name='rut'
-                                placeholder='11111111-1'
-                                onChange={handleChange}
-                                className='form-input'
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className='form-group'>
-                        <label className='form-label'>CORREO ELECTRÓNICO</label>
-                        <div className="input-wrapper">
-                            <Mail size={20} color={colorIcono} className="input-icon" />
-                            <input
-                                name='email'
-                                placeholder='ejemplo@gmail.com'
-                                onChange={handleChange}
-                                className='form-input'
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className='form-group'>
-                        <label className='form-label'>CONTRASEÑA</label>
-                        <div className="input-wrapper">
-                            <Lock size={20} color={colorIcono} className="input-icon" />
-                            <input
-                                name='password'
-                                type={mostrarPass ? "text" : "password"}
-                                placeholder='*******'
-                                onChange={handleChange}
-                                className='form-input'
-                                required
-                            />
-                            <button type="button" className="toggle-pass" onClick={() => setMostrarPass(!mostrarPass)}>
-                                {mostrarPass ? <EyeOff size={20} color={colorIcono} /> : <Eye size={20} color={colorIcono} />}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className='form-group'>
-                        <label className='form-label'>NÚMERO DE CONTACTO</label>
-                        <div className="input-wrapper">
-                            <Phone size={20} color={colorIcono} className="input-icon" />
-                            <input
-                                name='contact'
-                                placeholder='56911111111'
-                                onChange={handleChange}
-                                className='form-input'
-                            />
-                        </div>
-                    </div>
-
-                    <button type="button" className="add-bicycle-button" onClick={() => setMostrarBici(true)}>
-                        <Bike size={18} color="white" /> AGREGAR BICICLETA (Opcional)
-                    </button>
-
-                    <button type='submit' className='submit-button'>
-                        ENVIAR SOLICITUD
-                    </button>
-                </form>
-                {mostrarBici && (
-                    <div className="modal-overlay">
-                        <div className="modal-bici">
-                            <button className="modal-cerrar" onClick={() => setMostrarBici(false)}>✕</button>
-                            <h3 className="modal-title">Registrar bicicleta</h3>
-
-                            <div className='form-group'>
-                                <label className="form-label">MARCA</label>
-                                <div className="input-wrapper">
-                                    <Bike size={20} color={colorIcono} className="input-icon" />
-                                    <input
-                                        name="brand"
-                                        placeholder="Oxford"
-                                        value={bicycle.brand}
-                                        onChange={handleBicycleChange}
-                                        className="form-input" />
-                                </div>
-                            </div>
-
-                            <div className='form-group'>
-                                <label className="form-label">MODELO</label>
-                                <div className="input-wrapper">
-                                    <Bike size={20} color={colorIcono} className="input-icon" />
-                                    <input
-                                        name="model"
-                                        placeholder="MTB 300"
-                                        value={bicycle.model}
-                                        onChange={handleBicycleChange}
-                                        className="form-input" />
-                                </div>
-                            </div>
-
-                            <div className='form-group'>
-                                <label className="form-label">COLOR</label>
-                                <div className="input-wrapper">
-                                    <Bike size={20} color={colorIcono} className="input-icon" />
-                                    <input
-                                        name="color"
-                                        placeholder="Azul"
-                                        value={bicycle.color}
-                                        onChange={handleBicycleChange}
-                                        className="form-input" />
-                                </div>
-                            </div>
-
-                            <div className='form-group'>
-                                <label className="form-label">FOTO DE LA BICICLETA</label>
-                                <label className="file-btn">
-                                    <Bike size={18} color={colorIcono} />
-                                    <span>Seleccionar archivo</span>
-                                    <input
-                                        type="file"
-                                        name="photo"
-                                        accept="image/*"
-                                        onChange={handleFileChange} />
-                                </label>
-                                {photo && <p className="file-name">{photo.name}</p>}
-                            </div>
-                        </div>
-                    </div>
+                {errors.length > 0 && (
+                  <ul className='error-list'>
+                    {errors.map((e, i) => (
+                      <li key={i}>{e}</li>
+                    ))}
+                  </ul>
                 )}
-            </div >
-        </>
+              </div>
+            )}
+
+            <div className='form-group'>
+              <label className='form-label'>NOMBRES</label>
+              <div className='input-wrapper'>
+                <User
+                  size={20}
+                  color={colorIcono}
+                  className='input-icon'
+                />
+                <input
+                  name='names'
+                  placeholder='Valentina Lucía'
+                  onChange={handleChange}
+                  className='form-input'
+                  required
+                />
+              </div>
+            </div>
+
+            <div className='form-group'>
+              <label className='form-label'>APELLIDOS</label>
+              <div className='input-wrapper'>
+                <User
+                  size={20}
+                  color={colorIcono}
+                  className='input-icon'
+                />
+                <input
+                  name='lastName'
+                  placeholder='Martínez López'
+                  onChange={handleChange}
+                  className='form-input'
+                  required
+                />
+              </div>
+            </div>
+
+            <div className='form-group'>
+              <label className='form-label'>RUT</label>
+              <div className='input-wrapper'>
+                <IdCard
+                  size={20}
+                  color={colorIcono}
+                  className='input-icon'
+                />
+                <input
+                  name='rut'
+                  placeholder='11111111-1'
+                  onChange={handleChange}
+                  className='form-input'
+                  required
+                />
+              </div>
+            </div>
+
+            <div className='form-group'>
+              <label className='form-label'>CORREO ELECTRÓNICO</label>
+              <div className='input-wrapper'>
+                <Mail
+                  size={20}
+                  color={colorIcono}
+                  className='input-icon'
+                />
+                <input
+                  name='email'
+                  placeholder='ejemplo@gmail.com'
+                  onChange={handleChange}
+                  className='form-input'
+                  required
+                />
+              </div>
+            </div>
+
+            <div className='form-group'>
+              <label className='form-label'>CONTRASEÑA</label>
+              <div className='input-wrapper'>
+                <Lock
+                  size={20}
+                  color={colorIcono}
+                  className='input-icon'
+                />
+                <input
+                  name='password'
+                  type={mostrarPass ? 'text' : 'password'}
+                  placeholder='*******'
+                  onChange={handleChange}
+                  className='form-input'
+                  required
+                />
+                <button
+                  type='button'
+                  className='toggle-pass'
+                  onClick={() => setMostrarPass(!mostrarPass)}
+                >
+                  {mostrarPass ? (
+                    <EyeOff
+                      size={20}
+                      color={colorIcono}
+                    />
+                  ) : (
+                    <Eye
+                      size={20}
+                      color={colorIcono}
+                    />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className='form-group'>
+              <label className='form-label'>NÚMERO DE CONTACTO</label>
+              <div className='input-wrapper'>
+                <Phone
+                  size={20}
+                  color={colorIcono}
+                  className='input-icon'
+                />
+                <input
+                  name='contact'
+                  placeholder='56911111111'
+                  onChange={handleChange}
+                  className='form-input'
+                />
+              </div>
+            </div>
+
+            <button
+              type='button'
+              className='add-bicycle-button'
+              onClick={() => setMostrarBici(true)}
+            >
+              <Bike
+                size={18}
+                color='white'
+              />{' '}
+              AGREGAR BICICLETA (Opcional)
+            </button>
+
+            <button
+              type='submit'
+              className='register-submit-button'
+            >
+              ENVIAR SOLICITUD
+            </button>
+          </form>
+          {mostrarBici && (
+            <div className='modal-overlay'>
+              <div className='modal-bici'>
+                <button
+                  className='modal-cerrar'
+                  onClick={() => setMostrarBici(false)}
+                >
+                  ✕
+                </button>
+                <h3 className='modal-title'>Registrar bicicleta</h3>
+
+                <div className='form-group'>
+                  <label className='form-label'>MARCA</label>
+                  <div className='input-wrapper'>
+                    <Bike
+                      size={20}
+                      color={colorIcono}
+                      className='input-icon'
+                    />
+                    <input
+                      name='brand'
+                      placeholder='Oxford'
+                      value={bicycle.brand}
+                      onChange={handleBicycleChange}
+                      className='form-input'
+                    />
+                  </div>
+                </div>
+
+                <div className='form-group'>
+                  <label className='form-label'>MODELO</label>
+                  <div className='input-wrapper'>
+                    <Bike
+                      size={20}
+                      color={colorIcono}
+                      className='input-icon'
+                    />
+                    <input
+                      name='model'
+                      placeholder='MTB 300'
+                      value={bicycle.model}
+                      onChange={handleBicycleChange}
+                      className='form-input'
+                    />
+                  </div>
+                </div>
+
+                <div className='form-group'>
+                  <label className='form-label'>COLOR</label>
+                  <div className='input-wrapper'>
+                    <Bike
+                      size={20}
+                      color={colorIcono}
+                      className='input-icon'
+                    />
+                    <input
+                      name='color'
+                      placeholder='Azul'
+                      value={bicycle.color}
+                      onChange={handleBicycleChange}
+                      className='form-input'
+                    />
+                  </div>
+                </div>
+
+                <div className='form-group'>
+                  <label className='form-label'>FOTO DE LA BICICLETA</label>
+                  <label className='file-btn'>
+                    <Bike
+                      size={18}
+                      color={colorIcono}
+                    />
+                    <span>Seleccionar archivo</span>
+                    <input
+                      type='file'
+                      name='photo'
+                      accept='image/*'
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                  {photo && <p className='file-name'>{photo.name}</p>}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </>
     );
 }
