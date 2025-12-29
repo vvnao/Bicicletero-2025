@@ -6,7 +6,6 @@ import {
   listBikeracks,
   storeBicycleInBikerack,
   removeBicycleFromBikerack,
-  getAllBikeracks
 } from '../controllers/bikerack.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { authorize } from '../middleware/authorize.middleware.js';
@@ -25,7 +24,6 @@ router.get('/dashboard', authorize(['admin', 'guardia', 'user']), getDashboard);
 //! RUTAS DE ACCIONES (con nombres específicos)
 router.post('/store-bicycle', authorize(['admin', 'guardia', 'user']), storeBicycleInBikerack);
 router.post('/remove-bicycle', authorize(['admin', 'guardia', 'user']), removeBicycleFromBikerack);
-router.get('/all', getAllBikeracks);
 //! RUTAS GENERALES
 // GET /api/bikeracks - Listar todos los bicicleteros
 router.get('/', authorize(['admin', 'guardia', 'user']), listBikeracks);
