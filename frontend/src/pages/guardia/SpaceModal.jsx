@@ -8,6 +8,29 @@ import {
 } from '@services/spaces.service';
 import '@styles/SpaceModal.css';
 
+import {
+  X,
+  Loader2,
+  Search,
+  User,
+  Bike,
+  Clock,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+  FileText,
+  Lock,
+  Unlock,
+  Mail,
+  Hash,
+  ShieldAlert,
+  ShieldCheck,
+  CalendarCheck,
+  ClipboardCheck,
+  UserCheck,
+  Tag,
+} from 'lucide-react';
+
 const SpaceModal = ({ spaceId, onClose }) => {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,7 +92,6 @@ const SpaceModal = ({ spaceId, onClose }) => {
     const loadData = async () => {
       try {
         setLoading(true);
-        console.log(`📡 Cargando espacio ID: ${spaceId}`);
         const data = await getSpaceDetails(spaceId);
 
         if (data && data.status === 'En Infracción' && data.times) {
@@ -88,9 +110,6 @@ const SpaceModal = ({ spaceId, onClose }) => {
         setError('');
       } catch (e) {
         console.error('Error al cargar detalles:', e);
-        console.error('Error response:', e.response?.data);
-        console.error('Error status:', e.response?.status);
-
         const errorMsg =
           e.response?.data?.message || e.message || 'Error desconocido';
         setError(`Error al cargar detalles: ${errorMsg}`);
@@ -123,8 +142,6 @@ const SpaceModal = ({ spaceId, onClose }) => {
 
     try {
       setActionLoading(true);
-      console.log('Buscando usuario con RUT:', rutInput);
-
       const user = await getUserByRut(rutInput);
 
       if (user && user.id) {
@@ -139,7 +156,6 @@ const SpaceModal = ({ spaceId, onClose }) => {
       }
     } catch (e) {
       console.error('Error al buscar usuario:', e);
-
       let errorMessage = 'Usuario no se encuentra registrado';
 
       const errorText = e.message?.toLowerCase() || '';
@@ -220,15 +236,11 @@ const SpaceModal = ({ spaceId, onClose }) => {
 
     try {
       setActionLoading(true);
-
-      const result = await occupyWithReservation(details.reservation.code);
-
-      alert(`¡Reserva confirmada con éxito!`);
-
+      await occupyWithReservation(details.reservation.code);
+      alert('¡Reserva confirmada con éxito!');
       onClose();
     } catch (e) {
       console.error('Error al confirmar reserva:', e);
-
       const errorMessage =
         e.response?.data?.message ||
         e.message ||
@@ -251,14 +263,11 @@ const SpaceModal = ({ spaceId, onClose }) => {
 
     try {
       setActionLoading(true);
-      const result = await liberateSpace(spaceId, retrievalCode.trim());
+      await liberateSpace(spaceId, retrievalCode.trim());
       alert('¡Espacio liberado exitosamente!');
       onClose();
     } catch (e) {
       console.error('Error al liberar espacio:', e);
-      console.error('Error response:', e.response?.data);
-      console.error('Error message:', e.message);
-
       const errorMsg =
         e.response?.data?.message || e.message || 'Error al liberar el espacio';
       alert(`Código de retiro inválido`);
@@ -271,6 +280,10 @@ const SpaceModal = ({ spaceId, onClose }) => {
     return (
       <div className='modal-overlay'>
         <div className='modal-content loading-modal'>
+          <Loader2
+            className='loading-spinner'
+            size={40}
+          />
           <p>Cargando información del espacio...</p>
         </div>
       </div>
@@ -281,6 +294,10 @@ const SpaceModal = ({ spaceId, onClose }) => {
     return (
       <div className='modal-overlay'>
         <div className='modal-content error-modal'>
+          <AlertCircle
+            size={48}
+            color='var(--mon-danger)'
+          />
           <h3>Error</h3>
           <p>{error}</p>
           <div className='error-details'>
@@ -306,6 +323,10 @@ const SpaceModal = ({ spaceId, onClose }) => {
     return (
       <div className='modal-overlay'>
         <div className='modal-content'>
+          <AlertCircle
+            size={48}
+            color='var(--mon-warning)'
+          />
           <p>No se encontró información del espacio.</p>
           <button
             onClick={onClose}
@@ -335,9 +356,15 @@ const SpaceModal = ({ spaceId, onClose }) => {
       >
         <header className='modal-header'>
           <h2>
+            <Tag
+              size={20}
+              style={{ marginRight: '10px' }}
+            />
             ESPACIO {details.spaceCode}:{' '}
             <span
-              className={`status-${status.toLowerCase().replace(' ', '-')}`}
+              className={`status-badge status-${status
+                .toLowerCase()
+                .replace(' ', '-')}`}
             >
               {status.toUpperCase()}
             </span>
@@ -347,7 +374,7 @@ const SpaceModal = ({ spaceId, onClose }) => {
             onClick={onClose}
             disabled={actionLoading}
           >
-            ×
+            <X size={20} />
           </button>
         </header>
 
@@ -355,10 +382,19 @@ const SpaceModal = ({ spaceId, onClose }) => {
         {isFree && (
           <div className='modal-body'>
             <div className='form-section'>
-              <h3>📝 Registro Manual de Ingreso</h3>
+              <h3 className='section-title'>
+                <FileText size={18} />
+                Registro Manual de Ingreso
+              </h3>
 
               <div className='form-group'>
-                <label>🔍 Buscar usuario por RUT:</label>
+                <label>
+                  <Search
+                    size={16}
+                    style={{ marginRight: '8px' }}
+                  />
+                  Buscar usuario por RUT:
+                </label>
                 <div className='input-group'>
                   <input
                     type='text'
@@ -372,7 +408,20 @@ const SpaceModal = ({ spaceId, onClose }) => {
                     className='btn-search'
                     disabled={actionLoading || !rut.trim()}
                   >
-                    {actionLoading ? 'Buscando...' : 'Buscar'}
+                    {actionLoading ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className='loading-spinner'
+                        />
+                        Buscando...
+                      </>
+                    ) : (
+                      <>
+                        <Search size={16} />
+                        Buscar
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -380,7 +429,10 @@ const SpaceModal = ({ spaceId, onClose }) => {
               {foundUser && (
                 <div className='user-section'>
                   <div className='user-info-card'>
-                    <h4>✅ Usuario Encontrado</h4>
+                    <h4>
+                      <UserCheck size={18} />
+                      Usuario Encontrado
+                    </h4>
                     <p>
                       <strong>Nombre:</strong> {foundUser.name}
                     </p>
@@ -389,7 +441,13 @@ const SpaceModal = ({ spaceId, onClose }) => {
                     </p>
 
                     <div className='form-group'>
-                      <label>🚲 Seleccionar Bicicleta:</label>
+                      <label>
+                        <Bike
+                          size={16}
+                          style={{ marginRight: '8px' }}
+                        />
+                        Seleccionar Bicicleta:
+                      </label>
                       <select
                         value={selectedBicycleId}
                         onChange={(e) => setSelectedBicycleId(e.target.value)}
@@ -397,7 +455,7 @@ const SpaceModal = ({ spaceId, onClose }) => {
                         disabled={actionLoading}
                       >
                         <option value=''>Seleccione una bicicleta</option>
-                        {foundUser.bicycles.map((bici) => (
+                        {foundUser.bicycles?.map((bici) => (
                           <option
                             key={bici.id}
                             value={bici.id}
@@ -406,22 +464,32 @@ const SpaceModal = ({ spaceId, onClose }) => {
                           </option>
                         ))}
                       </select>
+                      <div className='help-text'>
+                        {foundUser.bicycles?.length === 0
+                          ? 'Usuario sin bicicletas registradas'
+                          : `${
+                              foundUser.bicycles?.length || 0
+                            } bicicleta(s) disponible(s)`}
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
               <div className='form-group'>
-                <label>🕐 Horas estimadas de estadía:</label>
+                <label>
+                  <Clock
+                    size={16}
+                    style={{ marginRight: '8px' }}
+                  />
+                  Horas estimadas de estadía:
+                </label>
                 <input
                   type='number'
                   value={hours}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Elimina caracteres no deseados: e, E, +, -, .
                     const cleanValue = value.replace(/[eE+-.]/g, '');
-
-                    // Solo actualiza si es válido
                     if (cleanValue === '' || /^\d+$/.test(cleanValue)) {
                       const num = parseInt(cleanValue);
                       if (cleanValue === '' || (num >= 1 && num <= 24)) {
@@ -446,7 +514,20 @@ const SpaceModal = ({ spaceId, onClose }) => {
                 }
                 className='btn-action btn-occupy'
               >
-                {actionLoading ? 'Procesando...' : 'Marcar como Ocupado'}
+                {actionLoading ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      className='loading-spinner'
+                    />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <Lock size={16} />
+                    Marcar como Ocupado
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -456,27 +537,33 @@ const SpaceModal = ({ spaceId, onClose }) => {
         {(isOccupied || isInfraction) && (
           <div className='modal-body'>
             <div className='info-section'>
-              <h3>📋 Información del Espacio</h3>
+              <h3 className='section-title'>
+                <FileText size={18} />
+                Información del Espacio
+              </h3>
 
               <div className='info-card user-card'>
-                <h4>👤 Datos del Usuario</h4>
+                <h4>
+                  <User size={18} />
+                  Datos del Usuario
+                </h4>
                 <div className='user-details'>
-                  <p>
-                    <strong>Nombre:</strong> {getUserFullName(user)}
-                  </p>
-                  <p>
-                    <strong>RUT:</strong> {user?.rut || 'No disponible'}
-                  </p>
-                  {user?.email && (
-                    <p>
-                      <strong>Email:</strong> {user.email}
-                    </p>
-                  )}
+                  <div className='detail-row'>
+                    <strong>Nombre:</strong>
+                    <span>{getUserFullName(user)}</span>
+                  </div>
+                  <div className='detail-row'>
+                    <strong>RUT:</strong>
+                    <span>{user?.rut || 'No disponible'}</span>
+                  </div>
                 </div>
               </div>
 
               <div className='info-card time-card'>
-                <h4>⏰ Registro de Tiempos</h4>
+                <h4>
+                  <Clock size={18} />
+                  Registro de Tiempos
+                </h4>
                 <div className='time-details'>
                   <div className='time-row'>
                     <span className='time-label'>Fecha-Hora de Llegada:</span>
@@ -495,9 +582,7 @@ const SpaceModal = ({ spaceId, onClose }) => {
 
                   {isInfraction && (
                     <div className='time-row infraction-highlight'>
-                      <span className='time-label'>
-                        ⏰ Tiempo en Infracción:
-                      </span>
+                      <span className='time-label'>Tiempo en Infracción:</span>
                       <span className='time-value infraction-time'>
                         {formatInfractionTime(times?.infractionMinutes || 0)}
                       </span>
@@ -517,7 +602,10 @@ const SpaceModal = ({ spaceId, onClose }) => {
 
               {/* Sección bicicleta */}
               <div className='info-card bicycle-card'>
-                <h4>🚲 Datos de la Bicicleta</h4>
+                <h4>
+                  <Bike size={18} />
+                  Datos de la Bicicleta
+                </h4>
                 <div className='bicycle-details'>
                   <p>
                     <strong>Marca:</strong> {bicycle?.brand || 'No disponible'}
@@ -529,7 +617,6 @@ const SpaceModal = ({ spaceId, onClose }) => {
                     <strong>Color:</strong> {bicycle?.color || 'No disponible'}
                   </p>
 
-                  {/* imagen bicicleta */}
                   {(bicycle?.urlImage || bicycle?.photo) && (
                     <div className='bicycle-image-container'>
                       <img
@@ -544,7 +631,10 @@ const SpaceModal = ({ spaceId, onClose }) => {
 
               {/* acción para liberar */}
               <div className='action-section'>
-                <h4>🔓 Proceso de Retiro</h4>
+                <h4>
+                  <Unlock size={18} />
+                  Proceso de Retiro
+                </h4>
                 <div className='input-group'>
                   <input
                     type='text'
@@ -561,21 +651,38 @@ const SpaceModal = ({ spaceId, onClose }) => {
                     }`}
                     disabled={actionLoading || !retrievalCode.trim()}
                   >
-                    {actionLoading ? 'Procesando...' : 'Liberar Espacio'}
+                    {actionLoading ? (
+                      <>
+                        <Loader2
+                          size={16}
+                          className='loading-spinner'
+                        />
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <Unlock size={16} />
+                        Liberar Espacio
+                      </>
+                    )}
                   </button>
                 </div>
                 <small className='help-text'>
+                  <Mail
+                    size={14}
+                    style={{ marginRight: '6px', verticalAlign: 'middle' }}
+                  />
                   El código de retiro fue enviado al correo del usuario
-                  {isInfraction && ' - Este espacio se encuentra en infracción'}
                 </small>
 
                 {isInfraction && (
                   <div className='infraction-notice'>
+                    <AlertCircle
+                      size={16}
+                      style={{ marginRight: '8px', verticalAlign: 'middle' }}
+                    />
                     <p>
-                      ⚠️ Este espacio ha excedido el tiempo estimado de estadía.
-                    </p>
-                    <p>
-                      Por favor, verifique el código de retiro con el usuario.
+                      Este espacio ha excedido el tiempo estimado de estadía.
                     </p>
                   </div>
                 )}
@@ -588,89 +695,88 @@ const SpaceModal = ({ spaceId, onClose }) => {
         {isReserved && (
           <div className='modal-body'>
             <div className='info-section'>
-              <h3>📅 Reserva Pendiente</h3>
+              <h3 className='section-title'>
+                <Calendar size={18} />
+                Reserva Pendiente
+              </h3>
 
               {!details?.user?.rut ||
               !details?.bicycle?.brand ||
               !details?.reservation?.code ? (
                 <div className='error-card'>
+                  <AlertCircle
+                    size={20}
+                    style={{ marginRight: '8px', verticalAlign: 'middle' }}
+                  />
                   <p>
-                    ⚠️ No se pudo cargar la información completa de la reserva.
+                    No se pudo cargar la información completa de la reserva.
                   </p>
                   <p className='help-text'>
                     Verifica que el espacio tenga una reserva activa en el
                     sistema.
                   </p>
-                  <div className='debug-info'>
-                    <p>
-                      <small>
-                        Debug: user existe: {details?.user ? 'Sí' : 'No'}
-                      </small>
-                    </p>
-                    <p>
-                      <small>
-                        Debug: bicycle existe: {details?.bicycle ? 'Sí' : 'No'}
-                      </small>
-                    </p>
-                    <p>
-                      <small>
-                        Debug: reservation existe:{' '}
-                        {details?.reservation ? 'Sí' : 'No'}
-                      </small>
-                    </p>
-                  </div>
                 </div>
               ) : (
                 <>
                   <div className='info-card'>
-                    <h4>👤 Datos del Usuario</h4>
-                    <p>
-                      <strong>Nombre:</strong>{' '}
-                      {details.user.name ||
-                        `${details.user.names} ${details.user.lastName}`}
-                    </p>
-                    <p>
-                      <strong>RUT:</strong> {details.user.rut}
-                    </p>
-                    <p>
-                      <strong>Email:</strong>{' '}
-                      {details.user.email || 'No disponible'}
-                    </p>
+                    <h4>
+                      <User size={18} />
+                      Datos del Usuario
+                    </h4>
+                    <div className='detail-row'>
+                      <strong>Nombre:</strong>
+                      <span>
+                        {details.user.name ||
+                          `${details.user.names} ${details.user.lastName}`}
+                      </span>
+                    </div>
+                    <div className='detail-row'>
+                      <strong>RUT:</strong>
+                      <span>{details.user.rut}</span>
+                    </div>
+                    <div className='detail-row'>
+                      <strong>Email:</strong>
+                      <span>{details.user.email || 'No disponible'}</span>
+                    </div>
                   </div>
 
                   <div className='info-card'>
-                    <h4>📋 Información de la Reserva</h4>
-                    <p>
-                      <strong>Código de Reserva:</strong>
-                      <span className='reservation-code'>
-                        {details.reservation.code}
-                      </span>
-                    </p>
-                    <p>
-                      <strong>Horas Estimadas:</strong>{' '}
-                      {details.reservation.estimatedHours} horas
-                    </p>
-                    <p>
+                    <h4>
+                      <ClipboardCheck size={18} />
+                      Información de la Reserva
+                    </h4>
+                    <div className='detail-row'>
+                      <strong>Horas Estimadas:</strong>
+                      <span>{details.reservation.estimatedHours} horas</span>
+                    </div>
+                    <div className='detail-row'>
                       <strong>Estado:</strong>
                       <span
                         className={`status-badge ${details.reservation.status?.toLowerCase()}`}
                       >
                         {details.reservation.status}
                       </span>
-                    </p>
+                    </div>
                   </div>
 
                   <div className='info-card'>
-                    <h4>🚲 Bicicleta Reservada</h4>
-                    <p>
-                      <strong>Marca:</strong> {details.bicycle.brand}
-                    </p>
-                    <p>
-                      <strong>Modelo:</strong> {details.bicycle.model}
-                    </p>
-                    <p>
-                      <strong>Color:</strong> {details.bicycle.color}
-                    </p>
+                    <h4>
+                      <Bike size={18} />
+                      Bicicleta Reservada
+                    </h4>
+                    <div className='detail-row'>
+                      <strong>Marca:</strong>
+                      <span>{details.bicycle.brand}</span>
+                    </div>
+                    <div className='detail-row'>
+                      <strong>Modelo:</strong>
+                      <span>{details.bicycle.model}</span>
+                    </div>
+                    <div className='detail-row'>
+                      <strong>Color:</strong>
+                      <span>{details.bicycle.color}</span>
+                    </div>
+
                     {(details.bicycle.urlImage || details.bicycle.photo) && (
                       <div className='bicycle-image-container'>
                         <img
@@ -686,7 +792,10 @@ const SpaceModal = ({ spaceId, onClose }) => {
                   </div>
 
                   <div className='confirmation-section'>
-                    <h4>✅ Confirmar Ingreso</h4>
+                    <h4>
+                      <CalendarCheck size={18} />
+                      Confirmar Ingreso
+                    </h4>
                     <p className='help-text'>
                       Confirme el ingreso cuando el usuario llegue con la
                       bicicleta. Se generará un código de retiro
@@ -698,16 +807,36 @@ const SpaceModal = ({ spaceId, onClose }) => {
                       className='btn-action btn-confirm-reservation'
                       disabled={actionLoading}
                     >
-                      {actionLoading
-                        ? 'Confirmando...'
-                        : 'Confirmar Ingreso de Reserva'}
+                      {actionLoading ? (
+                        <>
+                          <Loader2
+                            size={16}
+                            className='loading-spinner'
+                          />
+                          Confirmando...
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck size={16} />
+                          Confirmar Ingreso de Reserva
+                        </>
+                      )}
                     </button>
 
                     <div className='reservation-code-display'>
                       <p>
                         <strong>Código a verificar:</strong>
                       </p>
-                      <div className='code-box'>{details.reservation.code}</div>
+                      <div className='code-box'>
+                        <Hash
+                          size={20}
+                          style={{
+                            marginRight: '8px',
+                            verticalAlign: 'middle',
+                          }}
+                        />
+                        {details.reservation.code}
+                      </div>
                       <small className='help-text'>
                         Este código fue proporcionado al usuario al hacer la
                         reserva
@@ -719,13 +848,24 @@ const SpaceModal = ({ spaceId, onClose }) => {
             </div>
           </div>
         )}
-
         <footer className='modal-footer'>
           <p className='legend'>
-            <span className='legend-item free'>🟢 Libre</span>
-            <span className='legend-item reserved'>🟡 Reservado</span>
-            <span className='legend-item occupied'>🔴 Ocupado</span>
-            <span className='legend-item infraction'>🟠 En Infracción</span>
+            <span className='legend-item free'>
+              <div className='legend-dot free'></div>
+              Libre
+            </span>
+            <span className='legend-item reserved'>
+              <div className='legend-dot reserved'></div>
+              Reservado
+            </span>
+            <span className='legend-item occupied'>
+              <div className='legend-dot occupied'></div>
+              Ocupado
+            </span>
+            <span className='legend-item infraction'>
+              <div className='legend-dot infraction'></div>
+              En Infracción
+            </span>
           </p>
         </footer>
       </div>

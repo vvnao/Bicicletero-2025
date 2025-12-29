@@ -100,8 +100,8 @@ const handleDeleteIncidence = async (incidenceId) => {
         setShowModal(true);
       }, 50);
     } catch (error) {
-      console.error('❌ Error obteniendo detalles:', error);
-      console.error('❌ Usando datos de lista como fallback');
+      console.error(' Error obteniendo detalles:', error);
+      console.error(' Usando datos de lista como fallback');
 
       setTimeout(() => {
         setSelectedIncidence(incidence);
@@ -201,7 +201,7 @@ const handleDeleteIncidence = async (incidenceId) => {
 
   return (
     <div className='incident-history'>
-      <h2>📊 Historial de Reportes</h2>
+      <h2> Historial de Reportes</h2>
       <p className='summary'>
         Total de incidencias: {incidences.length} | Mostrando:{' '}
         {filteredIncidences.length}
@@ -209,7 +209,7 @@ const handleDeleteIncidence = async (incidenceId) => {
 
       {/* filtros */}
       <div className='filters-section'>
-        <h3>🔍 Filtros</h3>
+        <h3> Filtros</h3>
         <div className='filters-grid'>
           <div className='filter-group'>
             <label>Fecha desde</label>
@@ -310,7 +310,7 @@ const handleDeleteIncidence = async (incidenceId) => {
       {/* tabla de incidencias */}
       <div className='incidence-table-section'>
         <div className='table-header'>
-          <h3>📋 Reportes Registrados</h3>
+          <h3> Reportes Registrados</h3>
           <span className='counter'>
             {filteredIncidences.length} incidencias
           </span>
@@ -374,9 +374,9 @@ const handleDeleteIncidence = async (incidenceId) => {
                         onClick={() => openIncidenceDetails(incidence)}
                         className='btn-view'
                         title='Ver detalles'
-                        disabled={loadingDetail} // ← Deshabilitar mientras carga
+                        disabled={loadingDetail} 
                       >
-                        {loadingDetail ? 'Cargando...' : '👁️ Ver'}
+                        {loadingDetail ? 'Cargando...' : 'Ver'}
                       </button>
                       <button
                         onClick={() => handleDeleteIncidence(incidence.id)}

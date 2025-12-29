@@ -1,0 +1,49 @@
+:root {
+  --mon-bg-primary: #0f172a;
+  --mon-bg-secondary: #1e293b;
+  --mon-card-bg: rgba(241, 245, 249, 0.12);
+  --mon-card-bg-hover: rgba(241, 245, 249, 0.18);
+  --mon-card-border: rgba(255, 255, 255, 0.2);
+
+  --mon-primary-blue: #60a5fa;
+  --mon-primary-dark: #3b82f6;
+  --mon-secondary-blue: #38bdf8;
+  --mon-accent-pink: #f472b6;
+
+  --mon-success: #10b981;
+  --mon-warning: #f59e0b;
+  --mon-danger: #ef4444;
+  --mon-orange: #f97316;
+  --mon-info: #60a5fa;
+
+  --mon-text-primary: #f8fafc;
+  --mon-text-secondary: #e2e8f0;
+  --mon-text-muted: #94a3b8;
+  --mon-text-dark: #1e293b;
+
+  --mon-border-color: rgba(255, 255, 255, 0.25);
+  --mon-border-light: rgba(255, 255, 255, 0.15);
+  --mon-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --mon-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.35);
+  --mon-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+  --mon-shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.45);
+  --mon-glow-blue: 0 0 25px rgba(96, 165, 250, 0.4);
+  --mon-glow-success: 0 0 25px rgba(16, 185, 129, 0.4);
+  --mon-glow-warning: 0 0 25px rgba(245, 158, 11, 0.4);
+  --mon-glow-danger: 0 0 25px rgba(239, 68, 68, 0.4);
+  --mon-glow-orange: 0 0 25px rgba(249, 115, 22, 0.4);
+
+  --mon-radius-sm: 0.5rem;
+  --mon-radius-md: 0.75rem;
+  --mon-radius-lg: 1rem;
+  --mon-radius-xl: 1.25rem;
+
+  --mon-spacing-xs: 0.5rem;
+  --mon-spacing-sm: 1rem;
+  --mon-spacing-md: 1.5rem;
+  --mon-spacing-lg: 2rem;
+  --mon-spacing-xl: 2.5rem;
+
+  --mon-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mon-font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}

@@ -18,7 +18,7 @@ const SidebarGuardia = ({ sidebarHover, setSidebarHover }) => {
     const location = useLocation();
 
     const mainMenuItems = [
-        { name: "Dashboard", path: "/home/guardia", icon: FiBarChart2 },
+        { name: "Inicio", path: "/home/guardia", icon: FiBarChart2 },
         { name: "Panel de Monitoreo", path: "/home/guardia/monitoring", icon: FiHome },
         { name: "Reportes de Incidencias", path: "/home/guardia/incident-reports", icon: FiShield },
         { name: "Solicitudes de Registro", path: "/home/guardia/pending-requests", icon: FiArchive },
@@ -48,8 +48,7 @@ const SidebarGuardia = ({ sidebarHover, setSidebarHover }) => {
     };
 
     const handleLogout = () => {
-        // Considera limpiar tokens/localStorage aquí
-        localStorage.removeItem('authToken'); // si usas tokens
+        localStorage.removeItem('authToken'); 
         navigate("/auth/login", { replace: true });
     };
 
@@ -85,9 +84,9 @@ const SidebarGuardia = ({ sidebarHover, setSidebarHover }) => {
 
         if (isHovered && !isActive) {
             styles.backgroundColor = '#19213f2d';
-            styles.borderRadius = '12px 8px 8px 12px'; // Reducir el radio del lado derecho
-            styles.marginRight = '0px'; // Reducir margen derecho
-            styles.width = 'calc(100% - 23px)'; // Ajustar ancho para compensar
+            styles.borderRadius = '12px 8px 8px 12px'; 
+            styles.marginRight = '0px'; 
+            styles.width = 'calc(100% - 23px)'; 
         }
 
         return styles;
@@ -111,7 +110,6 @@ const SidebarGuardia = ({ sidebarHover, setSidebarHover }) => {
                 justifyContent: 'space-between',
                 borderTopRightRadius: '20px',
                 borderBottomRightRadius: '20px'
-                // boxShadow: '3px 0 20px rgba(0, 0, 0, 0.15)',
             }}
             onMouseEnter={() => setSidebarHover(true)}
             onMouseLeave={() => setSidebarHover(false)}

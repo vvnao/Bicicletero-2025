@@ -126,7 +126,7 @@ const IncidentDetailsModal = ({ incidence, onClose }) => {
         <div className='modal-body'>
           {/* información General */}
           <div className='info-section'>
-            <h3>📋 INFORMACIÓN GENERAL</h3>
+            <h3> INFORMACIÓN GENERAL</h3>
             <div className='info-grid'>
               <div className='info-item'>
                 <span className='info-label'>ID:</span>
@@ -164,7 +164,7 @@ const IncidentDetailsModal = ({ incidence, onClose }) => {
 
           {/* fecha del Incidente */}
           <div className='detail-section'>
-            <h3>📅 FECHA Y HORA DEL INCIDENTE</h3>
+            <h3> FECHA Y HORA DEL INCIDENTE</h3>
             <div className='detail-value'>
               {formatDateTime(incidence?.dateTimeIncident)}
             </div>
@@ -172,7 +172,7 @@ const IncidentDetailsModal = ({ incidence, onClose }) => {
 
           {/* ubicación */}
           <div className='detail-section'>
-            <h3>📍 UBICACIÓN</h3>
+            <h3> UBICACIÓN</h3>
             <div className='form-row'>
               <div className='form-group'>
                 <label>Bicicletero</label>
@@ -197,7 +197,7 @@ const IncidentDetailsModal = ({ incidence, onClose }) => {
 
           {/* clasificación */}
           <div className='detail-section'>
-            <h3>🏷️ CLASIFICACIÓN</h3>
+            <h3> CLASIFICACIÓN</h3>
             <div className='form-row'>
               <div className='form-group'>
                 <label>Tipo de Incidencia</label>
@@ -218,7 +218,7 @@ const IncidentDetailsModal = ({ incidence, onClose }) => {
 
           {/* usuario Involucrado */}
           <div className='detail-section'>
-            <h3>👤 USUARIO INVOLUCRADO (Opcional)</h3>
+            <h3> USUARIO INVOLUCRADO (Opcional)</h3>
             <div className='user-info-display'>
               {incidence?.involvedUser ? (
                 <>
@@ -250,7 +250,7 @@ const IncidentDetailsModal = ({ incidence, onClose }) => {
 
           {/* descripción */}
           <div className='detail-section'>
-            <h3>📝 DESCRIPCIÓN</h3>
+            <h3> DESCRIPCIÓN</h3>
             <div className='description-content'>
               {incidence?.description || 'No hay descripción'}
             </div>
@@ -258,7 +258,7 @@ const IncidentDetailsModal = ({ incidence, onClose }) => {
 
           {/* evidencia */}
           <div className='detail-section'>
-            <h3>🖼️ EVIDENCIA ({images.length} imágenes)</h3>
+            <h3> EVIDENCIA ({images.length} imágenes)</h3>
             <div className='evidence-display'>
               {images.length > 0 ? (
                 <div className='evidence-gallery'>
@@ -270,7 +270,7 @@ const IncidentDetailsModal = ({ incidence, onClose }) => {
                       className='main-evidence-image'
                       onError={(e) => {
                         console.error(
-                          '❌ Error cargando imagen:',
+                          'Error cargando imagen:',
                           images[currentImageIndex]
                         );
                         setImageError(true);
@@ -331,7 +331,7 @@ const IncidentDetailsModal = ({ incidence, onClose }) => {
 
                   {imageError && (
                     <div className='image-error'>
-                      <p>⚠️ No se pudo cargar la imagen</p>
+                      <p> No se pudo cargar la imagen</p>
                       <p>
                         <small>URL: {images[currentImageIndex]}</small>
                       </p>
