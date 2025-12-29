@@ -1,176 +1,203 @@
 "use strict";
 import { useState, useEffect } from "react";
-import { getAvailableSpaces, createReservation } from '@services/reservation.service';
+import { getAvailableSpaces, createReservation, cancelReservation } from '@services/reservation.service';
 import { useGetPrivateBicycles } from "../hooks/bicycles/useGetPrivateBicycles";
 import Swal from 'sweetalert2';
 
-//Para manejar cada fila independiente
-const BikerackRow = ({ rack, bicycles, onReserved }) => {
+const BikerackRow = ({ rack, bicycles, activeReservation, onReserved, onCancel }) => {
     const [selectedBicycle, setSelectedBicycle] = useState("");
     const [hours, setHours] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const isThisMyReservation = activeReservation?.bikerackId === rack.id || activeReservation?.bikerackName === rack.name;
+
     const handleReserve = async () => {
-        if (!selectedBicycle) {
-            return Swal.fire("Atención", "Por favor selecciona una de tus bicicletas", "warning");
-        }
-
+        if (!selectedBicycle) return Swal.fire("Aviso", "Selecciona una bicicleta", "warning");
+        
         setIsSubmitting(true);
-        try {
-            const result = await createReservation(rack.id, selectedBicycle, hours);
+        const response = await createReservation(rack.id, selectedBicycle, hours);
+        setIsSubmitting(false);
 
-            // Verificamos éxito según el estándar de tu controlador
-            if (result.status === "Success" || result.reservationCode) {
-                Swal.fire({
-                    title: "¡Reserva Confirmada!",
-                    html: `
-                        <div class="text-left bg-gray-50 p-4 rounded-lg border border-gray-200 mt-2">
-                            <p><b>Código:</b> ${result.data?.reservationCode || result.reservationCode}</p>
-                            <p><b>Espacio:</b> ${result.data?.spaceCode || result.spaceCode}</p>
-                            <p><b>Ubicación:</b> ${rack.name}</p>
-                        </div>
-                    `,
-                    icon: "success"
-                });
-                onReserved(); // Refresca la tabla principal
-            } else {
-                Swal.fire("Error", result.message || "No se pudo realizar la reserva", "error");
+        if (response.status === "Success" || response.data?.reservationCode) {
+            Swal.fire("¡Éxito!", "Reserva creada correctamente", "success");
+            onReserved({ 
+                ...response.data, 
+                bikerackId: rack.id, 
+                id: response.data.id || response.reservationId 
+            }); 
+        } else {
+            Swal.fire("Error", response.message, "error");
+        }
+    };
+
+    const handleCancelClick = async () => {
+        const confirm = await Swal.fire({
+            title: '¿Cancelar reserva?',
+            text: "El espacio quedará libre y el correo de confirmación se invalidará.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Sí, cancelar'
+        });
+
+        if (confirm.isConfirmed) {
+            setIsSubmitting(true);
+            try {
+                await onCancel(activeReservation.id);
+            } catch (err) {
+                Swal.fire("Error", "No se pudo cancelar la reserva", "error");
+            } finally {
+                setIsSubmitting(false);
             }
-        } catch (error) {
-            Swal.fire("Error", "Error interno al procesar la reserva", "error");
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
     const isFull = rack.availableSpaces <= 0;
 
     return (
-        <tr className={`border-b border-gray-100 transition-colors ${isFull ? 'bg-gray-50' : 'hover:bg-blue-50/30'}`}>
+        <tr className={`border-b border-gray-100 transition-all ${isThisMyReservation ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''}`}>
             <td className="px-6 py-5">
                 <div className="font-bold text-gray-800">{rack.name}</div>
-                <div className="text-xs text-gray-400 font-normal">Capacidad: {rack.capacity}</div>
+                <div className="text-xs text-gray-400">Capacidad: {rack.capacity}</div>
             </td>
             <td className="px-6 py-5">
-                <div className="flex items-center">
-                    <span className={`h-2.5 w-2.5 rounded-full mr-2 ${isFull ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                    <span className={`font-semibold ${isFull ? 'text-red-600' : 'text-green-700'}`}>
-                        {rack.availableSpaces} disponibles
+                <span className={`text-sm font-semibold ${isFull ? 'text-red-500' : 'text-green-600'}`}>
+                    {rack.availableSpaces} disponibles
+                </span>
+            </td>
+            <td className="px-6 py-5">
+                {!activeReservation ? (
+                    <select 
+                        disabled={isFull}
+                        className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={selectedBicycle}
+                        onChange={(e) => setSelectedBicycle(e.target.value)}
+                    >
+                        <option value="">Elegir bicicleta...</option>
+                        {bicycles.map(b => (
+                            <option key={b.id} value={b.id}>{b.brand} - {b.model}</option>
+                        ))}
+                    </select>
+                ) : (
+                    <span className="text-sm italic text-gray-500">
+                        {isThisMyReservation ? "Bicicleta reservada" : "---"}
                     </span>
-                </div>
-            </td>
-            <td className="px-6 py-5 text-sm">
-                <select 
-                    disabled={isFull}
-                    className="w-full border border-gray-300 rounded-lg p-2 bg-white focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-200"
-                    value={selectedBicycle}
-                    onChange={(e) => setSelectedBicycle(e.target.value)}
-                >
-                    <option value="">Elegir bicicleta...</option>
-                    {bicycles.map(bike => (
-                        <option key={bike.id} value={bike.id}>{bike.brand} - {bike.model}</option>
-                    ))}
-                </select>
+                )}
             </td>
             <td className="px-6 py-5">
-                <select 
-                    disabled={isFull}
-                    className="border border-gray-300 rounded-lg p-2 text-sm outline-none bg-white disabled:bg-gray-200"
-                    value={hours}
-                    onChange={(e) => setHours(e.target.value)}
-                >
-                    {[...Array(24)].map((_, i) => (
-                        <option key={i+1} value={i+1}>{i+1} hr{i > 0 ? 's' : ''}</option>
-                    ))}
-                </select>
+                {!activeReservation && (
+                    <select 
+                        disabled={isFull}
+                        className="border border-gray-300 rounded-lg p-2 text-sm"
+                        value={hours}
+                        onChange={(e) => setHours(e.target.value)}
+                    >
+                        {[...Array(24)].map((_, i) => (
+                            <option key={i+1} value={i+1}>{i+1} hr{i > 0 ? 's' : ''}</option>
+                        ))}
+                    </select>
+                )}
             </td>
             <td className="px-6 py-5 text-center">
-                <button 
-                    onClick={handleReserve}
-                    disabled={isFull || isSubmitting}
-                    className={`px-5 py-2 rounded-lg font-bold text-sm text-white transition-all transform shadow-sm
-                        ${isFull 
-                            ? 'bg-gray-300 cursor-not-allowed' 
-                            : 'bg-blue-600 hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0'}`}
-                >
-                    {isSubmitting ? '...' : 'Reservar'}
-                </button>
+                {isThisMyReservation ? (
+                    <button 
+                        onClick={handleCancelClick}
+                        disabled={isSubmitting}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition-all active:scale-95"
+                    >
+                        {isSubmitting ? '...' : 'Cancelar Reserva'}
+                    </button>
+                ) : !activeReservation ? (
+                    <button 
+                        onClick={handleReserve}
+                        disabled={isFull || isSubmitting}
+                        className={`px-4 py-2 rounded-lg font-bold text-sm text-white shadow-sm transition-all
+                            ${isFull ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    >
+                        Reservar
+                    </button>
+                ) : null}
             </td>
         </tr>
     );
 };
-//Página principal
-function Reservation() {
+
+export default function Reservation() {
     const { bicycles, isLoading: loadingBikes } = useGetPrivateBicycles();
     const [bikeracks, setBikeracks] = useState([]);
-    const [loadingRacks, setLoadingRacks] = useState(true);
+    const [activeRes, setActiveRes] = useState(null); 
+    const [loading, setLoading] = useState(true);
 
-    const fetchStatus = async () => {
+    const refreshData = async () => {
         try {
             const data = await getAvailableSpaces();
-            // Aseguramos que data sea un array (en caso de que el service devuelva directo el response.data)
-            setBikeracks(Array.isArray(data) ? data : []);
+            setBikeracks(data || []);
         } catch (error) {
-            console.error("Error al cargar disponibilidad:", error);
+            console.error("Error al refrescar:", error);
         } finally {
-            setLoadingRacks(false);
+            setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchStatus();
+        refreshData();
     }, []);
 
-    if (loadingRacks || loadingBikes) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600 mb-4"></div>
-                <p className="text-gray-600 font-medium">Sincronizando disponibilidad...</p>
-            </div>
-        );
-    }
+    const onCancelAction = async (reservationId) => {
+        try {
+            await cancelReservation(reservationId);
+            setActiveRes(null);
+            await refreshData(); 
+            Swal.fire("Cancelada", "Tu reserva ha sido eliminada exitosamente", "info");
+        } catch (error) {
+            Swal.fire("Error", error.message || "No se pudo cancelar", "error");
+        }
+    };
+
+    if (loading || loadingBikes) return <div className="p-10 text-center font-bold">Cargando sistema de reservas...</div>;
 
     return (
-        <div className="p-8 max-w-6xl mx-auto animate-fadeIn">
-            <header className="mb-10">
-                <h1 className="text-3xl font-extrabold text-white tracking-tight">Sistema de Reservas</h1>
-            </header>
+        <div className="p-8 max-w-6xl mx-auto">
+            <h1 className="text-3xl font-bold text-white mb-2">Reservas de Bicicleteros</h1>
             
             <div className="bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr className="text-left text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                <th className="px-6 py-4">Bicicletero</th>
-                                <th className="px-6 py-4">Estado</th>
-                                <th className="px-6 py-4">Tu Bicicleta</th>
-                                <th className="px-6 py-4">Tiempo Estimado</th>
-                                <th className="px-6 py-4 text-center">Gestión</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {bikeracks.length > 0 ? (
-                                bikeracks.map((rack) => (
-                                    <BikerackRow 
-                                        key={rack.id} 
-                                        rack={rack} 
-                                        bicycles={bicycles} 
-                                        onReserved={fetchStatus} 
-                                    />
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
-                                        No se encontraron bicicleteros disponibles en este momento.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                <table className="min-w-full">
+                    <thead className="bg-gray-50 text-gray-400 text-xs font-bold uppercase tracking-widest">
+                        <tr>
+                            <th className="px-6 py-4 text-left">Bicicletero</th>
+                            <th className="px-6 py-4 text-left">Estado</th>
+                            <th className="px-6 py-4 text-left">Bicicleta</th>
+                            <th className="px-6 py-4 text-left">Tiempo</th>
+                            <th className="px-6 py-4 text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {bikeracks.map(rack => (
+                            <BikerackRow 
+                                key={rack.id} 
+                                rack={rack} 
+                                bicycles={bicycles} 
+                                activeReservation={activeRes}
+                                onReserved={(data) => { setActiveRes(data); refreshData(); }}
+                                onCancel={onCancelAction}
+                            />
+                        ))}
+                    </tbody>
+                </table>
             </div>
+
+            {activeRes && (
+                <div className="mt-8 p-6 bg-amber-50 border-2 border-amber-200 rounded-2xl flex items-center shadow-sm">
+                    <div className="text-4xl mr-5">⏳</div>
+                    <div>
+                        <h4 className="text-amber-900 font-extrabold text-lg uppercase tracking-tight">¡Reserva Activa!</h4>
+                        <p className="text-amber-800 mt-1">
+                            Recuerda que tienes un máximo de <b>30 minutos</b> para presentarte en el bicicletero. 
+                            Si no registras tu llegada, tu reserva en el espacio <b>{activeRes.spaceCode}</b> será cancelada automáticamente.
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
-
-export default Reservation;

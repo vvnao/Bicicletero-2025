@@ -15,8 +15,7 @@ router.get('/', getAvailableSpacesController);
 
 // 3. FINALMENTE definir rutas
 router.post('/create',authMiddleware,createReservation);
-
-router.patch('/:reservationId/cancel', authorize(['user', 'admin', 'guardia']),cancelReservationController);
+router.patch('/:reservationId/cancel', authMiddleware,cancelReservationController);
 
 router.get('/user/:userId',authorize(['admin', 'guardia', 'user']),//isOwnerOrAdmin('userId'),  // Descomenta cuando funcionegetUserReservationsController
 );
