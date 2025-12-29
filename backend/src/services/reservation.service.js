@@ -300,11 +300,11 @@ export async function expireOldReservations() {
             );
 
         await sendEmail(
-          reservation.user.email,
-          'Reserva Expirada - Bicicletero UBB',
-          emailHtml
-        );
-      }
+            reservation.user.email,
+            'Reserva Expirada - Bicicletero UBB',
+            emailHtml
+            );
+        }
 
         console.log(
             `--> Reserva ${reservation.reservationCode} expirada y espacio ${reservation.space?.spaceCode} liberado.`

@@ -105,7 +105,7 @@ export async function createReservation(req, res) {
 export async function cancelReservationController(req, res) {
   try {
     const { reservationId } = req.params;
-    const { userId } = req.body;
+    const userId = req.user.id;
 
     if (!reservationId) {
       return handleErrorClient(res, 400, 'ID de reserva requerido');

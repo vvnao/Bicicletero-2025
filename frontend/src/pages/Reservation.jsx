@@ -4,15 +4,12 @@ import { getAvailableSpaces, createReservation, cancelReservation, getCurrentRes
 import { useGetPrivateBicycles } from "../hooks/bicycles/useGetPrivateBicycles";
 import Swal from "sweetalert2";
 
-const BikerackRow = ({ rack, bicycles, activeReservation, onReserved, onCancel }) => {
+const BikerackRow = ({ rack, bicycles, activeReservation, onReserved }) => {
     const [selectedBicycle, setSelectedBicycle] = useState("");
     const [hours, setHours] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const isThisMyReservation = activeReservation?.spaceId === rack.id;
-    const isPending = activeReservation?.status === "Pendiente";
-    const isActive = activeReservation?.status === "Activa";
-    
     const hasAnyActiveRes = Boolean(activeReservation);
     const isFull = rack.availableSpaces <= 0;
 
@@ -34,28 +31,8 @@ const BikerackRow = ({ rack, bicycles, activeReservation, onReserved, onCancel }
         }
     };
 
-    const handleCancelClick = async () => {
-        const confirm = await Swal.fire({
-            title: "¿Cancelar reserva?",
-            text: "El espacio quedará libre.",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#ef4444",
-            confirmButtonText: "Sí, cancelar",
-        });
-
-        if (!confirm.isConfirmed) return;
-
-        setIsSubmitting(true);
-        try {
-            await onCancel(activeReservation.id);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
     return (
-        <tr className={`border-b border-gray-100 transition-all ${isThisMyReservation ? "bg-blue-50 border-l-4 border-l-blue-600" : ""}`}>
+        <tr className={`border-b border-gray-100 ${isThisMyReservation ? "bg-blue-50" : ""}`}>
             <td className="px-6 py-5">
                 <div className="font-bold text-gray-800">{rack.name}</div>
                 <div className="text-xs text-gray-400">Capacidad: {rack.capacity}</div>
@@ -71,13 +48,15 @@ const BikerackRow = ({ rack, bicycles, activeReservation, onReserved, onCancel }
                 {!isThisMyReservation ? (
                     <select
                         disabled={isFull || hasAnyActiveRes}
-                        className="w-full border border-gray-300 rounded-lg p-2 text-sm disabled:bg-gray-50"
+                        className="w-full border rounded-lg p-2 text-sm"
                         value={selectedBicycle}
                         onChange={(e) => setSelectedBicycle(e.target.value)}
                     >
                         <option value="">Elegir bicicleta...</option>
                         {bicycles.map((b) => (
-                            <option key={b.id} value={b.id}>{b.brand} - {b.model}</option>
+                            <option key={b.id} value={b.id}>
+                                {b.brand} - {b.model}
+                            </option>
                         ))}
                     </select>
                 ) : (
@@ -91,40 +70,28 @@ const BikerackRow = ({ rack, bicycles, activeReservation, onReserved, onCancel }
                 {!isThisMyReservation && (
                     <select
                         disabled={isFull || hasAnyActiveRes}
-                        className="border border-gray-300 rounded-lg p-2 text-sm disabled:bg-gray-50"
+                        className="border rounded-lg p-2 text-sm"
                         value={hours}
                         onChange={(e) => setHours(e.target.value)}
                     >
                         {[...Array(24)].map((_, i) => (
-                            <option key={i + 1} value={i + 1}>{i + 1} hrs</option>
+                            <option key={i + 1} value={i + 1}>
+                                {i + 1} hrs
+                            </option>
                         ))}
                     </select>
                 )}
             </td>
 
             <td className="px-6 py-5 text-center">
-                {isThisMyReservation && isPending && (
-                    <button
-                        onClick={handleCancelClick}
-                        disabled={isSubmitting}
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors"
-                    >
-                        Cancelar Reserva
-                    </button>
-                )}
-
-                {isThisMyReservation && isActive && (
-                    <span className="inline-block bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-bold text-sm border border-blue-200">
-                        Reserva Activa
-                    </span>
-                )}
-
                 {!isThisMyReservation && (
                     <button
                         onClick={handleReserve}
                         disabled={isFull || isSubmitting || hasAnyActiveRes}
-                        className={`px-4 py-2 rounded-lg font-bold text-sm text-white transition-all
-                        ${(isFull || hasAnyActiveRes) ? "bg-gray-300 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-md"}`}
+                        className={`px-4 py-2 rounded-lg font-bold text-sm text-white
+                        ${(isFull || hasAnyActiveRes)
+                            ? "bg-gray-300 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700"}`}
                     >
                         Reservar
                     </button>
@@ -148,8 +115,6 @@ export default function Reservation() {
             ]);
             setBikeracks(spaces || []);
             setActiveRes(current);
-        } catch (error) {
-            console.error("Error cargando datos:", error);
         } finally {
             setLoading(false);
         }
@@ -159,31 +124,59 @@ export default function Reservation() {
         loadData();
     }, []);
 
-    const onCancelAction = async (reservationId) => {
+    const handleCancelReservation = async () => {
+        const confirm = await Swal.fire({
+            title: "¿Cancelar reserva?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Cancelar",
+            confirmButtonColor: "#ef4444",
+        });
+
+        if (!confirm.isConfirmed) return;
+
         try {
-            await cancelReservation(reservationId);
+            await cancelReservation(activeRes.id);
             setActiveRes(null);
-            const spaces = await getAvailableSpaces();
-            setBikeracks(spaces || []);
-            Swal.fire("Cancelada", "Tu reserva fue eliminada", "info");
-        } catch (error) {
+            setBikeracks(await getAvailableSpaces());
+            Swal.fire("Cancelada", "Reserva cancelada", "info");
+        } catch {
             Swal.fire("Error", "No se pudo cancelar", "error");
         }
     };
 
-    if (loading || loadingBikes) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-xl font-bold text-white animate-pulse">Cargando sistema de reservas...</div>
-            </div>
-        );
-    }
+    if (loading || loadingBikes) return null;
 
     return (
         <div className="p-8 max-w-6xl mx-auto">
-            <h1 className="text-3xl font-bold text-white mb-6">Reservas de Bicicleteros</h1>
+            {/* HEADER */}
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-3xl font-bold text-white">
+                    Reservas de Bicicleteros
+                </h1>
 
-            <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
+                {activeRes?.status === "Pendiente" && (
+                    <button
+                        onClick={handleCancelReservation}
+                        className="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg font-bold"
+                    >
+                        Cancelar reserva
+                    </button>
+                )}
+            </div>
+
+            {/* MENSAJE ESTÁTICO */}
+            {activeRes?.status === "Pendiente" && (
+    <div className="mb-6 bg-amber-100 border border-amber-300 text-amber-800 px-4 py-3 rounded-lg text-sm font-medium">
+        Tienes una reserva pendiente para tu bicicleta:{" "}
+        <strong>
+            {activeRes?.bicycle?.brand} {activeRes?.bicycle?.model}
+        </strong>
+    </div>
+)}
+
+            {/* TABLA */}
+            <div className="bg-white shadow rounded-2xl overflow-hidden">
                 <table className="min-w-full">
                     <thead className="bg-gray-50 text-gray-400 text-xs font-bold uppercase">
                         <tr>
@@ -202,27 +195,11 @@ export default function Reservation() {
                                 bicycles={bicycles}
                                 activeReservation={activeRes}
                                 onReserved={setActiveRes}
-                                onCancel={onCancelAction}
                             />
                         ))}
                     </tbody>
                 </table>
             </div>
-
-            {activeRes && (
-                <div className={`mt-8 p-6 rounded-2xl border-2 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-500 ${
-                    activeRes.status === "Pendiente" ? "bg-amber-50 border-amber-200 text-amber-800" : "bg-blue-50 border-blue-200 text-blue-800"
-                }`}>
-                    <h4 className="font-extrabold text-lg uppercase flex items-center gap-2">
-                        {activeRes.status === "Pendiente" ? "Reserva Pendiente" : "Reserva Activa"}
-                    </h4>
-                    <p className="mt-2 text-sm">
-                        {activeRes.status === "Pendiente" 
-                        ? `Tienes 30 minutos para llegar. Espacio: ${activeRes.spaceCode || 'Asignado'}`
-                        : `Tu bicicleta está segura en el biciparking. No se permiten más acciones hasta finalizar.`}
-                    </p>
-                </div>
-            )}
         </div>
     );
 }
