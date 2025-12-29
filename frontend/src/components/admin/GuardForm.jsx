@@ -123,7 +123,19 @@ const GuardForm = ({ onSubmit, onCancel, initialData = {} }) => {
                     <span className={hintStyle}>Opcional - se generará automáticamente</span>
                 </div>
 
-               
+                <div className={inputContainerStyle}>
+                    <label className={labelStyle}>Tipo de Persona</label>
+                    <select
+                        name="typePerson"
+                        value={formData.typePerson}
+                        onChange={handleChange}
+                        className={inputStyle}
+                    >
+                        <option value="funcionario">Funcionario</option>
+                        <option value="estudiante">Estudiante</option>
+                        <option value="externo">Externo</option>
+                    </select>
+                </div>
             </div>
 
             {/* Teléfono y Contraseña */}

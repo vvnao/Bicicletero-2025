@@ -9,7 +9,7 @@ import ReservationEntity, {
 
 import UserEntity from '../entities/UserEntity.js';
 import BicycleEntity from '../entities/BicycleEntity.js';
-import BicicleteroEntity from '../entities/BicicleteroEntity.js';
+import BikerackEntity from '../entities/BikerackEntity.js';
 
 const reservationRepository = AppDataSource.getRepository(ReservationEntity);
 const spaceRepository = AppDataSource.getRepository(SpaceEntity);
@@ -324,7 +324,7 @@ export async function expireOldReservations() {
 }
 export async function getAvailableSpaces() {
     try {
-        const bikerackRepository = AppDataSource.getRepository(BicicleteroEntity);
+        const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
         const bikeracks = await bikerackRepository.find({
         relations: ['spaces'],
         });

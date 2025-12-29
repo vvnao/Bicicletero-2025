@@ -1,7 +1,7 @@
 'use strict';
 import { EntitySchema } from 'typeorm';
 
-export const BicicleteroEntity = new EntitySchema({
+export const BikerackEntity = new EntitySchema({
   name: 'Bikerack',
   tableName: 'bikeracks',
   columns: {
@@ -54,4 +54,4 @@ export const BicicleteroEntity = new EntitySchema({
   },
 });
 
-export default BicicleteroEntity;
+export default BikerackEntity;

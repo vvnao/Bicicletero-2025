@@ -2,7 +2,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import { UserEntity } from "../entities/UserEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
-import BicicleteroEntity from "../entities/BicicleteroEntity.js";
+import BikerackEntity from "../entities/BikerackEntity.js";
 import { SpaceEntity } from "../entities/SpaceEntity.js";
 import { ReservationEntity, RESERVATION_STATUS } from "../entities/ReservationEntity.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
@@ -19,7 +19,7 @@ import {
   handleErrorServer,
 } from '../Handlers/responseHandlers.js';
 
-const bikerackRepository = AppDataSource.getRepository(BicicleteroEntity);
+const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
 const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 const guardAssignmentRepository = AppDataSource.getRepository(GuardAssignmentEntity);
 

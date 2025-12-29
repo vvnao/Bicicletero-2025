@@ -2,7 +2,7 @@
 import { AppDataSource } from '../config/configDb.js'; // ← CAMBIO IMPORTANTE
 import { GuardAssignmentEntity } from '../entities/GuardAssignmentEntity.js';
 import { GuardEntity } from '../entities/GuardEntity.js';
-import { BicicleteroEntity } from '../entities/BicicleteroEntity.js';
+import { BikerackEntity } from '../entities/BikerackEntity.js';
 import { validateCreateAssignment } from '../validations/guardAssignment.validation.js';
 import HistoryService from '../services/history.service.js';
 import { Not } from "typeorm";
@@ -22,7 +22,7 @@ export class GuardAssignmentController {
     }
 
     get bikerackRepository() {
-        return AppDataSource.getRepository(BicicleteroEntity);
+        return AppDataSource.getRepository(BikerackEntity);
     }
 
    async create(req, res) {
