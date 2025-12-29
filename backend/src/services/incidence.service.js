@@ -9,12 +9,14 @@ import {
 import UserEntity from '../entities/UserEntity.js';
 import BikerackEntity from '../entities/BikerackEntity.js';
 import SpaceEntity from '../entities/SpaceEntity.js';
+import EvidenceEntity from '../entities/EvidenceEntity.js';
 import { validateIncidenceData } from '../validations/incidence.validation.js';
 
 const incidenceRepository = AppDataSource.getRepository(IncidenceEntity);
 const userRepository = AppDataSource.getRepository(UserEntity);
 const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
 const spaceRepository = AppDataSource.getRepository(SpaceEntity);
+const evidenceRepository = AppDataSource.getRepository(EvidenceEntity);
 /////////////////////////////////////////////////////////////////////////////
 //! esta función crea la incidencia
 export async function createIncidenceReport(incidenceData, reporterId) {
@@ -69,7 +71,7 @@ export async function createIncidenceReport(incidenceData, reporterId) {
       bikerack: bikerack,
       space: incidenceToSave.space || null,
       involvedUser: incidenceToSave.involvedUser || null,
-      evidences: [], 
+      evidences: [],
     };
   } catch (error) {
     console.error('Error en createIncidenceReport:', error.message);
@@ -105,7 +107,7 @@ export async function getIncidencesByGuard(guardId) {
         reporter: { id: guardId },
       },
       order: { dateTimeReport: 'DESC' },
-      relations: ['bikerack', 'involvedUser', 'space', 'evidences'], 
+      relations: ['bikerack', 'involvedUser', 'space', 'evidences'],
     });
   } catch (error) {
     console.error('Error en getIncidencesByGuard:', error);
@@ -121,14 +123,22 @@ export async function deleteIncidence(incidenceId, guardId) {
         id: incidenceId,
         reporter: { id: guardId },
       },
-      relations: ['reporter'],
+      relations: ['reporter', 'evidences'],
     });
 
     if (!incidence) {
       throw new Error('No tienes permiso para eliminar esta incidencia');
     }
 
-    const result = await incidenceRepository.remove(incidence);
+    if (incidence.evidences && incidence.evidences.length > 0) {
+      console.log(`Eliminando ${incidence.evidences.length} evidencias...`);
+
+      for (const evidence of incidence.evidences) {
+        await evidenceRepository.remove(evidence);
+      }
+    }
+
+    await incidenceRepository.remove(incidence);
 
     return {
       success: true,
@@ -136,6 +146,7 @@ export async function deleteIncidence(incidenceId, guardId) {
       deletedId: incidenceId,
     };
   } catch (error) {
+    console.error('Error detallado en deleteIncidence:', error);
     throw new Error(`Error al eliminar incidencia: ${error.message}`);
   }
 }

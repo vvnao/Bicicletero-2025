@@ -17,11 +17,6 @@ const IncidentHistory = () => {
   const [selectedIncidence, setSelectedIncidence] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState({
-    show: false,
-    incidenceId: null,
-    loading: false,
-  });
   const [formOptions, setFormOptions] = useState({
     types: [],
     severities: [],
@@ -68,35 +63,27 @@ const IncidentHistory = () => {
     }
   };
 
-  const handleDeleteIncidence = async (incidenceId) => {
-    try {
-      setConfirmDelete((prev) => ({ ...prev, loading: true }));
-      await deleteIncidence(incidenceId);
-      await loadIncidences();
-      setConfirmDelete({ show: false, incidenceId: null, loading: false });
-      alert('✅ Incidencia eliminada correctamente');
-    } catch (error) {
-      console.error('Error al eliminar incidencia:', error);
-      alert(`❌ Error: ${error.message}`);
-      setConfirmDelete((prev) => ({ ...prev, loading: false }));
-    }
-  };
+const handleDeleteIncidence = async (incidenceId) => {
+  const incidenceNumber = incidenceId.toString().padStart(3, '0');
 
-  const showDeleteConfirmation = (incidenceId) => {
-    setConfirmDelete({
-      show: true,
-      incidenceId,
-      loading: false,
-    });
-  };
+  const userConfirmed = window.confirm(
+      `¿Estás seguro de que deseas eliminar la incidencia #${incidenceNumber}?\n\n` +
+      `Esta acción no se puede deshacer.`
+  );
 
-  const cancelDelete = () => {
-    setConfirmDelete({
-      show: false,
-      incidenceId: null,
-      loading: false,
-    });
-  };
+  if (!userConfirmed) {
+    return; 
+  }
+
+  try {
+    await deleteIncidence(incidenceId);
+    await loadIncidences(); 
+    window.alert(`Incidencia #${incidenceNumber} eliminada correctamente`);
+  } catch (error) {
+    console.error('Error al eliminar incidencia:', error);
+    window.alert(`Error: ${error.message}`);
+  }
+};
 
   const openIncidenceDetails = async (incidence) => {
     try {
@@ -392,7 +379,7 @@ const IncidentHistory = () => {
                         {loadingDetail ? 'Cargando...' : '👁️ Ver'}
                       </button>
                       <button
-                        onClick={() => showDeleteConfirmation(incidence.id)}
+                        onClick={() => handleDeleteIncidence(incidence.id)}
                         className='btn-delete'
                         title='Eliminar incidencia'
                       >
@@ -416,57 +403,6 @@ const IncidentHistory = () => {
             setSelectedIncidence(null);
           }}
         />
-      )}
-
-      {/* modal de confirmación para eliminar */}
-      {confirmDelete.show && (
-        <div
-          className='modal-overlay'
-          onClick={cancelDelete}
-        >
-          <div
-            className='confirmation-modal'
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className='confirmation-header'>
-              <h3>⚠️ Confirmar Eliminación</h3>
-              <button
-                className='modal-close'
-                onClick={cancelDelete}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className='confirmation-body'>
-              <p>
-                ¿Estás seguro de que deseas eliminar la incidencia{' '}
-                <strong>
-                  #{confirmDelete.incidenceId?.toString().padStart(3, '0')}
-                </strong>
-                ?
-              </p>
-              <p className='warning-text'>Esta acción no se puede deshacer.</p>
-            </div>
-
-            <div className='confirmation-actions'>
-              <button
-                className='btn-cancel'
-                onClick={cancelDelete}
-                disabled={confirmDelete.loading}
-              >
-                Cancelar
-              </button>
-              <button
-                className='btn-delete-confirm'
-                onClick={() => handleDeleteIncidence(confirmDelete.incidenceId)}
-                disabled={confirmDelete.loading}
-              >
-                {confirmDelete.loading ? 'Eliminando...' : 'Sí, Eliminar'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

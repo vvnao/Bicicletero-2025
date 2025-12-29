@@ -63,6 +63,7 @@ const IncidentForm = ({ formOptions }) => {
   const handleSearchUser = async () => {
     if (!rutInput.trim()) {
       setErrors((prev) => ({ ...prev, rut: 'Ingrese un RUT' }));
+      setUserResult(null);
       return;
     }
 
@@ -77,21 +78,24 @@ const IncidentForm = ({ formOptions }) => {
 
     try {
       setSearchingUser(true);
-      setErrors((prev) => ({ ...prev, rut: null }));
+      setErrors((prev) => ({ ...prev, rut: null })); 
       setUserResult(null);
 
       const result = await searchUserByRut(rutInput);
 
-      setUserResult(result);
-
-      if (result.found) {
+      if (!result.found) {
+        setErrors((prev) => ({
+          ...prev,
+          rut: result.message || 'El RUT no está registrado en el sistema',
+        }));
+        setUserResult(null);
+      } else {
+        setUserResult(result);
         setFormData((prev) => ({
           ...prev,
           involvedUserId: parseInt(result.user.id),
           involvedUserRut: result.user.rut,
         }));
-
-        setErrors((prev) => ({ ...prev, rut: null }));
       }
     } catch (error) {
       const errorMsg =
@@ -104,10 +108,7 @@ const IncidentForm = ({ formOptions }) => {
         rut: errorMsg,
       }));
 
-      setUserResult({
-        found: false,
-        message: 'No se pudo verificar el usuario',
-      });
+      setUserResult(null);
     } finally {
       setSearchingUser(false);
     }
@@ -188,14 +189,12 @@ const IncidentForm = ({ formOptions }) => {
 
       const incidenceData = {
         bikerackId: parseInt(formData.bikerackId),
+        spaceId: formData.spaceId ? parseInt(formData.spaceId) : null,
         incidenceType: formData.incidenceType,
         severity: formData.severity,
         description: formData.description.trim(),
         dateTimeIncident: formData.dateTimeIncident.toISOString(),
-        spaceId: formData.spaceId ? parseInt(formData.spaceId) : null,
-        involvedUserId: formData.involvedUserId
-          ? Number(formData.involvedUserId)
-          : null,
+        involvedUserId: formData.involvedUserId || null,
       };
 
       let result;
@@ -208,17 +207,24 @@ const IncidentForm = ({ formOptions }) => {
         result = await createIncidence(incidenceData);
       }
 
-      setSuccess(true);
+      resetForm();
 
-      setTimeout(() => {
-        resetForm();
-        setSuccess(false);
-      }, 3000);
+      window.alert(
+        `Incidencia #${result.id
+          .toString()
+          .padStart(3, '0')} creada exitosamente`
+      );
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
         submit: error.response?.data?.message || 'Error al enviar reporte',
       }));
+
+      window.alert(
+        `Error: ${
+          error.response?.data?.message || 'No se pudo enviar el reporte'
+        }`
+      );
     } finally {
       setSubmitting(false);
     }
@@ -435,6 +441,7 @@ const IncidentForm = ({ formOptions }) => {
 
       <div className='form-section'>
         <h2 className='section-title'>👤 Usuario Involucrado (Opcional)</h2>
+
         <div className='user-search-group'>
           <div className='form-group'>
             <label>Buscar por RUT</label>
@@ -445,6 +452,7 @@ const IncidentForm = ({ formOptions }) => {
                 onChange={(e) => {
                   setRutInput(e.target.value);
                   setErrors((prev) => ({ ...prev, rut: null }));
+                  setUserResult(null);
                 }}
                 placeholder='Ej: 12.345.678-9'
                 className={`form-control ${errors.rut ? 'error' : ''}`}
@@ -458,83 +466,70 @@ const IncidentForm = ({ formOptions }) => {
                 {searchingUser ? 'Buscando...' : 'Buscar'}
               </button>
             </div>
+
+            {/* mensaje de error rut */}
             {errors.rut && <span className='error-text'>{errors.rut}</span>}
+
+            {/* mensaje informativo cuando el campo está vacío */}
+            {!errors.rut && !rutInput && (
+              <span className='hint-text'>
+                Busque un usuario por RUT para vincularlo al reporte
+              </span>
+            )}
           </div>
 
-          {userResult && (
-            <div
-              className={`user-result ${
-                userResult.found ? 'found' : 'not-found'
-              }`}
-            >
-              {userResult.found ? (
-                <>
-                  <div className='user-info'>
-                    <div className='user-header'>
-                      <strong>✅ Usuario encontrado</strong>
-                      <span className='user-status'>Vinculado al reporte</span>
-                    </div>
-                    <div className='user-details'>
-                      <div className='detail-row'>
-                        <span className='detail-label'>Nombre:</span>
-                        <span className='detail-value'>
-                          {userResult.user.fullName}
-                        </span>
-                      </div>
-                      <div className='detail-row'>
-                        <span className='detail-label'>RUT:</span>
-                        <span className='detail-value'>
-                          {userResult.user.rut}
-                        </span>
-                      </div>
-                      <div className='detail-row'>
-                        <span className='detail-label'>Email:</span>
-                        <span className='detail-value'>
-                          {userResult.user.email}
-                        </span>
-                      </div>
-                      {userResult.user.bicycles &&
-                        userResult.user.bicycles.length > 0 && (
-                          <div className='detail-row'>
-                            <span className='detail-label'>Bicicletas:</span>
-                            <span className='detail-value'>
-                              {userResult.user.bicycles.length} registrada(s)
-                            </span>
-                          </div>
-                        )}
-                    </div>
-                  </div>
-                  <button
-                    type='button'
-                    onClick={() => {
-                      setRutInput('');
-                      setUserResult(null);
-                      setFormData((prev) => ({
-                        ...prev,
-                        involvedUserId: null,
-                        involvedUserRut: null,
-                      }));
-                    }}
-                    className='clear-user-btn'
-                    title='Desvincular usuario'
-                  >
-                    ✕
-                  </button>
-                </>
-              ) : (
-                <div className='user-info'>
-                  <div className='user-header'>
-                    <strong>❌ Usuario no encontrado</strong>
-                  </div>
-                  <p className='error-message'>{userResult.message}</p>
-                  <div className='hint'>
-                    <small>
-                      Puede continuar sin vincular usuario o verificar el RUT
-                      ingresado.
-                    </small>
-                  </div>
+          {/* mostrar cuando usuario fue encontrado */}
+          {userResult && userResult.found && (
+            <div className='user-result found'>
+              <div className='user-info'>
+                <div className='user-header'>
+                  <strong>✅ Usuario encontrado</strong>
+                  <span className='user-status'>Vinculado al reporte</span>
                 </div>
-              )}
+                <div className='user-details'>
+                  <div className='detail-row'>
+                    <span className='detail-label'>Nombre:</span>
+                    <span className='detail-value'>
+                      {userResult.user.fullName}
+                    </span>
+                  </div>
+                  <div className='detail-row'>
+                    <span className='detail-label'>RUT:</span>
+                    <span className='detail-value'>{userResult.user.rut}</span>
+                  </div>
+                  <div className='detail-row'>
+                    <span className='detail-label'>Email:</span>
+                    <span className='detail-value'>
+                      {userResult.user.email}
+                    </span>
+                  </div>
+                  {userResult.user.bicycles &&
+                    userResult.user.bicycles.length > 0 && (
+                      <div className='detail-row'>
+                        <span className='detail-label'>Bicicletas:</span>
+                        <span className='detail-value'>
+                          {userResult.user.bicycles.length} registrada(s)
+                        </span>
+                      </div>
+                    )}
+                </div>
+              </div>
+              <button
+                type='button'
+                onClick={() => {
+                  setRutInput('');
+                  setUserResult(null);
+                  setFormData((prev) => ({
+                    ...prev,
+                    involvedUserId: null,
+                    involvedUserRut: null,
+                  }));
+                }}
+                className='clear-user-btn'
+                title='Desvincular usuario'
+              >
+                ✕
+              </button>
             </div>
           )}
         </div>

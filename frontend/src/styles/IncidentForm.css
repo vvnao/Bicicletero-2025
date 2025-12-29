@@ -210,11 +210,6 @@
   border-color: #27ae60;
 }
 
-.user-result.not-found {
-  background: #ffeaea;
-  border-color: #e74c3c;
-}
-
 .user-info {
   display: flex;
   flex-direction: column;

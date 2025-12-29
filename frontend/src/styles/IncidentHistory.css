@@ -308,73 +308,8 @@
   transform: scale(1.1);
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-
-.confirmation-modal {
-  background: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  animation: slideIn 0.3s ease;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.confirmation-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 30px;
-  background: #e74c3c;
-  color: white;
-  border-radius: 12px 12px 0 0;
-}
-
-.confirmation-header h3 {
-  margin: 0;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.modal-close {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: white;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .modal-close:hover {
   background: rgba(255, 255, 255, 0.2);
-}
-
-.confirmation-body {
-  padding: 30px;
-  text-align: center;
-}
-
-.confirmation-body p {
-  margin-bottom: 15px;
-  font-size: 16px;
-  color: #2c3e50;
 }
 
 .warning-text {
@@ -383,42 +318,8 @@
   font-size: 14px;
 }
 
-.confirmation-actions {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  padding: 20px 30px;
-  background: #f8f9fa;
-  border-radius: 0 0 12px 12px;
-  border-top: 1px solid #e9ecef;
-}
-
-.btn-cancel {
-  padding: 12px 30px;
-  background: #95a5a6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
 .btn-cancel:hover:not(:disabled) {
   background: #7f8c8d;
-}
-
-.btn-delete-confirm {
-  padding: 12px 30px;
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
 }
 
 .btn-delete-confirm:hover:not(:disabled) {
