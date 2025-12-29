@@ -28,7 +28,7 @@ export class GuardService {
     }
 
     /**
-     * Crear un nuevo guardia (con usuario)
+     *! Crear un nuevo guardia (con usuario)
      */
   async createGuard(guardData, adminId) {
     const queryRunner = AppDataSource.createQueryRunner();
@@ -108,10 +108,7 @@ export class GuardService {
         });
 
         const savedGuard = await queryRunner.manager.save(GuardEntity, guard);
-
-        // 8. Registrar en historial (opcional)
-        // ... (código existente)
-
+        
         await queryRunner.commitTransaction();
 
         // 9. Obtener datos completos usando el repositorio principal
@@ -160,19 +157,18 @@ export class GuardService {
         };
 
   } catch (error) {
-    //  SOLO hacer rollback si la transacción está activa
+  
     if (queryRunner.isTransactionActive) {
         await queryRunner.rollbackTransaction();
     }
     
-    console.error('ERROR REAL EN CREATEGUARD:', error); // Esto te dirá qué falló realmente
-    throw error;
+    console.error('ERROR REAL EN CREATEGUARD:', error); 
 } finally {
     await queryRunner.release();
 }
   }
     /**
-     * Obtener todos los guardias con información de usuario
+     * !Obtener todos los guardias con información de usuario
      */
     async getAllGuards(filters = {}) {
         try {
@@ -197,7 +193,7 @@ export class GuardService {
                 );
             }
 
-            // Ordenar por número de guardia
+            //* Ordenar por número de guardia
             query.orderBy('guard.guardNumber', 'ASC');
 
             return await query.getMany();
@@ -208,7 +204,7 @@ export class GuardService {
     }
 
     /**
-     * Obtener guardia por ID
+     * !Obtener guardia por ID
      */
     async getGuardById(guardId) {
         try {
@@ -223,7 +219,7 @@ export class GuardService {
     }
 
     /**
-     * Obtener guardia por userId
+     * !Obtener guardia por userId
      */
     async getGuardByUserId(userId) {
         try {
@@ -238,7 +234,7 @@ export class GuardService {
     }
 
     /**
-     * Obtener guardia por email
+     * !Obtener guardia por email
      */
     async getGuardByEmail(email) {
         try {
@@ -254,7 +250,7 @@ export class GuardService {
     }
 
     /**
-     * Obtener guardia por número de guardia
+     * !Obtener guardia por número de guardia
      */
     async getGuardByNumber(guardNumber) {
         try {
@@ -269,7 +265,7 @@ export class GuardService {
     }
 
     /**
-     * Actualizar información del guardia
+     * !Actualizar información del guardia
      */
     async updateGuard(guardId, updateData, currentUserId, currentUserRole) {
         const queryRunner = AppDataSource.createQueryRunner();
@@ -286,7 +282,6 @@ export class GuardService {
                 throw new Error("Guardia no encontrado");
             }
 
-            // Validar permisos
             if (currentUserRole !== 'admin' && currentUserId !== guard.userId) {
                 throw new Error("No tienes permisos para editar este guardia");
             }
@@ -382,28 +377,33 @@ export class GuardService {
     }
 
     /**
-     * Cambiar disponibilidad del guardia
+     * !Cambiar disponibilidad del guardia
      */
     async toggleAvailability(guardId, isAvailable) {
-        try {
-            const guard = await this.guardRepository.findOne({
-                where: { id: guardId }
-            });
+    try {
+        const guard = await this.guardRepository.findOne({
+            where: { id: guardId },
+            relations: ['user']  // ¡AGREGAR ESTA RELACIÓN!
+        });
 
-            if (!guard) {
-                throw new Error("Guardia no encontrado");
-            }
-
-            guard.isAvailable = isAvailable;
-            return await this.guardRepository.save(guard);
-        } catch (error) {
-            console.error('Error cambiando disponibilidad:', error);
-            throw error;
+        if (!guard) {
+            throw new Error("Guardia no encontrado");
         }
-    }
 
+       
+        if (!guard.user.isActive) {
+            throw new Error("No se puede cambiar disponibilidad de un guardia inactivo. Active primero al guardia.");
+        }
+
+        guard.isAvailable = isAvailable;
+        return await this.guardRepository.save(guard);
+    } catch (error) {
+        console.error('Error cambiando disponibilidad:', error);
+        throw error;
+    }
+}
     /**
-     * Desactivar guardia (solo admin)
+     * !Desactivar guardia (solo admin)
      */
     async deactivateGuard(guardId) {
         const queryRunner = AppDataSource.createQueryRunner();
@@ -420,12 +420,10 @@ export class GuardService {
                 throw new Error("Guardia no encontrado");
             }
 
-            // Desactivar el usuario
             await queryRunner.manager.update(UserEntity, guard.userId, {
                 isActive: false
             });
 
-            // Desactivar guardia
             guard.isAvailable = false;
             await queryRunner.manager.save(GuardEntity, guard);
 
@@ -447,7 +445,7 @@ export class GuardService {
     }
 
     /**
-     * Activar guardia (solo admin)
+     * !Activar guardia (solo admin)
      */
     async activateGuard(guardId) {
         const queryRunner = AppDataSource.createQueryRunner();
@@ -462,14 +460,11 @@ export class GuardService {
 
             if (!guard) {
                 throw new Error("Guardia no encontrado");
-            }
-
-            // Activar el usuario
+            }          
             await queryRunner.manager.update(UserEntity, guard.userId, {
                 isActive: true
             });
 
-            // Activar guardia
             guard.isAvailable = true;
             await queryRunner.manager.save(GuardEntity, guard);
 
@@ -486,7 +481,7 @@ export class GuardService {
     }
 
     /**
-     * Obtener estadísticas del guardia
+     * !Obtener estadísticas del guardia
      */
     async getGuardStats(guardId) {
         try {
@@ -515,7 +510,7 @@ export class GuardService {
     }
 
     /**
-     * Generar RUT temporal
+     * !Generar RUT temporal
      */
     generateTemporaryRUT() {
         const randomNum = Math.floor(Math.random() * 25000000) + 1000000;
@@ -525,7 +520,7 @@ export class GuardService {
     }
 
     /**
-     * Calcular dígito verificador
+     *!Calcular dígito verificador
      */
     calculateDV(rut) {
         let sum = 0;
@@ -544,7 +539,7 @@ export class GuardService {
     }
 
     /**
-     * Buscar guardias disponibles para una fecha/hora específica
+     * !Buscar guardias disponibles para una fecha/hora específica
      */
     async findAvailableGuards(date, startTime, endTime) {
         try {
@@ -601,7 +596,7 @@ export class GuardService {
     }
 
     /**
-     * Métodos auxiliares
+     * !Métodos auxiliares
      */
     parseWorkDays(workDaysString) {
         if (!workDaysString) return [];

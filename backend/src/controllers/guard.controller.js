@@ -10,7 +10,7 @@ export class GuardController {
         this.guardService = new GuardService();
         this.historyService = HistoryService;
         
-        // 🔗 Bindeo de métodos para mantener el contexto
+        //  Bindeo de métodos para mantener el contexto
         this.createGuard = this.createGuard.bind(this);
         this.getAllGuards = this.getAllGuards.bind(this);
         this.getGuardById = this.getGuardById.bind(this);
@@ -35,7 +35,7 @@ async createGuard(req, res) {
             });
         }
 
-        // 2. Validar datos con Joi
+        //! Validar datos con Joi
         const { error, value } = validateCreateGuard(req.body);
         if (error) {
             return res.status(400).json({
@@ -45,22 +45,22 @@ async createGuard(req, res) {
             });
         }
 
-        // 3. Definir la variable (AQUÍ ESTABA EL ERROR)
+        //!Definir la variable 
         const guardDataWithRequest = {
             ...value,
             ipAddress: req.ip,
             userAgent: req.headers['user-agent']
         };
 
-        // 4. Llamar al servicio
+        //! Llamar al servicio
         const result = await this.guardService.createGuard(
             guardDataWithRequest, 
             req.user.id
         );
         
-        // 5. Historial (Solo si el servicio tuvo éxito)
+        //! Historial (Solo si el servicio tuvo éxito)
     if (result.success && result.data) {
-    // Ya no pasas un objeto gigante, solo los datos
+    
     await HistoryService.logGuardCreation(req.user.id, result.data.guard, req);
 }
 
@@ -195,60 +195,51 @@ w
     /**
      * Cambiar disponibilidad - ADMIN y el propio guardia
      */
-    async toggleAvailability(req, res) {
-        try {
-            const guardId = parseInt(req.params.id);
-            const { isAvailable } = req.body;
+   async toggleAvailability(req, res) {
+    try {
+        const guardId = parseInt(req.params.id);
+        const { isAvailable } = req.body;
 
-            // Validar permisos
-            if (req.user.role !== 'admin' && req.user.id !== guardId) {
-                return res.status(403).json({
-                    success: false,
-                    message: "Solo puedes cambiar tu propia disponibilidad"
-                });
-            }
-
-            if (typeof isAvailable !== 'boolean') {
-                return res.status(400).json({
-                    success: false,
-                    message: "El campo isAvailable debe ser booleano"
-                });
-            }
-
-            const guard = await this.guardService.toggleAvailability(guardId, isAvailable);
-            
-            await this.logHistory(
-                isAvailable ? 'guard_activated' : 'guard_deactivated', 
-                {
-                    guardId: guard.id,
-                    isAvailable: guard.isAvailable,
-                    changedBy: req.user.id,
-                    userAgent: req.headers['user-agent']
-                },
-                req.user.id
-            );
-
-            res.status(200).json({
-                success: true,
-                message: `Disponibilidad ${isAvailable ? 'activada' : 'desactivada'} exitosamente`,
-                data: guard
-            });
-        } catch (error) {
-            console.error("Error cambiando disponibilidad:", error);
-            
-            if (error.message.includes('no encontrado')) {
-                return res.status(404).json({
-                    success: false,
-                    message: error.message
-                });
-            }
-            
-            res.status(500).json({
+        // Validar permisos
+        if (req.user.role !== 'admin' && req.user.id !== guardId) {
+            return res.status(403).json({
                 success: false,
-                message: "Error al cambiar disponibilidad"
+                message: "Solo puedes cambiar tu propia disponibilidad"
             });
         }
+
+        if (typeof isAvailable !== 'boolean') {
+            return res.status(400).json({
+                success: false,
+                message: "El campo isAvailable debe ser booleano"
+            });
+        }
+
+        const guard = await this.guardService.toggleAvailability(guardId, isAvailable);
+
+        
+        res.status(200).json({
+            success: true,
+            message: `Disponibilidad ${isAvailable ? 'activada' : 'desactivada'} exitosamente`,
+            data: guard
+        });
+    } catch (error) {
+        console.error("Error cambiando disponibilidad:", error);
+        
+        if (error.message.includes('no encontrado')) {
+            return res.status(404).json({
+                success: false,
+                message: error.message
+            });
+        }
+        
+  
+        res.status(500).json({
+            success: false,
+            message: `Error al cambiar disponibilidad: ${error.message}`
+        });
     }
+}
 
     /**
      * Desactivar guardia - SOLO ADMIN
@@ -411,5 +402,5 @@ w
     }
 }
 
-// Exportar instancia única
+
 export default new GuardController();

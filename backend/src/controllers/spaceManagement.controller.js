@@ -109,7 +109,7 @@ export async function occupyWithoutReservation(req, res) {
       parseInt(bicycleId)
     );
 
-    // 🟢 AÑADIR ESTO: REGISTRAR CHECK-IN EN HISTORIAL
+    // *🟢 CHECK-IN EN HISTORIAL
     await HistoryService.logEvent({
       historyType: 'user_checkin',
       description: `Usuario ${result.user.names} ingresó al bicicletero ${result.space.bikerack.name} sin reserva`,

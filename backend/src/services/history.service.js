@@ -3,6 +3,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import HistoryEntity, { HISTORY_TYPES } from "../entities/HistoryEntity.js";
 import { Between, LessThan } from "typeorm"; // Importamos utilidades de TypeORM
+
 import { Not, In } from "typeorm";
 
 class HistoryService {
@@ -27,7 +28,7 @@ async getHistory(filters = {}) {
         search,
         startDate,
         endDate,
-        onlyGuards = false // 🚩 Nueva bandera para separar historiales
+        onlyGuards = false 
     } = filters;
 
     const queryBuilder = this.historyRepository
@@ -38,9 +39,9 @@ async getHistory(filters = {}) {
         .leftJoinAndSelect("history.reservation", "reservation")
         .leftJoinAndSelect("history.bikerack", "bikerack");
 
-    // --- FILTRO DE SEPARACIÓN (CLAVE) ---
+    // --- FILTRO DE SEPARACIÓN ---
     if (onlyGuards) {
-        // Esto obliga a que el registro TENGA un guardia asociado
+      
        queryBuilder.andWhere("guard.id IS NOT NULL");
     }
 
@@ -152,14 +153,33 @@ async getSpecificGuardHistory(guardId, filters) {
     return stats;
   }
 
-  async exportHistory(filters) {
-    // Reutilizamos getHistory pero con un límite muy alto para exportar todo
-    // OJO: En producción real, esto debería ser un Stream, pero para este caso sirve.
-    filters.limit = 10000; 
-    filters.page = 1;
-    return this.getHistory(filters);
+  async exportHistory(filters, writableStream) {
+  const batchSize = 1000;
+  let page = 1;
+  
+  while (true) {
+    filters.page = page;
+    filters.limit = batchSize;
+    
+    const batch = await this.getHistory(filters);
+    
+    if (!batch.data || batch.data.length === 0) {
+      break;
+    }
+    
+    // Escribir cada registro al stream
+    for (const record of batch.data) {
+      writableStream.write(recordToCSV(record));
+    }
+    
+    page++;
+    
+    // Esperar un poco entre batches para no sobrecargar la DB
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
-
+  
+  writableStream.end();
+}
   async cleanOldHistory(days) {
     const dateLimit = new Date();
     dateLimit.setDate(dateLimit.getDate() - days);
@@ -180,13 +200,13 @@ async getSpecificGuardHistory(guardId, filters) {
 
 async logEvent(data) {
   try {
-    // 1. Extraemos los datos, permitiendo tanto 'type' como 'historyType'
+    // 1.  
     const {
       type,
       historyType,
       description,
       details,
-      // Aceptamos tanto el objeto completo (user) como el ID (userId)
+     
       user, userId,
       guard, guardId,
       bicycle, bicycleId,
@@ -195,7 +215,7 @@ async logEvent(data) {
     } = data;
 
     const newEntry = this.historyRepository.create({
-      type: type || historyType, // Usa el que venga
+      type: type || historyType, 
       description,
       details,
      
@@ -208,8 +228,8 @@ async logEvent(data) {
 
     return await this.historyRepository.save(newEntry);
   } catch (error) {
-    console.error("❌ Error en logEvent:", error);
-    return null; // No bloqueamos el flujo principal (registro/login) si falla el historial
+    console.error(" Error en logEvent:", error);
+    return null; 
   }
 }
 
@@ -222,7 +242,7 @@ async logReservationCreated(reservation) {
             userId: reservation.user.id,
             bicycleId: reservation.bicycleId,
             bikerackId: reservation.space.bikerack.id,
-            spaceId: reservation.space.id, // Esto es lo que agregamos a la entidad hace poco
+            spaceId: reservation.space.id, 
             details: {
                 reservationCode: reservation.reservationCode,
                 expirationTime: reservation.expirationTime,
@@ -230,8 +250,7 @@ async logReservationCreated(reservation) {
             }
         });
     } catch (error) {
-        // Si el historial falla, que no detenga la reserva de tu compañera
-        console.error("Error silencioso en historial de reserva:", error);
+       
     }
 }
 
@@ -366,6 +385,46 @@ async getBicycleOccupancyHistory(page = 1, limit = 20) {
         pagination: { total, page, totalPages: Math.ceil(total / limit) }
     };
 }
+
+// ==========================================
+  //  MÉTODOS ESPECÍFICOS PARA BICICLETEROS
+  // ==========================================
+
+  /**
+   * Obtener historial filtrado por un bicicletero
+   */
+  async getBikerackHistory(bikerackId, filters = {}) {
+    // Reutilizamos el método principal pasando el ID del bicicletero en los filtros
+    return await this.getHistory({
+      ...filters,
+      bikerackId: bikerackId
+    });
+  }
+
+  /**
+   * Método para registrar eventos (LogEvent)
+   * Este es el que usaremos en bikerack.controller.js
+   */
+  async logEvent(data) {
+    try {
+      const newRecord = this.historyRepository.create({
+        type: data.historyType,
+        description: data.description,
+        user: data.userId ? { id: data.userId } : null,
+        guard: data.guardId ? { id: data.guardId } : null,
+        bicycle: data.bicycleId ? { id: data.bicycleId } : null,
+        bikerack: data.bikerackId ? { id: data.bikerackId } : null,
+        space: data.spaceId ? { id: data.spaceId } : null,
+        details: data.details || {}
+      });
+
+      return await this.historyRepository.save(newRecord);
+    } catch (error) {
+      console.error("Error al guardar en historial:", error);
+      // No lanzamos error para no romper la ejecución principal del controlador
+      return null;
+    }
+  }
 //BICICLETAS SPACES HISTORY
 async getBikerackUsageHistory(page = 1, limit = 20) {
     const usageTypes = ['user_checkin', 'user_checkout', 'infraction'];
@@ -401,7 +460,7 @@ async getBikerackUsageHistory(page = 1, limit = 20) {
       description: `INCIDENTE: ${description}`,
       userId: userId,
       guardId: guardId,
-      details: details, // Aquí puedes meter fotos, nivel de gravedad, etc.
+      details: details, 
       ipAddress: req.ip,
       userAgent: req.headers['user-agent']
     });

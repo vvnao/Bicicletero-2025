@@ -1,226 +1,154 @@
-// controllers/reports.controller.js - VERSIÓN CORREGIDA DEFINITIVA
 'use strict';
 
-import { handleSuccess, handleErrorClient, handleErrorServer } from "../Handlers/responseHandlers.js";
-import reportService from "../services/reports.service.js";
+import historyService from '../services/history.service.js';
+import { handleSuccess, handleErrorServer } from '../Handlers/responseHandlers.js';
 
-// Tipos de reporte permitidos
-const ALLOWED_REPORT_TYPES = [
-    'uso_semanal',           // Uso Semanal General
-    'capacidad',             // Estado de Capacidad
-    'redistribucion',        // Plan de Redistribución
-    'actividad_usuarios',    // Actividad de Usuarios (futuro)
-    'estado_inventario'      // Estado del Inventario (futuro)
-];
-
-// Generar reporte semanal general (solo admin)
-export async function generateWeeklyReportController(req, res) {
+// ==================== GENERAR REPORTE DE INGRESOS Y SALIDAS ====================
+export const generateBikerackReport = async (req, res) => {
     try {
-        if (req.user.role !== 'admin') {
-            return handleErrorClient(res, 403, "Solo administradores pueden generar reportes semanales");
+        const { startDate, endDate, bikerackId } = req.query;
+        const userId = req.user?.id;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({
+                success: false,
+                message: 'Las fechas de inicio y fin son requeridas'
+            });
         }
 
-        const { weekStart, weekEnd, bikerackId, reportType = 'uso_semanal' } = req.query;
-        
-        if (!weekStart || !weekEnd) {
-            return handleErrorClient(res, 400, "Se requieren weekStart y weekEnd en formato YYYY-MM-DD");
-        }
-
-        console.log('📋 Controlador - Generando reporte:', { weekStart, weekEnd, reportType, bikerackId });
-
-        const userId = req.user.id; // ← OBTENER EL ID DEL USUARIO AUTENTICADO
-        let result;
-
-        switch(reportType) {
-            case 'uso_semanal':
-                result = await reportService.generateAndSaveWeeklyReport({
-                    weekStart,
-                    weekEnd,
-                    reportType,
-                    bikerackId: bikerackId ? parseInt(bikerackId) : undefined,
-                    generatedByUserId: userId // ← ¡PASAR EL USER ID!
-                });
-                break;
-
-            case 'capacidad':
-                // Este método NO guarda en la tabla reports, solo devuelve datos
-                result = await reportService.checkCapacityIssues(
-                    bikerackId ? parseInt(bikerackId) : undefined
-                );
-                break;
-
-            case 'redistribucion':
-                if (!bikerackId) {
-                    return handleErrorClient(res, 400, "Se requiere bikerackId para generar plan de redistribución");
-                }
-                result = await reportService.generateRedistributionPlan(
-                    parseInt(bikerackId),
-                    userId // ← ¡PASAR EL USER ID!
-                );
-                break;
-
-            default:
-                return handleErrorClient(res, 400, `Tipo de reporte no implementado: ${reportType}`);
-        }
-        
-        return handleSuccess(res, 200, "Reporte generado exitosamente", result);
-    } catch (error) {
-        console.error('❌ Error en generateWeeklyReportController:', error);
-        return handleErrorServer(res, 500, "Error al generar reporte", error.message);
-    }
-}
-// Obtener reporte semanal de un bicicletero específico (admin y guardia)
-export async function getBikerackWeeklyReportController(req, res) {
-    try {
-        if (req.user.role !== 'admin' && req.user.role !== 'guardia') {
-            return handleErrorClient(res, 403, "No tiene permisos para ver reportes");
-        }
-
-        const { weekStart, weekEnd, reportType = 'uso_semanal' } = req.query;
-        const { bikerackId } = req.params;
-        
-        if (!weekStart || !weekEnd) {
-            return handleErrorClient(res, 400, "Se requieren weekStart y weekEnd");
-        }
-
-        if (!bikerackId || isNaN(bikerackId)) {
-            return handleErrorClient(res, 400, "ID de bicicletero inválido");
-        }
-
-        console.log('📋 Controlador - Reporte de bicicletero:', { bikerackId, weekStart, weekEnd, reportType });
-
-        const userId = req.user.id;
-        let result;
-
-        switch(reportType) {
-            case 'uso_semanal':
-                result = await reportService.generateAndSaveWeeklyReport({
-                    weekStart,
-                    weekEnd,
-                    reportType,
-                    bikerackId: parseInt(bikerackId),
-                    generatedByUserId: userId
-                });
-                break;
-
-            case 'capacidad':
-                result = await reportService.checkCapacityIssues(parseInt(bikerackId));
-                break;
-
-            case 'redistribucion':
-                result = await reportService.generateRedistributionPlan(
-                    parseInt(bikerackId),
-                    userId
-                );
-                break;
-
-            default:
-                return handleErrorClient(res, 400, `Tipo de reporte no disponible para bicicletero específico: ${reportType}`);
-        }
-        
-        return handleSuccess(res, 200, "Reporte del bicicletero obtenido", result);
-    } catch (error) {
-        console.error('❌ Error en getBikerackWeeklyReportController:', error);
-        return handleErrorServer(res, 500, "Error al obtener reporte del bicicletero", error.message);
-    }
-}
-
-export async function downloadWeeklyReport(req, res) {
-    try {
-        const { start, end } = req.query;
-        
-        // 1. Generar los datos
-        const reportData = await ReportService.generateWeeklyUsageReport(new Date(start), new Date(end));
-        
-        // 2. Convertir a Excel
-        const buffer = await ReportService.exportToExcel(reportData);
-        
-        // 3. Configurar headers para que el navegador lo reconozca como descarga
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename=Reporte_${start}.xlsx`);
-        
-        return res.send(buffer);
-    } catch (error) {
-        res.status(500).json({ message: "Error al generar Excel" });
-    }
-}
-
-export async function getHistory(req, res) {
-    const historyRepo = AppDataSource.getRepository(ReportHistoryEntity);
-    // Trae los últimos 30 días como dice tu diseño
-    const history = await historyRepo.find({
-        order: { createdAt: 'DESC' },
-        take: 10 // O los que necesites mostrar
-    });
-    res.json(history);
-}
-
-/**
- * Reporte de auditoría/consistencia
- */
-export async function generateAuditReportController(req, res) {
-    try {
-        // Solo admin puede generar reportes de auditoría
-        if (req.user.role !== 'admin') {
-            return handleErrorClient(res, 403, "Solo administradores pueden generar reportes de auditoría");
-        }
-
-        const { 
-            weekStart, 
-            weekEnd, 
-            bikerackId 
-        } = req.query;
-        
-        // Validar parámetros requeridos
-        if (!weekStart || !weekEnd) {
-            return handleErrorClient(res, 400, 
-                "Se requieren weekStart y weekEnd en formato YYYY-MM-DD. Ej: weekStart=2024-11-01&weekEnd=2024-11-07"
-            );
-        }
-
-        console.log('🔍 Generando reporte de auditoría:', { weekStart, weekEnd, bikerackId });
-
-        // Generar reporte de auditoría
-        const auditReport = await reportService.generateAuditReport(
-            weekStart,
-            weekEnd,
-            bikerackId ? parseInt(bikerackId) : undefined
-        );
-
-        return handleSuccess(res, 200, 
-            auditReport.summary.issuesFound > 0 
-                ? `Auditoría completada - Se encontraron ${auditReport.summary.issuesFound} problema(s)` 
-                : "Auditoría completada - Todo en orden",
-            auditReport
-        );
-    } catch (error) {
-        console.error('❌ Error en generateAuditReportController:', error);
-        return handleErrorServer(res, 500, "Error al generar reporte de auditoría", error.message);
-    }
-}
-
-// NUEVO: Obtener historial de reportes generados
-export async function getReportsHistoryController(req, res) {
-    try {
-        if (req.user.role !== 'admin') {
-            return handleErrorClient(res, 403, "Solo administradores pueden ver el historial de reportes");
-        }
-
+        // Usar el servicio de historial que ya tienes
         const filters = {
-            page: req.query.page ? parseInt(req.query.page) : 1,
-            limit: req.query.limit ? parseInt(req.query.limit) : 20,
-            reportType: req.query.reportType,
-            status: req.query.status,
-            startDate: req.query.startDate,
-            endDate: req.query.endDate,
-            bikerackId: req.query.bikerackId ? parseInt(req.query.bikerackId) : undefined
+            startDate,
+            endDate,
+            bikerackId: bikerackId ? parseInt(bikerackId) : undefined,
+            historyType: 'CHECKIN,CHECKOUT', // Solo entradas y salidas
+            page: 1,
+            limit: 1000 // Obtener todos los registros
         };
 
-        const result = await reportService.getReportHistory(filters);
-        return handleSuccess(res, 200, "Historial de reportes obtenido", result);
+        const historyResult = await historyService.getHistory(filters);
+
+        // Procesar datos para el reporte
+        const report = {
+            title: `Reporte de Ingresos y Salidas`,
+            period: {
+                start: startDate,
+                end: endDate,
+                formatted: `${formatDate(startDate)} al ${formatDate(endDate)}`
+            },
+            summary: calculateSummary(historyResult.data || []),
+            dailyStats: groupByDay(historyResult.data || []),
+            bikerackStats: groupByBikerack(historyResult.data || []),
+            movements: historyResult.data || [],
+            generatedAt: new Date(),
+            generatedBy: userId
+        };
+
+        return handleSuccess(res, 200, 'Reporte generado exitosamente', report);
+
     } catch (error) {
-        console.error('❌ Error en getReportsHistoryController:', error);
-        return handleErrorServer(res, 500, "Error al obtener historial de reportes", error.message);
+        console.error('❌ Error generando reporte:', error);
+        return handleErrorServer(res, 500, 'Error generando reporte', error.message);
     }
+};
+
+// ==================== FUNCIONES AUXILIARES ====================
+
+function calculateSummary(movements) {
+    const checkins = movements.filter(m => m.historyType === 'CHECKIN').length;
+    const checkouts = movements.filter(m => m.historyType === 'CHECKOUT').length;
+    
+    const uniqueUsers = new Set(movements.map(m => m.user?.id).filter(Boolean)).size;
+    const uniqueBicycles = new Set(movements.map(m => m.bicycle?.id).filter(Boolean)).size;
+
+    return {
+        totalMovements: movements.length,
+        totalCheckins: checkins,
+        totalCheckouts: checkouts,
+        uniqueUsers,
+        uniqueBicycles
+    };
 }
 
+function groupByDay(movements) {
+    const days = {};
+    
+    movements.forEach(movement => {
+        const date = formatDate(movement.createdAt);
+        
+        if (!days[date]) {
+            days[date] = {
+                date,
+                checkins: 0,
+                checkouts: 0,
+                users: new Set(),
+                bicycles: new Set()
+            };
+        }
+        
+        if (movement.historyType === 'CHECKIN') {
+            days[date].checkins++;
+        } else if (movement.historyType === 'CHECKOUT') {
+            days[date].checkouts++;
+        }
+        
+        if (movement.user?.id) days[date].users.add(movement.user.id);
+        if (movement.bicycle?.id) days[date].bicycles.add(movement.bicycle.id);
+    });
+
+    return Object.values(days).map(day => ({
+        date: day.date,
+        checkins: day.checkins,
+        checkouts: day.checkouts,
+        total: day.checkins + day.checkouts,
+        uniqueUsers: day.users.size,
+        uniqueBicycles: day.bicycles.size
+    }));
+}
+
+function groupByBikerack(movements) {
+    const bikeracks = {};
+    
+    movements.forEach(movement => {
+        const name = movement.bikerack?.name || 'Sin Asignar';
+        
+        if (!bikeracks[name]) {
+            bikeracks[name] = {
+                name,
+                checkins: 0,
+                checkouts: 0,
+                users: new Set(),
+                bicycles: new Set()
+            };
+        }
+        
+        if (movement.historyType === 'CHECKIN') {
+            bikeracks[name].checkins++;
+        } else if (movement.historyType === 'CHECKOUT') {
+            bikeracks[name].checkouts++;
+        }
+        
+        if (movement.user?.id) bikeracks[name].users.add(movement.user.id);
+        if (movement.bicycle?.id) bikeracks[name].bicycles.add(movement.bicycle.id);
+    });
+
+    const total = movements.length;
+    
+    return Object.values(bikeracks).map(b => ({
+        name: b.name,
+        checkins: b.checkins,
+        checkouts: b.checkouts,
+        total: b.checkins + b.checkouts,
+        uniqueUsers: b.users.size,
+        percentage: total > 0 ? Math.round((b.checkins + b.checkouts) / total * 100) : 0
+    })).sort((a, b) => b.total - a.total);
+}
+
+function formatDate(date) {
+    if (!date) return 'N/A';
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+}

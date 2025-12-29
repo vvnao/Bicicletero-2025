@@ -13,7 +13,11 @@ router.post('/', isAdmin, guardController.createGuard);
 router.get('/', isAdminOrGuard, guardController.getAllGuards);
 router.get('/:id', isAdminOrGuard, guardController.getGuardById);
 router.put('/:id', isAdminOrGuard, guardController.updateGuard);
+
+
+router.patch('/:id/availability', isAdminOrGuard, guardController.toggleAvailability);
 router.patch('/:id/toggle-availability', isAdminOrGuard, guardController.toggleAvailability);
+
 router.patch('/:id/deactivate', isAdmin, guardController.deactivateGuard);
 router.patch('/:id/activate', isAdmin, guardController.activateGuard);
 router.get('/:id/stats', isAdminOrGuard, guardController.getGuardStats);

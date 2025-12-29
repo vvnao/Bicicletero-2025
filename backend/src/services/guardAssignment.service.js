@@ -80,7 +80,7 @@ export class GuardAssignmentController {
                     dayOfWeek: dayNumber,
                     startTime,
                     endTime,
-                    status: 'activo' // CAMBIO: usar 'status' en lugar de 'isActive'
+                    status: 'activo' 
                 }
             });
 
@@ -98,8 +98,8 @@ export class GuardAssignmentController {
                     dayOfWeek: dayNumber,
                     startTime,
                     endTime,
-                    status: 'activo', // CAMBIO: usar 'status' en lugar de 'isActive'
-                    guardId: Not(guardId) // Busca OTROS guardias
+                    status: 'activo',
+                    guardId: Not(guardId) 
                 }
             });
 
@@ -117,7 +117,7 @@ export class GuardAssignmentController {
                     dayOfWeek: dayNumber,
                     startTime,
                     endTime,
-                    status: 'activo', // CAMBIO: usar 'status' en lugar de 'isActive'
+                    status: 'activo', 
                     bikerackId: Not(bikerackId)
                 }
             });
@@ -144,7 +144,7 @@ export class GuardAssignmentController {
                 effectiveFrom: value.effectiveFrom || new Date(),
                 effectiveUntil: value.effectiveUntil || null,
                 status: 'activo',
-                assignedBy: req.user.id // Usar el ID del usuario autenticado
+                assignedBy: req.user.id 
             });
 
             await this.assignmentRepository.save(newAssignment);
@@ -201,12 +201,12 @@ export class GuardAssignmentController {
                 ? this.parseDayToNumber(dayOfWeek)
                 : parseInt(dayOfWeek);
 
-            // Construir query
+          
             const whereClause = {
                 dayOfWeek: dayNumber,
                 startTime,
                 endTime,
-                status: 'activo' // CAMBIO: usar 'status'
+                status: 'activo' 
             };
 
             if (excludeAssignmentId) {
@@ -280,7 +280,7 @@ export class GuardAssignmentController {
             const assignments = await this.assignmentRepository.find({
                 where: {
                     guardId: parseInt(guardId),
-                    status: 'activo' // CAMBIO: usar 'status'
+                    status: 'activo' 
                 },
                 relations: ['bikerack'],
                 order: {
@@ -335,7 +335,7 @@ export class GuardAssignmentController {
     async getAllActiveAssignments(req, res) {
         try {
             const assignments = await this.assignmentRepository.find({
-                where: { status: 'activo' }, // CAMBIO: usar 'status'
+                where: { status: 'activo' },
                 relations: ['guard', 'guard.user', 'bikerack'],
                 order: {
                     dayOfWeek: 'ASC',

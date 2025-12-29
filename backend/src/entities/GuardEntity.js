@@ -9,12 +9,6 @@ export const GuardEntity = new EntitySchema({
             type: 'int',
             generated: 'increment',
         },
-        // ❌ ELIMINAR userId - la relación lo crea automáticamente
-        // userId: {
-        //     type: 'int',
-        //     nullable: false,
-        //     name: 'user_id'
-        // },
         guardNumber: {
             type: 'int',
             unique: true,
@@ -85,7 +79,7 @@ export const GuardEntity = new EntitySchema({
             target: 'User',
             type: 'many-to-one',
             joinColumn: { 
-                name: 'user_id',  // ✅ TypeORM creará esta columna
+                name: 'user_id',  
                 referencedColumnName: 'id'
             },
             inverseSide: 'guard',

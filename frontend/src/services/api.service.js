@@ -1,7 +1,5 @@
-// frontend/src/services/api.service.js - VERSIÓN CORREGIDA
 const API_URL = 'http://localhost:3000/api';
 
-// Helper para manejar fetch con error handling
 const handleResponse = async (response) => {
     const contentType = response.headers.get('content-type');
     
@@ -15,12 +13,13 @@ const handleResponse = async (response) => {
         }
     }
     
-    // Si la respuesta es exitosa y tiene JSON
+   
+
     if (contentType && contentType.includes('application/json')) {
         return await response.json();
     } else {
-        // Si no es JSON, retornar texto o un objeto por defecto
         const text = await response.text();
+        if (!text) return { success: false, message: "Respuesta vacía del servidor" }; // Evita objetos vacíos
         try {
             return JSON.parse(text);
         } catch {

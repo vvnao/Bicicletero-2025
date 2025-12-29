@@ -132,6 +132,7 @@ async getManagementMovements(req, res) {
         }
     }
 
+    
      /**
      * Historial de TODOS los usuarios (general)
      */
@@ -318,28 +319,32 @@ async getGuardsHistory(req, res) {
     /**
      * Historial de bicicletero específico
      */
-     async getSpecificBikerackHistory(req, res) {
+  async getSpecificBikerackHistory(req, res) {
         try {
             const { bikerackId } = req.params;
-            const filters = {
-                page: req.query.page ? parseInt(req.query.page) : 1,
-                limit: req.query.limit ? parseInt(req.query.limit) : 50,
-                startDate: req.query.startDate,
-                endDate: req.query.endDate,
-                search: req.query.search
-            };
-
-            if (!['admin', 'guardia'].includes(req.user.role)) {
-                return handleErrorClient(res, 403, 'No tiene permisos');
+            
+            // Validamos que sea uno de tus 4 bicicleteros (ID del 1 al 4)
+            const idNum = parseInt(bikerackId);
+            if (isNaN(idNum) || idNum < 1 || idNum > 4) {
+                return handleErrorClient(res, 400, "ID de bicicletero inválido. Solo existen 4.");
             }
 
-            const result = await this.historyService.getBikerackHistory(parseInt(bikerackId), filters);
-            return handleSuccess(res, 200, 'Historial de bicicletero obtenido', result);
+            const filters = {
+                page: parseInt(req.query.page) || 1,
+                limit: parseInt(req.query.limit) || 20
+            };
+
+            // Llamamos al servicio (asegúrate que historyService esté importado arriba)
+            const result = await historyService.getBikerackHistory(idNum, filters);
+            
+            return handleSuccess(res, 200, 'Historial obtenido correctamente', result);
         } catch (error) {
-            console.error('Error en getSpecificBikerackHistory:', error);
-            return handleErrorServer(res, 500, 'Error al obtener historial de bicicletero', error.message);
+            return handleErrorServer(res, 500, 'Error en el servidor', error.message);
         }
     }
+
+
+
    
     /**
      * Obtener estadísticas del historial
@@ -383,8 +388,7 @@ async getGuardsHistory(req, res) {
     }
 }
     /**
-     * Obtener actividad reciente
-     */
+     * Obtener actividad reciente*/
     async getRecentActivity(req, res) {
         try {
             if (!['admin', 'guardia'].includes(req.user.role)) {

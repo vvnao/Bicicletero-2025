@@ -9,12 +9,14 @@ import {
 import UserEntity from '../entities/UserEntity.js';
 import BikerackEntity from '../entities/BikerackEntity.js';
 import SpaceEntity from '../entities/SpaceEntity.js';
+import EvidenceEntity from '../entities/EvidenceEntity.js';
 import { validateIncidenceData } from '../validations/incidence.validation.js';
 
 const incidenceRepository = AppDataSource.getRepository(IncidenceEntity);
 const userRepository = AppDataSource.getRepository(UserEntity);
 const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
 const spaceRepository = AppDataSource.getRepository(SpaceEntity);
+const evidenceRepository = AppDataSource.getRepository(EvidenceEntity);
 /////////////////////////////////////////////////////////////////////////////
 //! esta función crea la incidencia
 export async function createIncidenceReport(incidenceData, reporterId) {
@@ -35,7 +37,6 @@ export async function createIncidenceReport(incidenceData, reporterId) {
       incidenceType: incidenceData.incidenceType,
       severity: incidenceData.severity,
       description: incidenceData.description.trim(),
-      evidenceUrl: incidenceData.evidenceUrl || null,
       dateTimeIncident: new Date(incidenceData.dateTimeIncident),
       dateTimeReport: new Date(),
       status: INCIDENCE_STATUS.OPEN,
@@ -52,10 +53,13 @@ export async function createIncidenceReport(incidenceData, reporterId) {
     }
 
     if (incidenceData.involvedUserId) {
+      const userId = parseInt(incidenceData.involvedUserId);
       const involvedUser = await userRepository.findOne({
-        where: { id: incidenceData.involvedUserId },
+        where: { id: userId },
       });
-      if (!involvedUser) throw new Error('El usuario involucrado no existe');
+      if (!involvedUser) {
+        throw new Error('El usuario involucrado no existe');
+      }
       incidenceToSave.involvedUser = involvedUser;
     }
 
@@ -67,6 +71,7 @@ export async function createIncidenceReport(incidenceData, reporterId) {
       bikerack: bikerack,
       space: incidenceToSave.space || null,
       involvedUser: incidenceToSave.involvedUser || null,
+      evidences: [],
     };
   } catch (error) {
     console.error('Error en createIncidenceReport:', error.message);
@@ -102,97 +107,46 @@ export async function getIncidencesByGuard(guardId) {
         reporter: { id: guardId },
       },
       order: { dateTimeReport: 'DESC' },
-      relations: ['bikerack', 'involvedUser'],
+      relations: ['bikerack', 'involvedUser', 'space', 'evidences'],
     });
   } catch (error) {
     console.error('Error en getIncidencesByGuard:', error);
     throw new Error('Error al obtener incidencias del guardia');
   }
 }
-
-export async function getAllIncidences(filters = {}) {
+/////////////////////////////////////////////////////////////////////////////
+//! función para eliminar una incidencia
+export async function deleteIncidence(incidenceId, guardId) {
   try {
-    const { status, severity, bikerackId } = filters;
-    
-    const query = incidenceRepository.createQueryBuilder('incidence')
-      .leftJoinAndSelect('incidence.reporter', 'reporter')
-      .leftJoinAndSelect('incidence.bikerack', 'bikerack')
-      .leftJoinAndSelect('incidence.involvedUser', 'involvedUser')
-      .leftJoinAndSelect('incidence.space', 'space')
-      .orderBy('incidence.dateTimeReport', 'DESC');
+    const incidence = await incidenceRepository.findOne({
+      where: {
+        id: incidenceId,
+        reporter: { id: guardId },
+      },
+      relations: ['reporter', 'evidences'],
+    });
 
-    if (status) query.andWhere('incidence.status = :status', { status });
-    if (severity) query.andWhere('incidence.severity = :severity', { severity });
-    if (bikerackId) query.andWhere('incidence.bikerackId = :bikerackId', { bikerackId });
+    if (!incidence) {
+      throw new Error('No tienes permiso para eliminar esta incidencia');
+    }
 
-    return await query.getMany();
-  } catch (error) {
-    console.error('Error en getAllIncidences:', error);
-    throw new Error('Error al recuperar el historial de incidencias');
-  }
-}
-export async function exportIncidencesToExcel(incidences) {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Plan de Reparaciones');
+    if (incidence.evidences && incidence.evidences.length > 0) {
+      console.log(`Eliminando ${incidence.evidences.length} evidencias...`);
 
-    // Configuración de Columnas
-    sheet.columns = [
-        { header: 'ID', key: 'id', width: 10 },
-        { header: 'Fecha Reporte', key: 'date', width: 20 },
-        { header: 'Bicicletero', key: 'bikerack', width: 25 },
-        { header: 'Tipo', key: 'type', width: 20 },
-        { header: 'Gravedad', key: 'severity', width: 15 },
-        { header: 'Estado', key: 'status', width: 15 },
-        { header: 'Descripción', key: 'desc', width: 40 },
-    ];
+      for (const evidence of incidence.evidences) {
+        await evidenceRepository.remove(evidence);
+      }
+    }
 
-    // Estilo al encabezado
-    sheet.getRow(1).font = { bold: true };
-    sheet.getRow(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFE67E22' } // Naranja para resaltar "Atención"
+    await incidenceRepository.remove(incidence);
+
+    return {
+      success: true,
+      message: 'Incidencia eliminada correctamente',
+      deletedId: incidenceId,
     };
-
-    // Agregar los datos
-    incidences.forEach(inc => {
-        const row = sheet.addRow({
-            id: inc.id,
-            date: inc.dateTimeReport.toLocaleString(),
-            bikerack: inc.bikerack?.name || 'N/A',
-            type: inc.incidenceType,
-            severity: inc.severity,
-            status: inc.status,
-            desc: inc.description
-        });
-
-        // Formato condicional: Si la gravedad es ALTA, poner el texto en rojo
-        if (inc.severity.toLowerCase() === 'alta') {
-            row.getCell('severity').font = { color: { argb: 'FFFF0000' }, bold: true };
-        }
-    });
-
-    return await workbook.xlsx.writeBuffer();
-}
-//! Resolver una incidencia (Acción del Admin)
-export async function resolveIncidence(incidenceId, adminId, resolutionData) {
-  try {
-    const incidence = await incidenceRepository.findOne({ 
-        where: { id: incidenceId },
-        relations: ['reporter'] 
-    });
-
-    if (!incidence) throw new Error('Incidencia no encontrada');
-    
-    // Actualizamos los campos de resolución
-    incidence.status = INCIDENCE_STATUS.RESOLVED; // Asegúrate de tenerlo en tus constantes
-    incidence.adminComments = resolutionData.comments;
-    incidence.resolvedAt = new Date();
-    incidence.resolvedBy = { id: adminId }; // Si tienes la relación en tu Entidad
-
-    return await incidenceRepository.save(incidence);
   } catch (error) {
-    console.error('Error al resolver incidencia:', error);
-    throw error;
+    console.error('Error detallado en deleteIncidence:', error);
+    throw new Error(`Error al eliminar incidencia: ${error.message}`);
   }
 }

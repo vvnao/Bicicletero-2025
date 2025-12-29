@@ -32,10 +32,6 @@ export async function liberateSpace(id, code) {
 }
 
 export async function getUserByRut(rut) {
-  try {
-    const { data } = await axios.get(`/space-details/user/${rut}`);
-    return data.data;
-  } catch (error) {
-    throw error.response?.data || error;
-  }
+  const { data } = await axios.get(`/space-details/user/${rut}`);
+  return data.data;
 }

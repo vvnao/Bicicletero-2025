@@ -5,9 +5,12 @@ import {
   getIncidenceFormOptionsController,
   getBikerackSpacesController,
   getMyIncidenceReportsController,
+  searchUserByRutController,
+  deleteIncidenceController,
+  getIncidenceByIdController,
 } from '../controllers/incidence.controller.js';
 import {
-  uploadSingleEvidence,
+  uploadIncidenceEvidence,
   handleEvidenceUploadError,
 } from '../middleware/multer.middleware.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
@@ -20,8 +23,8 @@ router.use(authMiddleware);
 router.post(
   '/report',
   authorize(['guardia']),
-  uploadSingleEvidence,
-  handleEvidenceUploadError, 
+  uploadIncidenceEvidence,
+  handleEvidenceUploadError,
   createIncidenceReportController
 );
 router.get(
@@ -39,5 +42,11 @@ router.get(
   authorize(['guardia']),
   getMyIncidenceReportsController
 );
+
+router.get('/search-by-rut', authorize(['guardia']), searchUserByRutController);
+
+router.get('/:id', authorize(['guardia']), getIncidenceByIdController);
+
+router.delete('/:id', authorize(['guardia']), deleteIncidenceController);
 
 export default router;
