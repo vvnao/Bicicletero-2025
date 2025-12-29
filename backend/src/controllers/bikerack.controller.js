@@ -2,7 +2,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import { UserEntity } from "../entities/UserEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
-import Bikerack from "../entities/BikerackEntity.js";
+import Bikerack, { BikerackEntity } from "../entities/BikerackEntity.js";
 import { SpaceEntity } from "../entities/SpaceEntity.js";
 import { ReservationEntity, RESERVATION_STATUS } from "../entities/ReservationEntity.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
@@ -312,4 +312,17 @@ export async function generateWeeklyReport(req, res) {
 async function generateWeeklyReportData() {
   // Tu lógica de reporte aquí
   return {};
+}
+
+export async function getAllBikeracks(req,res){
+  try{
+    const bikeracksRepository = AppDataSource.getRepository(BikerackEntity);
+
+    const bikeracks = await bikeracksRepository.find();
+
+    return handleSuccess(res,200,"Bicicleteros obtenidos correctamente",bikeracks);
+  }catch(error){
+
+    return handleErrorServer(res,500,"Error al obtener los bicicleteros");
+  }
 }

@@ -1,16 +1,7 @@
 'use strict';
-import {
-  getUserBicycles,
-  createAutomaticReservation,
-  cancelReservation,
-  getUserReservations,
-} from '../services/reservation.service.js';
+import {getUserBicycles,createAutomaticReservation,cancelReservation,getUserReservations, getAvailableSpaces} from '../services/reservation.service.js';
 import HistoryService from '../services/history.service.js';
-import {
-  handleSuccess,
-  handleErrorClient,
-  handleErrorServer,
-} from '../Handlers/responseHandlers.js';
+import {handleSuccess,handleErrorClient,handleErrorServer} from '../Handlers/responseHandlers.js';
 import { sendEmail } from '../services/email.service.js';
 import { emailTemplates } from '../templates/reservationEmail.template.js';
 
@@ -40,9 +31,13 @@ export async function getUserBicyclesForReservation(req, res) {
 //! CREAR RESERVA AUTOMÁTICA
 export async function createReservation(req, res) {
   try {
-    const { userId, bikerackId, estimatedHours, bicycleId } = req.body;
+    const userId =req.user.id;
+    const { bikerackId, estimatedHours, bicycleId } = req.body;
 
-    if (!userId || !bikerackId || !estimatedHours || !bicycleId) {
+    if(!userId){
+      return handleErrorClient(res,404,'Usuario no encontrado o no posee los permisos');
+    }
+    if (!bikerackId || !estimatedHours || !bicycleId) {
       return handleErrorClient(res, 400, 'Faltan campos obligatorios');
     }
 
@@ -155,5 +150,14 @@ export async function getUserReservationsController(req, res) {
   } catch (error) {
     console.error('Error en getUserReservations:', error);
     handleErrorServer(res, 500, 'Error al obtener las reservas', error.message);
+  }
+}
+export async function getAvailableSpacesController(req, res) {
+  try {
+    const summary = await getAvailableSpaces();
+    return res.status(200).json(summary);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Error al obtener espacios disponibles' });
   }
 }

@@ -31,6 +31,7 @@ import LayoutGuardia from '@components/guardia/LayoutGuardia';
 import LayoutUser from "./components/user/LayoutUser";
 import GuardiaReviewWrapper from '@components/guardia/GuardiaReviewWrapper.jsx';
 import BikerackDetail from '@pages/guardia/BikerackDetail';
+import Reservation from '@pages/Reservation';
 import './styles/Styles.css';
 
 const router = createBrowserRouter([
@@ -117,6 +118,10 @@ const router = createBrowserRouter([
                 {
                     path: "addBicycles",
                     element: <Bicycles />,
+                },
+                {
+                    path: "reservation",
+                    element: <Reservation />,
                 },
             ],
         },

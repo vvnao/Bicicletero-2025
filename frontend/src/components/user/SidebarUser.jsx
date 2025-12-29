@@ -13,7 +13,7 @@ const Sidebar = ({ sidebarHover, setSidebarHover }) => {
     const menuItems = [
         { name: "Perfil", path: "/home/user/privateProfile", icon: FiUser },
         { name: "Perfil bicicletas", path: "/home/user/bicycles", icon: FaBicycle },
-        { name: "Reservas", path: "/home/user/reserve", icon: FiArchive },
+        { name: "Reservas", path: "/home/user/reservation", icon: FiArchive },
         { name: "Añadir bicicletas", path: "/home/user/addBicycles", icon: FiPlus },
     ];
 

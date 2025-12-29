@@ -9,6 +9,7 @@ import ReservationEntity, {
 
 import UserEntity from '../entities/UserEntity.js';
 import BicycleEntity from '../entities/BicycleEntity.js';
+import BikerackEntity from '../entities/BikerackEntity.js';
 
 const reservationRepository = AppDataSource.getRepository(ReservationEntity);
 const spaceRepository = AppDataSource.getRepository(SpaceEntity);
@@ -319,5 +320,31 @@ export async function expireOldReservations() {
         return 0;
     } finally {
         await queryRunner.release();
+    }
+}
+export async function getAvailableSpaces() {
+    try {
+        const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
+        const bikeracks = await bikerackRepository.find({
+        relations: ['spaces'],
+        });
+
+        const availableSummary = bikeracks.map((bikerack) => {
+        const spaces = bikerack.spaces || [];
+        const availableSpaces = spaces.filter(
+            (space) => space.status === SPACE_STATUS.FREE
+        ).length;
+
+        return {
+            id: bikerack.id,
+            name: bikerack.name,
+            capacity: bikerack.capacity,
+            availableSpaces,
+        };
+        });
+
+        return availableSummary;
+    } catch (error) {
+        throw new Error(`Error al obtener espacios disponibles: ${error.message}`);
     }
 }
