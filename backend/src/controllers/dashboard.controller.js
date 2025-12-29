@@ -326,7 +326,7 @@ export const getGuards = async (req, res) => {
     const guards = [];
 
     for (const bikerack of bikeracks) {
-      const assignments = await assignmentsRepo
+        const assignments = await assignmentsRepo
         .createQueryBuilder('assignment')
         .leftJoinAndSelect('assignment.guard', 'guard')
         .leftJoinAndSelect('guard.user', 'user')
@@ -335,31 +335,31 @@ export const getGuards = async (req, res) => {
         .andWhere('(assignment.effectiveUntil IS NULL OR assignment.effectiveUntil >= CURRENT_DATE)')
         .getMany();
 
-      const guardNames = assignments
-        .filter(a => a.guard && a.guard.user)
-        .map(a => `${a.guard.user.names} ${a.guard.user.lastName}`);
+        const guardNames = assignments
+            .filter(a => a.guard && a.guard.user)
+            .map(a => `${a.guard.user.names} ${a.guard.user.lastName}`);
 
-      const uniqueGuards = [...new Set(guardNames)];
+        const uniqueGuards = [...new Set(guardNames)];
 
-      guards.push({
-        bikerackId: bikerack.id,
-        bikerackName: bikerack.name,
-        guards: uniqueGuards
-      });
+        guards.push({
+            bikerackId: bikerack.id,
+            bikerackName: bikerack.name,
+            guards: uniqueGuards
+        });
+        }
+
+        res.status(200).json({
+        status: 'Success',
+        data: guards
+        });
+    } catch (error) {
+        console.error('❌ Error obteniendo guardias:', error);
+        res.status(500).json({
+        status: 'Error',
+        message: 'Error al obtener guardias',
+        error: error.message
+        });
     }
-
-    res.status(200).json({
-      status: 'Success',
-      data: guards
-    });
-  } catch (error) {
-    console.error('❌ Error obteniendo guardias:', error);
-    res.status(500).json({
-      status: 'Error',
-      message: 'Error al obtener guardias',
-      error: error.message
-    });
-  }
 };
 
 /**
@@ -426,7 +426,7 @@ export const getIncidents = async (req, res) => {
         { tipo: 'Robo', cantidad: 0 },
         { tipo: 'Daño', cantidad: 0 },
         { tipo: 'Pérdida', cantidad: 0 }
-      ];
+    ];
     }
 
     res.status(200).json({

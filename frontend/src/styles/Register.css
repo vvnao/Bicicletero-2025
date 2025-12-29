@@ -12,20 +12,20 @@
 .register-container {
     position: absolute;
     z-index: 2;
-    width: 90%;
-    max-width: 800px;
+    width: 80%;              /* más pequeño */
+    max-width: 650px;        /* antes 800px */
     min-width: 300px;
-    padding: 2.5rem;
+    padding: 2rem;           /* menos padding */
     background: rgba(13, 25, 40, 0.85);
     border-radius: 18px;
     backdrop-filter: blur(4px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    left: 6%;
-    top: 50%;
-    transform: translateY(-50%);
-    overflow-y: scroll;
+    left: 23%;
+    top: 50%;            
+    transform: translate(-50%, -50%);
+    overflow-y: auto;
+    max-height: 80vh;       
 }
-
 .register-container::-webkit-scrollbar {
     width: 8px;
 }
@@ -33,7 +33,7 @@
 .register-container::-webkit-scrollbar-thumb {
     background-color: #4b678d;
     border-radius: 10px;
-    border: 2px solid #cadbfe;
+    border: 2px solid #f3f3f3;
 }
 
 .register-container::-webkit-scrollbar-track {
@@ -112,11 +112,11 @@
 
 .form-label {
     font-family: 'Poppins', sans-serif;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
-    color: white;
+    color: rgb(255, 255, 255);
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     padding-bottom: 2px;
 }
 
@@ -213,7 +213,7 @@
     font-family: 'Nunito', sans-serif;
     font-size: 16px;
 
-    /* 👇 ESTO ES LO IMPORTANTE */
+  
     text-align: center;
 }
 
@@ -283,7 +283,7 @@
 
     .form-input {
         font-size: 17px;
-        padding: 12px 12px 12px 40px;
+        padding: 12px 12px 12px 42px;
     }
 
     .submit-button {
