@@ -78,7 +78,7 @@ const IncidentForm = ({ formOptions }) => {
 
     try {
       setSearchingUser(true);
-      setErrors((prev) => ({ ...prev, rut: null })); 
+      setErrors((prev) => ({ ...prev, rut: null }));
       setUserResult(null);
 
       const result = await searchUserByRut(rutInput);
@@ -262,17 +262,15 @@ const IncidentForm = ({ formOptions }) => {
       onSubmit={handleSubmit}
     >
       {success && (
-        <div className='alert alert-success'>
-          ✅ Reporte enviado exitosamente
-        </div>
+        <div className='alert alert-success'>Reporte enviado exitosamente</div>
       )}
 
       {errors.submit && (
-        <div className='alert alert-error'>⚠️ {errors.submit}</div>
+        <div className='alert alert-error'> {errors.submit}</div>
       )}
 
       <div className='form-section'>
-        <h2 className='section-title'>📅 Fecha y Hora del Incidente *</h2>
+        <h2 className='section-title'>Fecha y Hora del Incidente *</h2>
         <div className='datetime-group'>
           <div className='form-group'>
             <label>Fecha</label>
@@ -332,7 +330,7 @@ const IncidentForm = ({ formOptions }) => {
       </div>
 
       <div className='form-section'>
-        <h2 className='section-title'>📍 Ubicación</h2>
+        <h2 className='section-title'> Ubicación</h2>
         <div className='form-row'>
           <div className='form-group'>
             <label>Bicicletero Afectado *</label>
@@ -383,7 +381,7 @@ const IncidentForm = ({ formOptions }) => {
       </div>
 
       <div className='form-section'>
-        <h2 className='section-title'>🏷️ Clasificación</h2>
+        <h2 className='section-title'> Clasificación</h2>
         <div className='form-row'>
           <div className='form-group'>
             <label>Tipo de Incidencia *</label>
@@ -440,7 +438,7 @@ const IncidentForm = ({ formOptions }) => {
       </div>
 
       <div className='form-section'>
-        <h2 className='section-title'>👤 Usuario Involucrado (Opcional)</h2>
+        <h2 className='section-title'> Usuario Involucrado (Opcional)</h2>
 
         <div className='user-search-group'>
           <div className='form-group'>
@@ -483,7 +481,7 @@ const IncidentForm = ({ formOptions }) => {
             <div className='user-result found'>
               <div className='user-info'>
                 <div className='user-header'>
-                  <strong>✅ Usuario encontrado</strong>
+                  <strong> Usuario encontrado</strong>
                   <span className='user-status'>Vinculado al reporte</span>
                 </div>
                 <div className='user-details'>
@@ -536,7 +534,7 @@ const IncidentForm = ({ formOptions }) => {
       </div>
 
       <div className='form-section'>
-        <h2 className='section-title'>📝 Descripción Detallada *</h2>
+        <h2 className='section-title'> Descripción Detallada *</h2>
         <div className='form-group'>
           <textarea
             name='description'
@@ -565,7 +563,7 @@ const IncidentForm = ({ formOptions }) => {
       </div>
 
       <div className='form-section'>
-        <h2 className='section-title'>🖼️ Evidencia (Opcional)</h2>
+        <h2 className='section-title'> Evidencia (Opcional)</h2>
         <div className='form-group'>
           <div className='file-upload-area'>
             <input
@@ -580,7 +578,7 @@ const IncidentForm = ({ formOptions }) => {
               htmlFor='evidence-upload'
               className='file-upload-label'
             >
-              📎 Subir imágenes
+              Subir imágenes
             </label>
             <span className='file-info'>Máximo 5 imágenes, 5MB cada una</span>
           </div>
