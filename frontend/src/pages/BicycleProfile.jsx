@@ -160,8 +160,8 @@ const BicycleProfile = () => {
                         {bicycles.length > 1 && (
                             <div className="bg-[#272e4b]/40 rounded-2xl p-6 flex justify-between items-center border border-white/10 shadow-xl">
                                 <div>
-                                    <p className="text-[10px] uppercase text-white/50 font-bold tracking-tighter">Bicicleta actual</p>
-                                    <p className="font-bold text-lg">{currentIndex + 1} / {bicycles.length}</p>
+                                    <p className="text-xs uppercase text-white/60 font-semibold tracking-wider">Bicicleta actual</p>
+                                    <p className="font-bold text-lg mt-1">{currentIndex + 1} / {bicycles.length}</p>
                                 </div>
                                 <button 
                                     onClick={() => setCurrentIndex((prev) => (prev + 1) % bicycles.length)} 
@@ -177,10 +177,10 @@ const BicycleProfile = () => {
                         <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/10 h-full p-10">
                             <h3 className="text-2xl font-bold mb-10 pb-4 border-b border-white/5">Perfil Bicicleta</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-12 gap-x-6">
-                                <InfoItem label="Marca" value={currentBicycle.brand} icon={<FiTag />} />
-                                <InfoItem label="Modelo" value={currentBicycle.model} icon={<FiSettings />} />
-                                <InfoItem label="Color" value={bicycleColor} icon={<FiDroplet />} />
-                                <InfoItem label="N° Serie" value={currentBicycle.serialNumber} icon={<FiHash />} />
+                                <InfoItem label=" Marca: " value={currentBicycle.brand} icon={<FiTag />} />
+                                <InfoItem label=" Modelo: " value={currentBicycle.model} icon={<FiSettings />} />
+                                <InfoItem label=" Color: " value={bicycleColor} icon={<FiDroplet />} />
+                                <InfoItem label=" N° Serie: " value={currentBicycle.serialNumber} icon={<FiHash />} />
                             </div>
                         </div>
                     </div>
@@ -194,7 +194,7 @@ const InfoItem = ({ label, value, icon }) => (
     <div className="flex items-center gap-5">
         <div className="p-4 bg-white/5 rounded-2xl text-[#3b82f6] border border-white/10">{icon}</div>
         <div>
-            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">{label}</p>
+           <p className="text-xl font-semibold text-white/70 uppercase tracking-wider mb-1 p-2">{label}</p>
             <p className="text-white font-bold text-xl tracking-tight">{value || "---"}</p>
         </div>
     </div>

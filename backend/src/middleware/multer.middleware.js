@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
             folder = "personal";
         }
 
-    const uploadPath = path.join(__dirname, '../uploads', folder);
+    const uploadPath = path.join('./src/uploads', folder);
 
     // Crear carpeta si no existe
     if (!fs.existsSync(uploadPath)) {

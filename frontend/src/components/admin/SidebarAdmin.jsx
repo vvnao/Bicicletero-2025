@@ -39,16 +39,16 @@ const SidebarAdmin = ({ sidebarHover, setSidebarHover }) => {
             path: '/home/admin/historial',
             icon: FiArchive
         },
-       /* {
+    /* {
             name: 'Reportes',
             path: '/home/admin/reportes',
             icon: FiFileText
-        },
+        },*/
         {
             name: 'Perfil',
             path: '/home/admin/perfil',
             icon: FiUser
-        },*/
+        },
     ];
 
     useEffect(() => {
