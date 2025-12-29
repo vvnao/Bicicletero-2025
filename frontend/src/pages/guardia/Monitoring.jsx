@@ -149,73 +149,13 @@ const Monitoring = () => {
             rack.capacity
           );
 
-          const percentage = Math.round(
-            (rack.totalInUse / rack.capacity) * 100
-          );
-
-          let progressColor;
-          let progressGlow;
-
-          if (occupancyClass === 'full') {
-            progressColor =
-              'linear-gradient(90deg, var(--mon-danger), #dc2626)';
-            progressGlow = 'var(--mon-glow-danger)';
-          } else if (occupancyClass === 'high') {
-            progressColor =
-              'linear-gradient(90deg, var(--mon-warning), #f59e0b)';
-            progressGlow = 'var(--mon-glow-warning)';
-          } else {
-            progressColor =
-              'linear-gradient(90deg, var(--mon-success), #10b981)';
-            progressGlow = 'var(--mon-glow-success)';
-          }
-
           return (
             <div
               key={rack.id}
               className='bikerack-card'
             >
               <div className='card-main-info'>
-                <h2>
-                  {rack.name}
-                </h2>
-                <span
-                  className={`occupancy-badge ${occupancyClass}`}
-                  title={`${rack.totalInUse} de ${rack.capacity} espacios ocupados`}
-                >
-                  {rack.totalInUse}/{rack.capacity}
-                </span>
-              </div>
-
-              {/* Barra de progreso */}
-              <div className='progress-container'>
-                <div className='progress-bar-bg'>
-                  <div
-                    className='progress-bar-fill'
-                    style={{
-                      width: `${percentage}%`,
-                      background: progressColor,
-                      boxShadow: progressGlow,
-                    }}
-                  />
-                </div>
-                <div className='progress-labels'>
-                  <span>0%</span>
-                  <span
-                    style={{
-                      color:
-                        occupancyClass === 'full'
-                          ? 'var(--mon-danger)'
-                          : occupancyClass === 'high'
-                          ? 'var(--mon-warning)'
-                          : 'var(--mon-success)',
-                      fontWeight: '600',
-                    }}
-                  >
-                    {percentage}% ocupado
-                  </span>
-                  <span>100%</span>
-                </div>
+                <h2>{rack.name}</h2>
               </div>
 
               <p className='update-time'>{formatUpdateTime(rack.lastUpdate)}</p>
