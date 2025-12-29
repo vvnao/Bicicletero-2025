@@ -1,10 +1,12 @@
 'use strict';
+import { In } from 'typeorm';
 import {getUserBicycles,createAutomaticReservation,cancelReservation,getUserReservations, getAvailableSpaces} from '../services/reservation.service.js';
 import HistoryService from '../services/history.service.js';
 import {handleSuccess,handleErrorClient,handleErrorServer} from '../Handlers/responseHandlers.js';
 import { sendEmail } from '../services/email.service.js';
 import { emailTemplates } from '../templates/reservationEmail.template.js';
-
+import { AppDataSource } from '../config/configDb.js';
+import { RESERVATION_STATUS, ReservationEntity } from '../entities/ReservationEntity.js';
 ////////////////////////////////////////////////////////////////////////////////////////////
 //! OBTENER LAS BICIS DEL USUARIO PARA QUE PUEDA SELECCIONAR 1 EN LA RESERVA
 export async function getUserBicyclesForReservation(req, res) {
@@ -161,3 +163,64 @@ export async function getAvailableSpacesController(req, res) {
     return res.status(500).json({ message: 'Error al obtener espacios disponibles' });
   }
 }
+
+export const getCurrentReservation = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const reservationRepository = AppDataSource.getRepository(ReservationEntity);
+
+    const reservation = await reservationRepository.findOne({
+      where: {
+        user: { id: userId },
+        status: In([
+          RESERVATION_STATUS.PENDING,
+          RESERVATION_STATUS.ACTIVE,
+        ]),
+      },
+      relations: ['space', 'space.bikerack', 'bicycle'],
+      order: {
+        created_at: 'DESC',
+      },
+    });
+
+    if (!reservation) {
+      return res.status(200).json(null);
+    }
+
+    if (reservation.status === RESERVATION_STATUS.PENDING) {
+      const now = new Date();
+      const expiration = new Date(reservation.expirationTime);
+
+      if (expiration && now > expiration) {
+        reservation.status = RESERVATION_STATUS.EXPIRED;
+        await reservationRepository.save(reservation);
+        return res.status(200).json(null);
+      }
+    }
+
+    return res.status(200).json({
+      id: reservation.id,
+      reservationCode: reservation.reservationCode,
+      status: reservation.status,
+      expirationTime: reservation.expirationTime,
+      estimatedHours: reservation.estimatedHours,
+      bikerackId: reservation.space?.bikerack?.id ?? null,
+      spaceId: reservation.space?.id,
+      spaceCode: reservation.space?.spaceCode,
+      bicycle: reservation.bicycle
+        ? {
+            id: reservation.bicycle.id,
+            brand: reservation.bicycle.brand,
+            model: reservation.bicycle.model,
+          }
+        : null,
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo reserva actual:', error);
+    return res.status(500).json({
+      message: 'Error interno del servidor',
+    });
+  }
+};

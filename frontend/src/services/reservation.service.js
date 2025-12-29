@@ -47,3 +47,15 @@ export async function getAvailableSpaces() {
         return error.response?.data || { message: 'Error al obtener los espacios disponibles' };
     }
 }
+
+export const getCurrentReservation = async () => {
+    try {
+        const token = cookies.get('jwt-auth');
+        const response = await axios.get('/reservations/current', {
+            headers: { Authorization: `Bearer ${token}`}
+        });
+        return response.data;
+    } catch (error) {
+        return error.response?.data || { message: 'Error al obtener los estados de las reservas' };
+    }
+};
