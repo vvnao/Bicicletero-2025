@@ -54,7 +54,7 @@ const Bicycles = () => {
                     <input id="model" class="swal2-input" placeholder="Modelo">
                     <input id="color" class="swal2-input" placeholder="Color">
                     <input id="serial" class="swal2-input" placeholder="Número de serie (solo números)">
-                    <label style="text-align: left; margin-top: 10px; font-size: 14px;">Foto de la bici:</label>
+                    <label style="text-align: center; margin-top: 10px; font-size: 16px;">Foto de la bicicleta</label>
                     <input type="file" id="photo" class="swal2-file" accept="image/*">
                 </div>
             `,
@@ -74,7 +74,6 @@ const Bicycles = () => {
                 const errors = validateBicycle(data);
 
                 if (Object.keys(errors).length > 0) {
-                    // Muestra el primer error encontrado en el mensaje de validación del modal
                     Swal.showValidationMessage(Object.values(errors)[0]);
                     return false;
                 }
