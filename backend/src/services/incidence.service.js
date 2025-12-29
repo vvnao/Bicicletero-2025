@@ -7,14 +7,14 @@ import {
   INCIDENCE_STATUS,
 } from '../entities/IncidenceEntity.js';
 import UserEntity from '../entities/UserEntity.js';
-import BikerackEntity from '../entities/BikerackEntity.js';
+import BicicleteroEntity from '../entities/BicicleteroEntity.js';
 import SpaceEntity from '../entities/SpaceEntity.js';
 import EvidenceEntity from '../entities/EvidenceEntity.js';
 import { validateIncidenceData } from '../validations/incidence.validation.js';
 
 const incidenceRepository = AppDataSource.getRepository(IncidenceEntity);
 const userRepository = AppDataSource.getRepository(UserEntity);
-const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
+const bikerackRepository = AppDataSource.getRepository(BicicleteroEntity);
 const spaceRepository = AppDataSource.getRepository(SpaceEntity);
 const evidenceRepository = AppDataSource.getRepository(EvidenceEntity);
 /////////////////////////////////////////////////////////////////////////////

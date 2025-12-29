@@ -1,6 +1,6 @@
 'use strict';
 import { AppDataSource } from '../config/configDb.js';
-import Bikerack from '../entities/BikerackEntity.js';
+import BicicleteroEntity from '../entities/BicicleteroEntity.js';
 import SpaceEntity from '../entities/SpaceEntity.js';
 import UserEntity from '../entities/UserEntity.js';
 import EvidenceEntity from '../entities/EvidenceEntity.js';
@@ -20,7 +20,7 @@ import {
 } from '../Handlers/responseHandlers.js';
 import IncidenceEntity from '../entities/IncidenceEntity.js';
 
-const bikerackRepository = AppDataSource.getRepository(Bikerack);
+const bikerackRepository = AppDataSource.getRepository(BicicleteroEntity);
 const spaceRepository = AppDataSource.getRepository(SpaceEntity);
 const userRepository = AppDataSource.getRepository(UserEntity);
 const incidenceRepository = AppDataSource.getRepository(IncidenceEntity);

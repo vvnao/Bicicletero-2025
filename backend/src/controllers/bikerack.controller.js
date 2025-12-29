@@ -2,7 +2,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import { UserEntity } from "../entities/UserEntity.js";
 import { BicycleEntity } from "../entities/BicycleEntity.js";
-import Bikerack from "../entities/BikerackEntity.js";
+import BicicleteroEntity from "../entities/BicicleteroEntity.js";
 import { SpaceEntity } from "../entities/SpaceEntity.js";
 import { ReservationEntity, RESERVATION_STATUS } from "../entities/ReservationEntity.js";
 import { GuardAssignmentEntity } from "../entities/GuardAssignmentEntity.js";
@@ -19,7 +19,7 @@ import {
   handleErrorServer,
 } from '../Handlers/responseHandlers.js';
 
-const bikerackRepository = AppDataSource.getRepository(Bikerack);
+const bikerackRepository = AppDataSource.getRepository(BicicleteroEntity);
 const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 const guardAssignmentRepository = AppDataSource.getRepository(GuardAssignmentEntity);
 
@@ -349,7 +349,7 @@ async function generateWeeklyReportData() {
 
 export async function getAllBikeracks(req,res){
   try{
-    const bikeracksRepository = AppDataSource.getRepository(BikerackEntity);
+    const bikeracksRepository = AppDataSource.getRepository(BicycleEntity);
 
     const bikeracks = await bikeracksRepository.find();
 

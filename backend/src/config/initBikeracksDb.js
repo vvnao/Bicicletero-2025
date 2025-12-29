@@ -2,11 +2,11 @@
 'use strict';
 import { AppDataSource } from './configDb.js';
 
-import { BikerackEntity } from '../entities/BikerackEntity.js';
+import { BicicleteroEntity } from '../entities/BicicleteroEntity.js';
 
 export async function createBikeracks() {
   try {
-    const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
+    const bikerackRepository = AppDataSource.getRepository(BicicleteroEntity);
 
     const count = await bikerackRepository.count();
     if (count > 0) return;

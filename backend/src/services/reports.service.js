@@ -2,7 +2,7 @@
 
 import { AppDataSource } from "../config/configDb.js";
 import ReportEntity from "../entities/ReportEntity.js";
-import BikerackEntity from "../entities/BikerackEntity.js";
+import BicicleteroEntity from "../entities/BicicleteroEntity.js";
 import HistoryEntity from "../entities/HistoryEntity.js";
 import UserEntity from "../entities/UserEntity.js";
 import { Between, In } from "typeorm";
@@ -10,7 +10,7 @@ import { Between, In } from "typeorm";
 class ReportsService {
     constructor() {
         this.reportRepository = AppDataSource.getRepository(ReportEntity);
-        this.bikerackRepository = AppDataSource.getRepository(BikerackEntity);
+        this.bikerackRepository = AppDataSource.getRepository(BicicleteroEntity);
         this.historyRepository = AppDataSource.getRepository(HistoryEntity);
         this.userRepository = AppDataSource.getRepository(UserEntity);
     }

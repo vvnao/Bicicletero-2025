@@ -2,12 +2,12 @@
 'use strict';
 import { AppDataSource } from './configDb.js';
 import { SpaceEntity, SPACE_STATUS } from '../entities/SpaceEntity.js';
-import { BikerackEntity } from "../entities/BikerackEntity.js";
+import { BicicleteroEntity } from "../entities/BicicleteroEntity.js";
 
 export async function createSpaces() {
   try {
     const spaceRepository = AppDataSource.getRepository(SpaceEntity);
-    const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
+    const bikerackRepository = AppDataSource.getRepository(BicicleteroEntity);
 
     const count = await spaceRepository.count();
     if (count > 0) return;
