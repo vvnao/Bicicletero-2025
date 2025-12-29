@@ -15,12 +15,13 @@ const handleResponse = async (response) => {
         }
     }
     
-    // Si la respuesta es exitosa y tiene JSON
+    // ... resto de tu lógica de !response.ok ...
+
     if (contentType && contentType.includes('application/json')) {
         return await response.json();
     } else {
-        // Si no es JSON, retornar texto o un objeto por defecto
         const text = await response.text();
+        if (!text) return { success: false, message: "Respuesta vacía del servidor" }; // Evita objetos vacíos
         try {
             return JSON.parse(text);
         } catch {

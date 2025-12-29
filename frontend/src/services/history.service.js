@@ -1,52 +1,59 @@
-'use strict';
+// history.service.js - CON API_URL AGREGADO
+import apiService from './api.service.js';
+import { getToken } from './auth.service';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// AÑADE ESTA LÍNEA (sin process.env):
+const API_URL = 'http://localhost:3000/api';
 
 const HistoryService = {
-  baseURL: `${API_URL}/history`,
-
-  getAuthHeaders() {
-    const token =
-      localStorage.getItem('jwt-auth') ||
-      document.cookie
-        .split('; ')
-        .find(row => row.startsWith('jwt-auth='))
-        ?.split('=')[1];
-
-    return {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` })
-    };
-  },
-
-  async request(url) {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: this.getAuthHeaders(),
-      credentials: 'include'
+  // Corresponde a http://localhost:3000/api/history/occupancy
+  getOccupancyHistory: async (page = 1, limit = 10) => {
+    const token = getToken();
+    const endpoint = `history/occupancy?page=${page}&limit=${limit}`;
+    // Usamos el método genérico de tu apiService si existe, 
+    // o un fetch directo si prefieres
+    const response = await fetch(`${API_URL}/${endpoint}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
+    return await response.json();
+  },
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`${response.status} - ${text}`);
+  // Corresponde a http://localhost:3000/api/history/guards
+  getGuardsHistory: async (page = 1, limit = 10) => {
+    const token = getToken();
+    const endpoint = `history/guards?page=${page}&limit=${limit}`;
+    const response = await fetch(`${API_URL}/${endpoint}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return await response.json();
+  },
+
+  // 3. NUEVO: Historial de un bicicletero específico (Movido de bikerack.service)
+  getBikerackActions: async (bicicleteroId) => {
+    try {
+      const token = getToken();
+      if (!token) throw new Error('No hay token de autenticación');
+
+      const response = await fetch(`${API_URL}/history/bikerack/${bicicleteroId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Error ${response.status}: ${errorData}`);
+      }
+
+      const result = await response.json();
+      // Mantenemos tu lógica de devolver solo el array de datos
+      return result.data || []; 
+    } catch (error) {
+      console.error(`Error en getBikerackActions para ID ${bicicleteroId}:`, error);
+      throw error;
     }
-
-    return response.json();
-  },
-
-  getAllBicycleHistory(filters = {}) {
-    const query = new URLSearchParams(filters).toString();
-    return this.request(`${this.baseURL}/bicycles?${query}`);
-  },
-
-  getAllUserHistory(filters = {}) {
-    const query = new URLSearchParams(filters).toString();
-    return this.request(`${this.baseURL}/users?${query}`);
-  },
-
-  getAllGuardHistory(filters = {}) {
-    const query = new URLSearchParams(filters).toString();
-    return this.request(`${this.baseURL}/guards?${query}`);
   }
 };
 
