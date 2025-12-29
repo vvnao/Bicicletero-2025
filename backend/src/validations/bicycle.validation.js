@@ -36,10 +36,10 @@ export const bicycleValidation = Joi.object({
             "string.pattern.base": "El color solo puede contener letras y espacios"
         }),
     serialNumber: Joi.string()
-    .pattern(/^[0-9]+$/)
+    .pattern(/^[0-9]{1,6}$/)
     .required()
     .messages({
-        "string.pattern.base": "El número de serie solo puede contener números",
+        "string.pattern.base": "El número de serie debe contener solo números y máximo 6 dígitos",
         "any.required": "El número de serie es obligatorio",
         "string.empty": "El número de serie no puede estar vacío"
     }),

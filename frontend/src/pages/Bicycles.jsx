@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { useGetPrivateBicycles } from "@hooks/bicycles/useGetPrivateBicycles";
 import { useCreateBicycles } from "@hooks/bicycles/useCreateBicycles";
 import { useDeleteBicycle } from "@hooks/bicycles/useDeleteBicycles";
+import { validateBicycle } from "../utils/bicycleValidation.js";
 
 const Bicycles = () => {
-    const { bicycles, isLoading, error, fetchBicycles } = useGetPrivateBicycles();
+    const { bicycles, isLoading, fetchBicycles } = useGetPrivateBicycles();
     const { create, isCreating } = useCreateBicycles(fetchBicycles);
-    const { removeBicycle, isDeleting } = useDeleteBicycle(); 
+    const { removeBicycle } = useDeleteBicycle(); 
     
     const [localBicycles, setLocalBicycles] = useState([]);
     const [deletingId, setDeletingId] = useState(null);
@@ -48,38 +49,49 @@ const Bicycles = () => {
         const { value: formValues } = await Swal.fire({
             title: "Agregar bicicleta",
             html: `
-                <input id="brand" class="swal2-input" placeholder="Marca">
-                <input id="model" class="swal2-input" placeholder="Modelo">
-                <input id="color" class="swal2-input" placeholder="Color">
-                <input id="serial" class="swal2-input" placeholder="Número de serie">
-                <input type="file" id="photo" class="swal2-file" accept="image/*">
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <input id="brand" class="swal2-input" placeholder="Marca">
+                    <input id="model" class="swal2-input" placeholder="Modelo">
+                    <input id="color" class="swal2-input" placeholder="Color">
+                    <input id="serial" class="swal2-input" placeholder="Número de serie (solo números)">
+                    <label style="text-align: left; margin-top: 10px; font-size: 14px;">Foto de la bici:</label>
+                    <input type="file" id="photo" class="swal2-file" accept="image/*">
+                </div>
             `,
             focusConfirm: false,
             showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
             preConfirm: () => {
-                const brand = document.getElementById("brand").value;
-                const model = document.getElementById("model").value;
-                const serialNumber = document.getElementById("serial").value;
-                if (!brand || !model || !serialNumber) {
-                    Swal.showValidationMessage("Marca, Modelo y Serie son obligatorios");
+                const data = {
+                    brand: document.getElementById("brand").value,
+                    model: document.getElementById("model").value,
+                    color: document.getElementById("color").value,
+                    serialNumber: document.getElementById("serial").value,
+                    photo: document.getElementById("photo").files[0],
+                };
+
+                const errors = validateBicycle(data);
+
+                if (Object.keys(errors).length > 0) {
+                    // Muestra el primer error encontrado en el mensaje de validación del modal
+                    Swal.showValidationMessage(Object.values(errors)[0]);
                     return false;
                 }
-                return { 
-                    brand, model, 
-                    color: document.getElementById("color").value, 
-                    serialNumber, 
-                    photo: document.getElementById("photo").files[0] 
-                };
+
+                return data;
             },
         });
 
         if (formValues) {
-            const data = new FormData();
-            Object.keys(formValues).forEach(key => {
-                if (formValues[key]) data.append(key, formValues[key]);
-            });
+            const formData = new FormData();
+            formData.append("brand", formValues.brand);
+            formData.append("model", formValues.model);
+            formData.append("color", formValues.color);
+            formData.append("serialNumber", formValues.serialNumber);
+            if (formValues.photo) formData.append("photo", formValues.photo);
 
-            const result = await create(data);
+            const result = await create(formData);
             if (result.ok) {
                 fetchBicycles();
                 Swal.fire("Éxito", "Bicicleta registrada correctamente", "success");
@@ -119,26 +131,32 @@ const Bicycles = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {localBicycles.map((bike) => {
-                                        const id = bike._id || bike.id;
-                                        return (
-                                            <tr key={id} className="border-t hover:bg-gray-50">
-                                                <td className="px-4 py-3">{bike.brand}</td>
-                                                <td className="px-4 py-3">{bike.model}</td>
-                                                <td className="px-4 py-3">{bike.color || "-"}</td>
-                                                <td className="px-4 py-3">{bike.serialNumber}</td>
-                                                <td className="px-4 py-3 text-center">
-                                                    <button 
-                                                        onClick={() => handleDeleteBike(bike)}
-                                                        disabled={deletingId === id}
-                                                        className="text-red-600 hover:text-red-800 font-medium disabled:text-gray-400"
-                                                    >
-                                                        {deletingId === id ? "Eliminando..." : "Eliminar"}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                    {localBicycles.length > 0 ? (
+                                        localBicycles.map((bike) => {
+                                            const id = bike._id || bike.id;
+                                            return (
+                                                <tr key={id} className="border-t hover:bg-gray-50">
+                                                    <td className="px-4 py-3">{bike.brand}</td>
+                                                    <td className="px-4 py-3">{bike.model}</td>
+                                                    <td className="px-4 py-3">{bike.color || "-"}</td>
+                                                    <td className="px-4 py-3">{bike.serialNumber}</td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <button 
+                                                            onClick={() => handleDeleteBike(bike)}
+                                                            disabled={deletingId === id}
+                                                            className="text-red-600 hover:text-red-800 font-medium disabled:text-gray-400"
+                                                        >
+                                                            {deletingId === id ? "Eliminando..." : "Eliminar"}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="5" className="text-center py-10 text-gray-500">No tienes bicicletas registradas.</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
