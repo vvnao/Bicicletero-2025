@@ -2,24 +2,29 @@
 import { AppDataSource } from '../config/configDb.js';
 import Bikerack from '../entities/BikerackEntity.js';
 import SpaceEntity from '../entities/SpaceEntity.js';
+import UserEntity from '../entities/UserEntity.js';
+import EvidenceEntity from '../entities/EvidenceEntity.js';
 import { formatRut } from '../helpers/rut.helper.js';
 import { isValidChileanRut } from '../validations/user.validation.js';
-
 import {
   createIncidenceReport,
   getIncidenceTypes,
   getSeverityLevels,
   getIncidencesByGuard,
+  deleteIncidence,
 } from '../services/incidence.service.js';
-
 import {
   handleSuccess,
   handleErrorClient,
   handleErrorServer,
 } from '../Handlers/responseHandlers.js';
+import IncidenceEntity from '../entities/IncidenceEntity.js';
 
 const bikerackRepository = AppDataSource.getRepository(Bikerack);
 const spaceRepository = AppDataSource.getRepository(SpaceEntity);
+const userRepository = AppDataSource.getRepository(UserEntity);
+const incidenceRepository = AppDataSource.getRepository(IncidenceEntity);
+const evidenceRepository = AppDataSource.getRepository(EvidenceEntity);
 /////////////////////////////////////////////////////////////////////////////
 //! crear incidencia
 export async function createIncidenceReportController(req, res) {
@@ -27,11 +32,31 @@ export async function createIncidenceReportController(req, res) {
     const incidenceData = req.body;
     const reporterId = req.user.id;
 
-    if (req.file) {
-      incidenceData.evidenceUrl = `/uploads/evidence/${req.file.filename}`;
-    }
-
     const incidence = await createIncidenceReport(incidenceData, reporterId);
+
+    if (req.files && req.files.evidence) {
+      const evidenceFiles = req.files.evidence;
+      const evidences = [];
+
+      for (let i = 0; i < evidenceFiles.length; i++) {
+        const file = evidenceFiles[i];
+
+        const evidence = evidenceRepository.create({
+          url: `/uploads/evidence/${file.filename}`,
+          filename: file.filename,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          order: i,
+          incidence: incidence,
+        });
+
+        const savedEvidence = await evidenceRepository.save(evidence);
+        evidences.push(savedEvidence);
+      }
+
+      incidence.evidences = evidences;
+    }
 
     return handleSuccess(res, 201, 'Incidencia reportada exitosamente', {
       id: incidence.id,
@@ -43,18 +68,22 @@ export async function createIncidenceReportController(req, res) {
       dateTimeReport: incidence.dateTimeReport,
       dateTimeIncident: incidence.dateTimeIncident,
       status: incidence.status,
-      evidenceUrl: incidence.evidenceUrl || null,
+      evidences: incidence.evidences || [],
     });
   } catch (error) {
-    console.error('Error en createIncidenceReportController:', error.message);
-
-    if (
-      error.message.includes('Campos obligatorios') ||
-      error.message.includes('no válido') ||
-      error.message.includes('no puede ser futura') ||
-      error.message.includes('al menos 10 caracteres') ||
-      error.message.includes('número válido')
-    ) {
+    if (error.message.includes('Campos obligatorios')) {
+      return handleErrorClient(res, 400, error.message);
+    }
+    if (error.message.includes('no válido')) {
+      return handleErrorClient(res, 400, error.message);
+    }
+    if (error.message.includes('no puede ser futura')) {
+      return handleErrorClient(res, 400, error.message);
+    }
+    if (error.message.includes('al menos 10 caracteres')) {
+      return handleErrorClient(res, 400, error.message);
+    }
+    if (error.message.includes('número válido')) {
       return handleErrorClient(res, 400, error.message);
     }
 
@@ -66,6 +95,7 @@ export async function createIncidenceReportController(req, res) {
     );
   }
 }
+
 /////////////////////////////////////////////////////////////////////////////
 //! obtener opciones para formulario de incidencias
 export async function getIncidenceFormOptionsController(req, res) {
@@ -167,19 +197,21 @@ export async function searchUserByRutController(req, res) {
     const { rut } = req.query;
 
     if (!rut || typeof rut !== 'string' || rut.trim().length === 0) {
-      return handleErrorClient(res, 400, 'Debe ingresar un RUT para buscar.');
+      return res.status(400).json({
+        success: false,
+        message: 'Debe ingresar un RUT para buscar.',
+      });
     }
 
     const rutInput = rut.trim();
-
     const formattedRut = formatRut(rutInput);
 
     if (!isValidChileanRut(formattedRut)) {
-      return handleErrorClient(
-        res,
-        400,
-        'Formato de RUT inválido. Ejemplos válidos: 12345678-9, 12.345.678-9'
-      );
+      return res.status(400).json({
+        success: false,
+        message:
+          'Formato de RUT inválido. Ejemplos válidos: 12345678-9, 12.345.678-9',
+      });
     }
 
     const user = await userRepository.findOne({
@@ -188,38 +220,107 @@ export async function searchUserByRutController(req, res) {
         role: 'user',
         isActive: true,
       },
-      select: [
-        'id',
-        'names',
-        'lastName',
-        'rut',
-        'email',
-        'typePerson',
-        'contact',
-        'requestStatus',
-      ],
+      select: ['id', 'names', 'lastName', 'rut', 'email'],
     });
 
     if (!user) {
-      return handleSuccess(res, 200, 'Usuario no encontrado en el sistema', {
-        found: false,
-        rutSearched: formattedRut,
-        message: `El RUT ${formattedRut} no está registrado en el sistema o está inactivo.`,
+      return res.status(200).json({
+        success: true,
+        message: 'Usuario no encontrado',
+        data: {
+          found: false,
+          message: `El RUT ${formattedRut} no está registrado.`,
+        },
       });
     }
 
-    return handleSuccess(res, 200, 'Usuario encontrado', {
-      found: true,
-      user: {
-        ...user,
-        fullName: `${user.names} ${user.lastName}`,
+    return res.status(200).json({
+      success: true,
+      message: 'Usuario encontrado',
+      data: {
+        found: true,
+        user: {
+          id: user.id,
+          names: user.names,
+          lastName: user.lastName,
+          rut: user.rut,
+          email: user.email,
+          fullName: `${user.names} ${user.lastName}`,
+        },
       },
     });
   } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error al buscar usuario',
+      error: error.message,
+    });
+  }
+}
+/////////////////////////////////////////////////////////////////////////////
+//! eliminar incidencia
+export async function deleteIncidenceController(req, res) {
+  try {
+    const { id } = req.params;
+    const guardId = req.user.id;
+
+    if (!id || isNaN(parseInt(id))) {
+      return handleErrorClient(res, 400, 'ID de incidencia inválido');
+    }
+
+    const result = await deleteIncidence(parseInt(id), guardId);
+
+    return handleSuccess(res, 200, result.message, {
+      deletedId: result.deletedId,
+      success: true,
+    });
+  } catch (error) {
+    if (error.message.includes('No tienes permiso')) {
+      return handleErrorClient(res, 403, error.message);
+    }
+    if (error.message.includes('no encontrada')) {
+      return handleErrorClient(res, 404, error.message);
+    }
+
     return handleErrorServer(
       res,
       500,
-      'Error al buscar usuario',
+      'Error al eliminar la incidencia',
+      error.message
+    );
+  }
+}
+/////////////////////////////////////////////////////////////////////////////
+//! obtener una incidencia específica por ID
+export async function getIncidenceByIdController(req, res) {
+  try {
+    const { id } = req.params;
+    const guardId = req.user.id;
+
+    const incidence = await incidenceRepository.findOne({
+      where: {
+        id: parseInt(id),
+        reporter: { id: guardId },
+      },
+      relations: ['reporter', 'bikerack', 'space', 'involvedUser', 'evidences'],
+    });
+
+    if (!incidence) {
+      return handleErrorClient(
+        res,
+        404,
+        'Incidencia no encontrada o no tienes permiso'
+      );
+    }
+
+    return handleSuccess(res, 200, 'Incidencia obtenida', incidence);
+  } catch (error) {
+    console.error('Error en getIncidenceByIdController:', error);
+    return handleErrorServer(
+      res,
+      500,
+      'Error al obtener la incidencia',
       error.message
     );
   }

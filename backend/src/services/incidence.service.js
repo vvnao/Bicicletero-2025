@@ -35,7 +35,6 @@ export async function createIncidenceReport(incidenceData, reporterId) {
       incidenceType: incidenceData.incidenceType,
       severity: incidenceData.severity,
       description: incidenceData.description.trim(),
-      evidenceUrl: incidenceData.evidenceUrl || null,
       dateTimeIncident: new Date(incidenceData.dateTimeIncident),
       dateTimeReport: new Date(),
       status: INCIDENCE_STATUS.OPEN,
@@ -52,10 +51,13 @@ export async function createIncidenceReport(incidenceData, reporterId) {
     }
 
     if (incidenceData.involvedUserId) {
+      const userId = parseInt(incidenceData.involvedUserId);
       const involvedUser = await userRepository.findOne({
-        where: { id: incidenceData.involvedUserId },
+        where: { id: userId },
       });
-      if (!involvedUser) throw new Error('El usuario involucrado no existe');
+      if (!involvedUser) {
+        throw new Error('El usuario involucrado no existe');
+      }
       incidenceToSave.involvedUser = involvedUser;
     }
 
@@ -67,6 +69,7 @@ export async function createIncidenceReport(incidenceData, reporterId) {
       bikerack: bikerack,
       space: incidenceToSave.space || null,
       involvedUser: incidenceToSave.involvedUser || null,
+      evidences: [], 
     };
   } catch (error) {
     console.error('Error en createIncidenceReport:', error.message);
@@ -102,10 +105,37 @@ export async function getIncidencesByGuard(guardId) {
         reporter: { id: guardId },
       },
       order: { dateTimeReport: 'DESC' },
-      relations: ['bikerack', 'involvedUser'],
+      relations: ['bikerack', 'involvedUser', 'space', 'evidences'], 
     });
   } catch (error) {
     console.error('Error en getIncidencesByGuard:', error);
     throw new Error('Error al obtener incidencias del guardia');
+  }
+}
+/////////////////////////////////////////////////////////////////////////////
+//! función para eliminar una incidencia
+export async function deleteIncidence(incidenceId, guardId) {
+  try {
+    const incidence = await incidenceRepository.findOne({
+      where: {
+        id: incidenceId,
+        reporter: { id: guardId },
+      },
+      relations: ['reporter'],
+    });
+
+    if (!incidence) {
+      throw new Error('No tienes permiso para eliminar esta incidencia');
+    }
+
+    const result = await incidenceRepository.remove(incidence);
+
+    return {
+      success: true,
+      message: 'Incidencia eliminada correctamente',
+      deletedId: incidenceId,
+    };
+  } catch (error) {
+    throw new Error(`Error al eliminar incidencia: ${error.message}`);
   }
 }

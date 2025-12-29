@@ -50,12 +50,6 @@ export const IncidenceEntity = new EntitySchema({
       type: 'text',
       nullable: false,
     },
-    evidenceUrl: {
-      //! url de la imagen/video/etc que se suba de la incidencia (evidencia es opcional)
-      type: 'varchar',
-      length: 500,
-      nullable: true,
-    },
     dateTimeReport: {
       //! fecha y hora de cuando se crea la incidencia (automático)
       type: 'timestamp',
@@ -84,7 +78,7 @@ export const IncidenceEntity = new EntitySchema({
     },
   },
   relations: {
-    //* guardia que reporta la incidencia 
+    //* guardia que reporta la incidencia
     reporter: {
       type: 'many-to-one',
       target: 'User',
@@ -112,6 +106,13 @@ export const IncidenceEntity = new EntitySchema({
       joinColumn: {
         name: 'bikerackId',
       },
+    },
+    evidences: {
+      //*para las imágenes (evidencias)
+      type: 'one-to-many',
+      target: 'Evidence',
+      inverseSide: 'incidence',
+      cascade: true,
     },
     space: {
       type: 'many-to-one',

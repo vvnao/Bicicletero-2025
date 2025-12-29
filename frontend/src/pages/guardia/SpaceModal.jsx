@@ -103,27 +103,57 @@ const SpaceModal = ({ spaceId, onClose }) => {
   }, [spaceId]);
 
   const handleSearchUser = async () => {
-    if (!rut.trim()) {
-      alert('Ingrese un RUT');
+    setError('');
+    setFoundUser(null);
+
+    const rutInput = rut.trim();
+
+    if (!rutInput) {
+      setError('Ingrese un RUT para buscar');
+      return;
+    }
+
+    const rutRegex = /^(\d{1,2}\.\d{3}\.\d{3}-[\dkK]|\d{7,8}-[\dkK])$/i;
+    if (!rutRegex.test(rutInput)) {
+      const errorMsg = 'Formato inválido. Use: 12.345.678-9 o 12345678-9';
+      setError(errorMsg);
+      alert(errorMsg);
       return;
     }
 
     try {
       setActionLoading(true);
-      const user = await getUserByRut(rut.trim());
-      setFoundUser(user);
-      setError('');
+      console.log('Buscando usuario con RUT:', rutInput);
 
-      if (user.bicycles && user.bicycles.length > 0) {
-        setSelectedBicycleId(user.bicycles[0].id.toString());
+      const user = await getUserByRut(rutInput);
+
+      if (user && user.id) {
+        setFoundUser(user);
+        if (user.bicycles && user.bicycles.length > 0) {
+          setSelectedBicycleId(user.bicycles[0].id.toString());
+        }
       } else {
-        setError('El usuario no tiene bicicletas registradas');
-        setFoundUser(null);
+        const errorMsg = 'Usuario no se encuentra registrado';
+        setError(errorMsg);
+        alert(errorMsg);
       }
     } catch (e) {
       console.error('Error al buscar usuario:', e);
-      setFoundUser(null);
-      setError('Usuario no encontrado o error en la búsqueda');
+
+      let errorMessage = 'Usuario no se encuentra registrado';
+
+      const errorText = e.message?.toLowerCase() || '';
+      if (
+        errorText.includes('network') ||
+        errorText.includes('conexión') ||
+        errorText.includes('internet') ||
+        e.code === 'ERR_NETWORK'
+      ) {
+        errorMessage = 'Error de conexión. Verifique su internet.';
+      }
+
+      setError(errorMessage);
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -139,8 +169,21 @@ const SpaceModal = ({ spaceId, onClose }) => {
       alert('Debe seleccionar una bicicleta');
       return;
     }
-    if (!hours || parseFloat(hours) <= 0) {
-      alert('Ingrese horas estimadas válidas (mayor a 0)');
+
+    if (!hours.trim()) {
+      alert('Ingrese las horas estimadas de estadía');
+      return;
+    }
+
+    if (!/^\d+$/.test(hours)) {
+      alert('Hora inválida, debe ser un número entero entre 1 y 24');
+      return;
+    }
+
+    const hoursNum = parseInt(hours);
+
+    if (hoursNum < 1 || hoursNum > 24) {
+      alert('Hora inválida, debe ser un número entero entre 1 y 24');
       return;
     }
 
@@ -148,10 +191,10 @@ const SpaceModal = ({ spaceId, onClose }) => {
       setActionLoading(true);
       await occupyWithoutReservation(spaceId, {
         rut: rut.trim(),
-        estimatedHours: parseFloat(hours),
+        estimatedHours: hoursNum,
         bicycleId: parseInt(selectedBicycleId),
       });
-      alert('¡Ingreso manual registrado con éxito!');
+      alert('¡Ingreso registrado con éxito!');
       onClose();
     } catch (e) {
       console.error('Error al ocupar espacio:', e);
@@ -170,9 +213,7 @@ const SpaceModal = ({ spaceId, onClose }) => {
     }
 
     const confirmed = window.confirm(
-      `¿Confirmar ingreso para la reserva ${details.reservation.code}?\n\n` +
-        `Usuario: ${details.user?.name || 'No disponible'}\n` +
-        `Esta acción cambiará el estado del espacio a OCUPADO.`
+      `¿Confirmar ingreso para la reserva ${details.reservation.code}?`
     );
 
     if (!confirmed) return;
@@ -182,11 +223,7 @@ const SpaceModal = ({ spaceId, onClose }) => {
 
       const result = await occupyWithReservation(details.reservation.code);
 
-      alert(
-        `¡Reserva confirmada con éxito!\n\n` +
-          `Código de retiro generado: ${result.retrievalCode || 'N/A'}\n` +
-          `Se ha enviado un correo de confirmación al usuario.`
-      );
+      alert(`¡Reserva confirmada con éxito!`);
 
       onClose();
     } catch (e) {
@@ -224,9 +261,7 @@ const SpaceModal = ({ spaceId, onClose }) => {
 
       const errorMsg =
         e.response?.data?.message || e.message || 'Error al liberar el espacio';
-      alert(
-        `Error: ${errorMsg}\n\nVerifica:\n1. El código es correcto\n2. El espacio está ocupado/en infracción\n3. El código no ha expirado`
-      );
+      alert(`Código de retiro inválido`);
     } finally {
       setActionLoading(false);
     }
@@ -381,13 +416,27 @@ const SpaceModal = ({ spaceId, onClose }) => {
                 <input
                   type='number'
                   value={hours}
-                  onChange={(e) => setHours(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Elimina caracteres no deseados: e, E, +, -, .
+                    const cleanValue = value.replace(/[eE+-.]/g, '');
+
+                    // Solo actualiza si es válido
+                    if (cleanValue === '' || /^\d+$/.test(cleanValue)) {
+                      const num = parseInt(cleanValue);
+                      if (cleanValue === '' || (num >= 1 && num <= 24)) {
+                        setHours(cleanValue);
+                      }
+                    }
+                  }}
                   min='1'
                   max='24'
                   placeholder='Ej: 4'
                   disabled={actionLoading}
                 />
-                <small className='help-text'>Máximo 24 horas</small>
+                <small className='help-text'>
+                  Máximo 24 horas (solo números enteros)
+                </small>
               </div>
 
               <button
@@ -480,7 +529,7 @@ const SpaceModal = ({ spaceId, onClose }) => {
                     <strong>Color:</strong> {bicycle?.color || 'No disponible'}
                   </p>
 
-                  {/* Imagen bicicleta */}
+                  {/* imagen bicicleta */}
                   {(bicycle?.urlImage || bicycle?.photo) && (
                     <div className='bicycle-image-container'>
                       <img
