@@ -1,6 +1,6 @@
 // frontend/src/components/admin/AssignmentForm.jsx - VERSIÓN ESTÉTICA
 import { useState, useEffect } from 'react';
-import { apiService } from '../../services/api.service';
+import  apiService  from '../../services/api.service';
 import { getToken } from '../../services/auth.service';
 import { Alert } from '../admin/common/Alert';
 import { ConfirmModal } from '../admin/common/ConfirmModal';
@@ -163,36 +163,40 @@ const AssignmentForm = ({
     };
 
     const updateAssignment = async (assignmentId, assignmentData, token) => {
-        try {
-            const response = await fetch(`http://localhost:3000/api/guard-assignments/${assignmentId}`, {
+         try {
+        const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/guard-assignments/${assignmentId}`,
+            {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(assignmentData)
-            });
-            
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return await response.json();
-        } catch (error) {
-            return { success: false, message: error.message || 'Error de conexión' };
-        }
-    };
-
-    const handleDelete = async () => {
-        showConfirmMessage(
-            '🗑️ Eliminar asignación',
-            '¿Seguro que deseas eliminar esta asignación?',
-            async () => {
-                try {
-                    const response = await fetch(`http://localhost:3000/api/guard-assignments/${assignmentToEdit.id}`, {
+            }
+        );
+ if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        return { success: false, message: error.message || 'Error de conexión' };
+    }
+};
+  const handleDelete = async () => {
+    showConfirmMessage(
+        '🗑️ Eliminar asignación',
+        '¿Seguro que deseas eliminar esta asignación?',
+        async () => {
+            try {
+                const response = await fetch(
+                    `${import.meta.env.VITE_API_URL}/guard-assignments/${assignmentToEdit.id}`,
+                    {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         }
-                    });
+                    }
+                );
                     
                     if (!response.ok) {
                         const errorData = await response.json().catch(() => ({}));

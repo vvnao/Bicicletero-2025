@@ -319,20 +319,20 @@ export default function UserReviewHistory() {
                                     <div
                                         className="user-modal-image-container"
                                         onClick={() =>
-                                            setPreviewImage(
-                                                `http://localhost:3000/${cleanPath(
-                                                    selectedUser.user.tnePhoto
-                                                )}`
-                                            )
-                                        }
+    setPreviewImage(
+        `${import.meta.env.VITE_API_URL.replace('/api', '')}/${cleanPath(
+            selectedUser.user.tnePhoto
+        )}`
+    )
+}
                                     >
                                         <img
-                                            src={`http://localhost:3000/${cleanPath(
-                                                selectedUser.user.tnePhoto
-                                            )}`}
-                                            alt="TNE"
-                                            className="user-modal-image"
-                                        />
+    src={`${import.meta.env.VITE_API_URL.replace('/api', '')}/${cleanPath(
+        selectedUser.user.tnePhoto
+    )}`}
+    alt="TNE"
+    className="user-modal-image"
+/>
                                         <div className="user-modal-image-overlay">
                                             <span className="user-modal-image-text">Click para ampliar</span>
                                         </div>
@@ -358,22 +358,23 @@ export default function UserReviewHistory() {
 
                                     {bikes[0].photo && (
                                         <div
-                                            className="user-modal-image-container"
-                                            onClick={() =>
-                                                setPreviewImage(
-                                                    `http://localhost:3000/${cleanPath(
-                                                        bikes[0].photo
-                                                    )}`
-                                                )
-                                            }
-                                        >
-                                            <img
-                                                src={`http://localhost:3000/${cleanPath(
-                                                    bikes[0].photo
-                                                )}`}
-                                                alt="Bicicleta"
-                                                className="user-modal-image"
-                                            />
+    className="user-modal-image-container"
+    onClick={() =>
+        setPreviewImage(
+            `${import.meta.env.VITE_API_URL.replace('/api', '')}/${cleanPath(
+                bikes[0].photo
+            )}`
+        )
+    }
+>
+    <img
+        src={`${import.meta.env.VITE_API_URL.replace('/api', '')}/${cleanPath(
+            bikes[0].photo
+        )}`}
+        alt="Bicicleta"
+        className="user-modal-image"
+    />
+
                                             <div className="user-modal-image-overlay">
                                                 <span className="user-modal-image-text">Click para ampliar</span>
                                             </div>

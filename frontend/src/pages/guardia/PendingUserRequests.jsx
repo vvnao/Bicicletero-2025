@@ -270,14 +270,22 @@ export default function PendingUserRequests() {
 
                         {selectedUser.tnePhoto && (
                             <div className="pending-modal-section">
-                                <h3>TNE</h3>
-                                <img
-                                    src={`http://localhost:3000/${cleanPath(selectedUser.tnePhoto)}`}
-                                    alt="TNE"
-                                    className="pending-modal-image"
-                                    onClick={() => setPreviewImage(`http://localhost:3000/${cleanPath(selectedUser.tnePhoto)}`)}
-                                />
-                            </div>
+    <h3>TNE</h3>
+    <img
+        src={`${import.meta.env.VITE_API_URL.replace('/api', '')}/${cleanPath(
+            selectedUser.tnePhoto
+        )}`}
+        alt="TNE"
+        className="pending-modal-image"
+        onClick={() =>
+            setPreviewImage(
+                `${import.meta.env.VITE_API_URL.replace('/api', '')}/${cleanPath(
+                    selectedUser.tnePhoto
+                )}`
+            )
+        }
+    />
+</div>
                         )}
 
                         <div className="pending-modal-section">
@@ -302,14 +310,23 @@ export default function PendingUserRequests() {
                                             </p>
                                             {bike.photo && (
                                                 <div className="photo-container">
-                                                    <span className="pending-modal-image-label">Foto:</span>
-                                                    <img
-                                                        src={`http://localhost:3000/${cleanPath(bike.photo)}`}
-                                                        alt="Bicicleta"
-                                                        className="pending-modal-image"
-                                                        onClick={() => setPreviewImage(`http://localhost:3000/${cleanPath(bike.photo)}`)}
-                                                    />
-                                                </div>
+    <span className="pending-modal-image-label">Foto:</span>
+    <img
+        src={`${import.meta.env.VITE_API_URL.replace('/api', '')}/${cleanPath(
+            bike.photo
+        )}`}
+        alt="Bicicleta"
+        className="pending-modal-image"
+        onClick={() =>
+            setPreviewImage(
+                `${import.meta.env.VITE_API_URL.replace('/api', '')}/${cleanPath(
+                    bike.photo
+                )}`
+            )
+        }
+    />
+</div>
+
                                             )}
                                         </div>
                                     ))}

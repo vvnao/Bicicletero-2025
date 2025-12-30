@@ -11,11 +11,21 @@ import { getToken } from '../../services/auth.service';
 // URL base desde variable de entorno
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+
 const GuardiasAdmin = () => {
     const [activeCards, setActiveCards] = useState({});
     const [guardias, setGuardias] = useState([]);
     const [bikeracks, setBikeracks] = useState([]);
     const [assignments, setAssignments] = useState([]);
+
+function BicicletasAdmin() {
+    const navigate = useNavigate();
+    
+    // URL base
+    const API_URL = import.meta.env.VITE_API_URL;
+    
+    // Estados
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showGuardForm, setShowGuardForm] = useState(false);
@@ -732,6 +742,8 @@ const GuardiasAdmin = () => {
             )}
         </LayoutAdmin>
     );
+};
+
 };
 
 export default GuardiasAdmin;

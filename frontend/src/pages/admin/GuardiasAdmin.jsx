@@ -1,7 +1,7 @@
 // frontend/src/pages/admin/GuardiasAdmin.jsx - VERSIÓN CORREGIDA CON API_URL
 import { useState, useEffect } from 'react';
 import LayoutAdmin from "../../components/admin/LayoutAdmin";
-import { apiService } from '../../services/api.service';
+import  apiService  from '../../services/api.service';
 import GuardForm from '../../components/admin/GuardForm';  
 import AssignmentForm from '../../components/admin/AssignmentForm';
 import { Alert } from '../../components/admin/common/Alert';
@@ -131,6 +131,7 @@ const GuardiasAdmin = () => {
     };
 
     const handleUpdateAssignment = async (assignmentData, assignmentId) => {
+
         try {
             const token = getToken();
             
@@ -149,8 +150,37 @@ const GuardiasAdmin = () => {
         } catch (err) {
             console.error('Error updating assignment:', err);
             alert('❌ Error al actualizar la asignación');
+
+    try {
+        const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/guard-assignments/${assignmentId}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(assignmentData)
+            }
+        );
+            
+            const result = await response.json();
+
+        if (result.success) {
+            alert(' Asignación actualizada exitosamente');
+            setShowAssignmentForm(false);
+            setSelectedGuardia(null);
+            setAssignmentToEdit(null);
+            setRefresh(prev => !prev);
+        } else {
+            alert(`❌ Error: ${result.message}`);
+
         }
-    };
+    } catch (err) {
+        console.error('Error updating assignment:', err);
+        alert('❌ Error al actualizar la asignación');
+    }
+};
 
     const handleToggleAvailability = async (guardId, isAvailable) => {
         try {
@@ -732,6 +762,8 @@ const GuardiasAdmin = () => {
             )}
         </LayoutAdmin>
     );
+};
+
 };
 
 export default GuardiasAdmin;
