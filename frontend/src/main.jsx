@@ -18,7 +18,6 @@ import HomeUser from '@pages/HomeUser';
 import BicicletasAdmin from './pages/admin/BicicletasAdmin';
 import GuardiasAdmin from './pages/admin/GuardiasAdmin';
 import HistorialAdmin from './pages/admin/HistorialAdmin';
-import ReportesAdmin from './pages/admin/ReportesAdmin';
 import PrivateProfile from '@pages/PrivateProfile';
 import BicycleProfile from '@pages/BicycleProfile';
 import Bicycles from './pages/Bicycles';
@@ -147,14 +146,6 @@ const router = createBrowserRouter([
             element: (
             <ProtectedRoute>
                 <HistorialAdmin />
-            </ProtectedRoute>
-            ),
-        },
-        {
-            path: 'home/admin/reportes',
-            element: (
-            <ProtectedRoute>
-                <ReportesAdmin />
             </ProtectedRoute>
             ),
         },

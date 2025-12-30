@@ -1,53 +1,54 @@
 import React, { useState, useEffect } from 'react';
+import { AlertTriangle, Clock, PlusCircle } from 'lucide-react';
 import '@styles/Incident.css';
 import IncidentForm from '../../components/guardia/IncidentForm';
 import IncidentHistory from '../../components/guardia/IncidentHistory';
 import { getIncidenceFormOptions } from '../../services/incident.service';
 
 const IncidentReports = () => {
-  const [activeTab, setActiveTab] = useState('create');
-  const [formOptions, setFormOptions] = useState({
+  const [activeTabIncidents, setActiveTabIncidents] = useState('create');
+  const [formOptionsIncidents, setFormOptionsIncidents] = useState({
     types: [],
     severities: [],
     bikeracks: [],
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loadingIncidents, setLoadingIncidents] = useState(true);
+  const [errorIncidents, setErrorIncidents] = useState(null);
 
   useEffect(() => {
     const loadFormOptions = async () => {
       try {
-        setLoading(true);
-        setError(null);
+        setLoadingIncidents(true);
+        setErrorIncidents(null);
         const data = await getIncidenceFormOptions();
-        setFormOptions(data);
+        setFormOptionsIncidents(data);
       } catch (err) {
         console.error('Error cargando opciones:', err);
-        setError('No se pudieron cargar las opciones del formulario');
+        setErrorIncidents('No se pudieron cargar las opciones del formulario');
       } finally {
-        setLoading(false);
+        setLoadingIncidents(false);
       }
     };
 
     loadFormOptions();
   }, []);
 
-  if (loading) {
+  if (loadingIncidents) {
     return (
-      <div className='incidents-loading'>
-        <div className='spinner'></div>
+      <div className='incidents-loading-container'>
+        <div className='incidents-spinner'></div>
         <p>Cargando opciones del formulario...</p>
       </div>
     );
   }
 
-  if (error) {
+  if (errorIncidents) {
     return (
-      <div className='incidents-error'>
-        <div className='error-icon'>⚠️</div>
-        <p>{error}</p>
+      <div className='incidents-error-container'>
+        <AlertTriangle className='incidents-error-icon' />
+        <p>{errorIncidents}</p>
         <button
-          className='retry-btn'
+          className='incidents-retry-button'
           onClick={() => window.location.reload()}
         >
           Reintentar
@@ -57,28 +58,37 @@ const IncidentReports = () => {
   }
 
   return (
-    <div className='incidents-container'>
-      <div className='incidents-header'>
-        <h1>🚲 Reportes de Incidencias</h1>
-        <div className='incidents-tabs'>
+    <div className='incidents-main-container'>
+      <div className='incidents-header-section'>
+        <h1 className='incidents-title'>
+          <AlertTriangle className='incidents-title-icon' />
+          Reportes de Incidencias
+        </h1>
+        <div className='incidents-tabs-container'>
           <button
-            className={`tab-btn ${activeTab === 'create' ? 'active' : ''}`}
-            onClick={() => setActiveTab('create')}
+            className={`incidents-tab-button ${
+              activeTabIncidents === 'create' ? 'incidents-tab-active' : ''
+            }`}
+            onClick={() => setActiveTabIncidents('create')}
           >
+            <PlusCircle className='incidents-tab-icon' />
             Crear Reporte
           </button>
           <button
-            className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => setActiveTab('history')}
+            className={`incidents-tab-button ${
+              activeTabIncidents === 'history' ? 'incidents-tab-active' : ''
+            }`}
+            onClick={() => setActiveTabIncidents('history')}
           >
+            <Clock className='incidents-tab-icon' />
             Historial de Reportes
           </button>
         </div>
       </div>
 
-      <div className='incidents-content'>
-        {activeTab === 'create' ? (
-          <IncidentForm formOptions={formOptions} />
+      <div className='incidents-content-container'>
+        {activeTabIncidents === 'create' ? (
+          <IncidentForm formOptions={formOptionsIncidents} />
         ) : (
           <IncidentHistory />
         )}

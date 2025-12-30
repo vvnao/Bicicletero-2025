@@ -15,28 +15,7 @@ export async function createDefaultUsers() {
     // Usuarios por defecto
     const users = [
       //! los users que agrego aquí son de prueba (slvn)
-      {
-        role: 'user',
-        names: 'user prueba 1',
-        lastName: 'ola1',
-        rut: '19157881-3',
-        email: 'silvana.araya2301@alumnos.ubiobio.cl',
-        password: await bcrypt.hash('silvana1234', 10),
-        contact: '+56981919004',
-        typePerson: 'estudiante',
-        requestStatus: 'aprobado',
-      },
-      {
-        role: 'user',
-        names: 'user prueba 2',
-        lastName: 'ola2',
-        rut: '19157881-4',
-        email: 'sayen.barra2301@alumnos.ubiobio.cl',
-        password: await bcrypt.hash('sayen1234', 10),
-        contact: '+56981919034',
-        typePerson: 'estudiante',
-        requestStatus: 'aprobado',
-      },
+ 
       //////////////////////////////////////////////////////////////////////////////////////////
       {
         role: 'admin',
@@ -59,18 +38,8 @@ export async function createDefaultUsers() {
         contact: '+56922222222',
         typePerson: true,
         requestStatus: 'aprobado',
-      },
-      {
-        role: 'user',
-        names: 'Erika Annais',
-        lastName: 'Mellao Jara',
-        rut: '21799899-9',
-        email: 'erika.mellao2301@alumnos.ubiobio.cl',
-        password: await bcrypt.hash('ErikaMellao', 10),
-        contact: '+56981919001',
-        typePerson: 'estudiante',
-        requestStatus: 'aprobado',
-      },
+      }
+      
     ];
 
     console.log('Creando usuarios por defecto...');

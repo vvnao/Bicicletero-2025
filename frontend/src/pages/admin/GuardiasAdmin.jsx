@@ -1,4 +1,4 @@
-// frontend/src/pages/admin/GuardiasAdmin.jsx (VERSIÓN CORREGIDA)
+// frontend/src/pages/admin/GuardiasAdmin.jsx - VERSIÓN CORREGIDA CON API_URL
 import { useState, useEffect } from 'react';
 import LayoutAdmin from "../../components/admin/LayoutAdmin";
 import { apiService } from '../../services/api.service';
@@ -7,6 +7,9 @@ import AssignmentForm from '../../components/admin/AssignmentForm';
 import { Alert } from '../../components/admin/common/Alert';
 import { ConfirmModal } from '../../components/admin/common/ConfirmModal'; 
 import { getToken } from '../../services/auth.service';
+
+// URL base desde variable de entorno
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const GuardiasAdmin = () => {
     const [activeCards, setActiveCards] = useState({});
@@ -32,7 +35,7 @@ const GuardiasAdmin = () => {
             setLoading(true);
             setError(null);
             
-            console.log(' Iniciando fetchData...');
+            console.log('🔄 Iniciando fetchData...');
             
             // Cargar datos en paralelo
             const [guardsRes, bikeracksRes, assignmentsRes] = await Promise.allSettled([
@@ -46,23 +49,23 @@ const GuardiasAdmin = () => {
             // PROCESAR GUARDIAS
             if (guardsRes.status === 'fulfilled' && guardsRes.value?.success) {
                 const guardsData = Array.isArray(guardsRes.value.data) ? guardsRes.value.data : [];
-                console.log(` ${guardsData.length} guardias cargados`);
+                console.log(`✅ ${guardsData.length} guardias cargados`);
                 setGuardias(guardsData);
             } else {
-                console.error(' Error en guards:', guardsRes.reason || guardsRes.value?.message);
+                console.error('❌ Error en guards:', guardsRes.reason || guardsRes.value?.message);
                 setGuardias([]);
             }
 
             // PROCESAR BICICLETEROS
             if (bikeracksRes.status === 'fulfilled' && bikeracksRes.value?.success) {
                 const bikeracksData = Array.isArray(bikeracksRes.value.data) ? bikeracksRes.value.data : [];
-                console.log(`${bikeracksData.length} bicicleteros cargados`);
+                console.log(`✅ ${bikeracksData.length} bicicleteros cargados`);
                 if (bikeracksData.length > 0) {
-                    console.log(' Primer bicicletero:', bikeracksData[0]);
+                    console.log('🔍 Primer bicicletero:', bikeracksData[0]);
                 }
                 setBikeracks(bikeracksData);
             } else {
-                console.error(' Error en bikeracks:', bikeracksRes.reason || bikeracksRes.value?.message);
+                console.error('❌ Error en bikeracks:', bikeracksRes.reason || bikeracksRes.value?.message);
                 setBikeracks([]);
             }
 
@@ -75,12 +78,12 @@ const GuardiasAdmin = () => {
                 }
                 setAssignments(assignmentsData);
             } else {
-                console.error(' Error en assignments:', assignmentsRes.reason || assignmentsRes.value?.message);
+                console.error('❌ Error en assignments:', assignmentsRes.reason || assignmentsRes.value?.message);
                 setAssignments([]);
             }
      
         } catch (err) {
-            console.error(' Error general en fetchData:', err);
+            console.error('❌ Error general en fetchData:', err);
             setError('Error al cargar los datos');
         } finally {
             setLoading(false);
@@ -129,16 +132,10 @@ const GuardiasAdmin = () => {
 
     const handleUpdateAssignment = async (assignmentData, assignmentId) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/guard-assignments/${assignmentId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(assignmentData)
-            });
+            const token = getToken();
             
-            const result = await response.json();
+           
+            const result = await apiService.updateAssignment(assignmentId, assignmentData, token);
             
             if (result.success) {
                 alert('✅ Asignación actualizada exitosamente');
@@ -657,7 +654,7 @@ const GuardiasAdmin = () => {
                         <div style={styles.emptyState}>
                             <h3>No hay guardias registrados</h3>
                             <button 
-                                style={{ ...styles.button, ...styles.buttonPrimary, width: 'auto' }}
+                                style={{ ...styles.button, ...styles.buttonPrimary, width: 'auto', margin: '50px' }}
                                 onClick={() => setShowGuardForm(true)}
                             >
                                 + Agregar Primer Guardia

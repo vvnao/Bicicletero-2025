@@ -1,14 +1,223 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register } from '@services/auth.service';
-import '../styles/Register.css';
-import '../styles/RegisterStudent.css';
-import '../styles/ModalBicycle.css';
 import fondo from '../assets/fondo-estudiante.png';
 import { User, Mail, Phone, IdCard, Lock, Eye, EyeOff, Bike, ArrowLeft } from "lucide-react";
 
+const SubmitButtonWithEffect = ({ children, style, onMouseEnter, onMouseLeave, onMouseDown, onMouseUp, ...props }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseEnter = (e) => {
+    setIsHovered(true);
+    onMouseEnter && onMouseEnter(e);
+  };
+
+  const handleMouseLeave = (e) => {
+    setIsHovered(false);
+    onMouseLeave && onMouseLeave(e);
+  };
+
+  return (
+    <button
+      {...props}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseDown={onMouseDown}
+      onMouseUp={onMouseUp}
+      style={{
+        ...style,
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      <span style={{
+        position: 'absolute',
+        top: 0,
+        left: isHovered ? '100%' : '-100%',
+        width: '100%',
+        height: '100%',
+        background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
+        transition: 'left 0.5s ease',
+        pointerEvents: 'none'
+      }} />
+      {children}
+    </button>
+  );
+};
+
 export default function RegisterStudent() {
   const navigate = useNavigate();
+  const styles = {
+    registerBackground: {
+      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+      backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 1
+    },
+    registerContainer: {
+      position: 'absolute', zIndex: 2, width: '85%', maxWidth: '700px',
+      minWidth: '300px', padding: '2rem', background: 'rgba(13, 25, 40, 0.92)',
+      borderRadius: '20px', backdropFilter: 'blur(10px)',
+      boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(163, 193, 255, 0.1)',
+      left: '6%', top: '50%', transform: 'translateY(-50%)', overflowY: 'auto',
+      maxHeight: '90vh', border: '1px solid rgba(163, 193, 255, 0.15)'
+    },
+    registerTitle: {
+      fontFamily: "'Poppins', sans-serif", color: '#ffffff', fontSize: '36px',
+      fontWeight: 700, marginBottom: '1.5rem', marginTop: '0.5rem',
+      textAlign: 'center', textShadow: '0 4px 20px rgba(163, 193, 255, 0.3)',
+      letterSpacing: '0.5px'
+    },
+    iconBack: {
+      background: 'rgba(163, 193, 255, 0.1)', border: '2px solid rgba(163, 193, 255, 0.2)',
+      cursor: 'pointer', display: 'flex', justifyContent: 'center',
+      marginBottom: '10px', padding: '10px', borderRadius: '12px',
+      transition: 'all 0.3s ease', width: 'fit-content'
+    },
+    formGroup: { position: 'relative', marginBottom: '1.5rem' },
+    formLabel: {
+      fontFamily: "'Poppins', sans-serif", fontSize: '18px', fontWeight: 600,
+      color: '#ffffff', display: 'block', marginBottom: '10px',
+      paddingBottom: '2px', textShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
+      letterSpacing: '0.3px'
+    },
+    inputWrapper: {
+      position: 'relative', display: 'flex', alignItems: 'center', width: '100%'
+    },
+    inputIcon: {
+      position: 'absolute', left: '16px', color: '#3e4856',
+      pointerEvents: 'none', zIndex: 3, transition: 'all 0.3s ease'
+    },
+    formInput: {
+      width: '100%', padding: '16px 16px 16px 50px',
+      background: 'linear-gradient(135deg, #cadbfe 0%, #d4e4ff 100%)',
+      fontFamily: "'Nunito', sans-serif", fontSize: '18px', fontWeight: 600,
+      color: '#0d1928', border: '2px solid rgba(163, 193, 255, 0.3)',
+      borderRadius: '14px', outline: 'none',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
+    },
+    addBicycleButton: {
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      gap: '10px', background: 'linear-gradient(135deg, #4b678d 0%, #5a7aa0 100%)',
+      fontFamily: "'Poppins', sans-serif", fontSize: '18px', fontWeight: 600,
+      color: 'white', padding: '16px', width: '100%',
+      marginTop: '0.8rem', marginBottom: '1rem',
+      border: '2px solid rgba(163, 193, 255, 0.2)', borderRadius: '14px',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'pointer',
+      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+    },
+    submitButton: {
+      background: 'linear-gradient(135deg, #354a66 0%, #4b678d 100%)',
+      fontFamily: "'Poppins', sans-serif", fontSize: '22px', padding: '18px',
+      minHeight: '60px', fontWeight: 700, color: 'white', width: '100%',
+      marginTop: '0.6rem', border: 'none', borderRadius: '16px',
+      letterSpacing: '0.8px', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+      cursor: 'pointer', boxShadow: '0 8px 30px rgba(53, 74, 102, 0.4)',
+      position: 'relative', overflow: 'hidden'
+    },
+    togglePass: {
+      position: 'absolute', right: '14px', top: '50%',
+      transform: 'translateY(-50%)', background: 'rgba(59, 130, 246, 0.1)',
+      border: 'none', cursor: 'pointer', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', zIndex: 3,
+      padding: '8px', borderRadius: '8px', transition: 'all 0.3s ease'
+    },
+    modalOverlay: {
+      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+      background: 'rgba(0, 0, 0, 0.5)', zIndex: 3,
+      display: 'flex', justifyContent: 'center', alignItems: 'center'
+    },
+    modalBici: {
+      background: 'rgba(13, 25, 40, 0.9)', width: '450px', padding: '2rem',
+      borderRadius: '18px', position: 'relative',
+      animation: 'aparecer 0.3s ease-out'
+    },
+    modalTitle: {
+      fontFamily: "'Poppins', sans-serif", fontSize: '28px', fontWeight: 700,
+      color: 'white', marginBottom: '1rem', textAlign: 'center'
+    },
+    modalCerrar: {
+      position: 'absolute', right: '12px', top: '12px',
+      background: '#a3c1ff', color: '#0d1928', fontSize: '18px',
+      width: '32px', height: '32px', borderRadius: '50%',
+      border: 'none', cursor: 'pointer'
+    },
+    fileBtn: {
+      display: 'flex', alignItems: 'center', gap: '10px',
+      background: '#cadbfe', padding: '12px 18px', borderRadius: '14px',
+      fontFamily: "'Poppins', sans-serif", fontSize: '16px', fontWeight: 600,
+      color: '#0d1928', cursor: 'pointer', width: 'fit-content',
+      transition: '0.3s ease', marginTop: '8px',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    fileInput: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      opacity: 0,
+      cursor: 'pointer'
+    },
+    fileName: {
+      fontFamily: "'Nunito', sans-serif", fontSize: '15px', fontWeight: 600,
+      color: '#cadbfe', marginTop: '6px', textAlign: 'center'
+    },
+    loadingMessage: {
+      position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+      background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+      color: 'white', padding: '16px 24px', borderRadius: '12px',
+      fontFamily: "'Nunito', sans-serif", fontSize: '16px', zIndex: 1000,
+      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    },
+    successMessage: {
+      position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      color: 'white', padding: '16px 24px', borderRadius: '12px',
+      fontFamily: "'Nunito', sans-serif", fontSize: '16px', zIndex: 1000,
+      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)'
+    },
+    errorMessage: {
+      position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+      color: 'white', padding: '16px 24px', borderRadius: '12px',
+      fontFamily: "'Nunito', sans-serif", fontSize: '16px', zIndex: 1000,
+      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'center',
+      maxWidth: '90%'
+    },
+    errorList: {
+      margin: '8px 0 0 0', padding: 0, listStyle: 'none'
+    },
+    submitButtonBefore: {
+      content: '\'\'',
+      position: 'absolute',
+      top: 0,
+      left: '-100%',
+      width: '100%',
+      height: '100%',
+      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
+      transition: 'left 0.5s ease'
+    },
+    fadeIn: {
+      animation: 'fadeIn 0.3s ease'
+    },
+    fadeOut: {
+      animation: 'fadeOut 0.4s ease forwards'
+    },
+    errorBox: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px'
+    },
+    formInputPlaceholder: {
+      fontFamily: "'Nunito', sans-serif",
+      color: '#7f8c8d',
+      opacity: 0.8
+    }
+  };
   const [formData, setFormData] = useState({
     names: '',
     lastName: '',
@@ -94,37 +303,87 @@ export default function RegisterStudent() {
     }
   };
 
+  const animationStyles = `
+    @keyframes aparecer {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+    
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+        }
+    }
+    
+    /* Scrollbar styles para register-container */
+    .register-container::-webkit-scrollbar {
+        width: 10px;
+    }
+    
+    .register-container::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #4b678d 0%, #6b88b4 100%);
+        border-radius: 10px;
+        border: 2px solid rgba(13, 25, 40, 0.3);
+    }
+    
+    .register-container::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #5a7aa0 0%, #7a98c4 100%);
+    }
+    
+    .register-container::-webkit-scrollbar-track {
+        background: rgba(44, 62, 80, 0.5);
+        border-radius: 10px;
+        margin: 10px 0;
+    }
+`;
+
   return (
     <>
-      <div
-        className='register-background'
-        style={{ backgroundImage: `url(${fondo})` }}
-      ></div>
+      <style>{animationStyles}</style>
+      <div style={{ ...styles.registerBackground, backgroundImage: `url(${fondo})` }}></div>
 
-      <div className='register-container'>
-        <button
-          className='icon-back'
-          onClick={() => navigate('/auth/register')}
-        >
-          <ArrowLeft
-            size={26}
-            color='white'
-          />
+      <div style={styles.registerContainer}>
+
+        <button style={styles.iconBack} onClick={() => navigate("/auth/register")}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(163, 193, 255, 0.2)';
+            e.currentTarget.style.borderColor = 'rgba(163, 193, 255, 0.4)';
+            e.currentTarget.style.transform = 'translateX(-5px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(163, 193, 255, 0.1)';
+            e.currentTarget.style.borderColor = 'rgba(163, 193, 255, 0.2)';
+            e.currentTarget.style.transform = 'translateX(0)';
+          }}>
+          <ArrowLeft size={26} color="white" />
         </button>
 
-        <h2 className='register-title'>Solicitud de Registro</h2>
-
+        <h2 style={styles.registerTitle}>Solicitud de Registro</h2>
         <form onSubmit={handleSubmit}>
-          {loading && <div className='loading-message'>Cargando...</div>}
-          {successMessage && (
-            <div className='success-message'>{successMessage}</div>
-          )}
+          {loading && <div style={styles.loadingMessage}>Cargando...</div>}
+          {successMessage && <div style={styles.successMessage}>{successMessage}</div>}
           {(errorMessage || errors.length > 0) && (
-            <div className='error-message error-box'>
+            <div style={styles.errorMessage}>
               <strong>{errorMessage}</strong>
 
               {errors.length > 0 && (
-                <ul className='error-list'>
+                <ul style={styles.errorList}>
                   {errors.map((e, i) => (
                     <li key={i}>{e}</li>
                   ))}
@@ -133,255 +392,271 @@ export default function RegisterStudent() {
             </div>
           )}
 
-          <div className='form-group'>
-            <label className='form-label'>NOMBRES</label>
-            <div className='input-wrapper'>
-              <User
-                size={20}
-                color={colorIcono}
-                className='input-icon'
-              />
+          <div style={styles.formGroup}>
+            <label style={styles.formLabel}>NOMBRES</label>
+            <div style={styles.inputWrapper}>
+              <User size={20} color={colorIcono} style={styles.inputIcon} />
               <input
                 name='names'
                 placeholder='Valentina Lucía'
                 onChange={handleChange}
-                className='form-input'
+                style={styles.formInput}
                 required
               />
             </div>
           </div>
 
-          <div className='form-group'>
-            <label className='form-label'>APELLIDOS</label>
-            <div className='input-wrapper'>
-              <User
-                size={20}
-                color={colorIcono}
-                className='input-icon'
-              />
+          <div style={styles.formGroup}>
+            <label style={styles.formLabel}>APELLIDOS</label>
+            <div style={styles.inputWrapper}>
+              <User size={20} color={colorIcono} style={styles.inputIcon} />
               <input
                 name='lastName'
                 placeholder='Martínez López'
                 onChange={handleChange}
-                className='form-input'
+                style={styles.formInput}
                 required
               />
             </div>
           </div>
 
-          <div className='form-group'>
-            <label className='form-label'>RUT</label>
-            <div className='input-wrapper'>
-              <IdCard
-                size={20}
-                color={colorIcono}
-                className='input-icon'
-              />
+          <div style={styles.formGroup}>
+            <label style={styles.formLabel}>RUT</label>
+            <div style={styles.inputWrapper}>
+              <IdCard size={20} color={colorIcono} style={styles.inputIcon} />
               <input
                 name='rut'
                 placeholder='11111111-1'
                 onChange={handleChange}
-                className='form-input'
+                style={styles.formInput}
                 required
               />
             </div>
           </div>
 
-          <div className='form-group'>
-            <label className='form-label'>CORREO ELECTRÓNICO</label>
-            <div className='input-wrapper'>
-              <Mail
-                size={20}
-                color={colorIcono}
-                className='input-icon'
-              />
+          <div style={styles.formGroup}>
+            <label style={styles.formLabel}>CORREO ELECTRÓNICO</label>
+            <div style={styles.inputWrapper}>
+              <Mail size={20} color={colorIcono} style={styles.inputIcon} />
               <input
                 name='email'
                 placeholder='ejemplo@gmail.com'
                 onChange={handleChange}
-                className='form-input'
+                style={styles.formInput}
                 required
               />
             </div>
           </div>
 
-          <div className='form-group'>
-            <label className='form-label'>CONTRASEÑA</label>
-            <div className='input-wrapper pass-wrapper'>
-              <Lock
-                size={20}
-                color={colorIcono}
-                className='input-icon'
-              />
+          <div style={styles.formGroup}>
+            <label style={styles.formLabel}>CONTRASEÑA</label>
+            <div style={styles.inputWrapper}>
+              <Lock size={20} color={colorIcono} style={styles.inputIcon} />
               <input
-                name='password'
-                type={mostrarPass ? 'text' : 'password'}
-                placeholder='*******'
+                name="password"
+                type={mostrarPass ? "text" : "password"}
+                placeholder="*******"
                 onChange={handleChange}
-                className='form-input'
+                style={styles.formInput}
                 required
               />
-              <button
-                type='button'
-                className='toggle-pass'
-                onClick={() => setMostrarPass(!mostrarPass)}
+              <button type="button" style={styles.togglePass} onClick={() => setMostrarPass(!mostrarPass)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(0.95)';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+                }}
               >
-                {mostrarPass ? (
-                  <EyeOff
-                    size={20}
-                    color={colorIcono}
-                  />
-                ) : (
-                  <Eye
-                    size={20}
-                    color={colorIcono}
-                  />
-                )}
+                {mostrarPass ? <EyeOff size={20} color={colorIcono} /> : <Eye size={20} color={colorIcono} />}
               </button>
             </div>
           </div>
 
-          <div className='form-group'>
-            <label className='form-label'>NÚMERO DE CONTACTO</label>
-            <div className='input-wrapper'>
-              <Phone
-                size={20}
-                color={colorIcono}
-                className='input-icon'
-              />
+          <div style={styles.formGroup}>
+            <label style={styles.formLabel}>NÚMERO DE CONTACTO</label>
+            <div style={styles.inputWrapper}>
+              <Phone size={20} color={colorIcono} style={styles.inputIcon} />
               <input
                 name='contact'
                 placeholder='+56911111111'
                 onChange={handleChange}
-                className='form-input'
+                style={styles.formInput}
                 required
               />
             </div>
           </div>
 
-          <div className='form-group'>
-            <label className='form-label'>
-              TARJETA NACIONAL ESTUDIANTIL (TNE)
-            </label>
+          <div style={styles.formGroup}>
+            <label style={styles.formLabel}>TARJETA NACIONAL ESTUDIANTIL (TNE)</label>
 
-            <label className='register-file-btn'>
-              <IdCard
-                size={18}
-                color={colorIcono}
-              />
+            <label style={styles.fileBtn}>
+              <IdCard size={18} color={colorIcono} />
               <span>Seleccionar archivo</span>
               <input
-                type='file'
-                name='tnePhoto'
-                accept='image/*'
+                type="file"
+                name="tnePhoto"
+                accept="image/*"
                 onChange={handleFileChange}
                 required
+                style={styles.fileInput}
               />
             </label>
-            {tnePhoto && <p className='register-file-name'>{tnePhoto.name}</p>}
+            {tnePhoto && <p style={styles.fileName}>{tnePhoto.name}</p>}
           </div>
 
-          <button
-            type='button'
-            className='add-bicycle-button'
-            onClick={() => setMostrarBici(true)}
+          <button type="button" style={styles.addBicycleButton} onClick={() => setMostrarBici(true)}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(163, 193, 255, 0.3)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, #5a7aa0 0%, #6b88b4 100%)';
+              e.currentTarget.style.borderColor = 'rgba(163, 193, 255, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, #4b678d 0%, #5a7aa0 100%)';
+              e.currentTarget.style.borderColor = 'rgba(163, 193, 255, 0.2)';
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'translateY(-3px)';
+            }}
           >
-            <Bike
-              size={18}
-              color='white'
-            />{' '}
-            AGREGAR BICICLETA (Opcional)
+            <Bike size={18} color="white" /> AGREGAR BICICLETA (Opcional)
           </button>
 
-          <button
+          <SubmitButtonWithEffect
             type='submit'
-            className='register-submit-button'
+            style={styles.submitButton}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 12px 40px rgba(53, 74, 102, 0.5)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, #4b678d 0%, #5a7aa0 100%)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 8px 30px rgba(53, 74, 102, 0.4)';
+              e.currentTarget.style.background = 'linear-gradient(135deg, #354a66 0%, #4b678d 100%)';
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+            }}
           >
             ENVIAR SOLICITUD
-          </button>
+          </SubmitButtonWithEffect>
         </form>
 
         {mostrarBici && (
-          <div className='modal-overlay'>
-            <div className='modal-bici'>
+          <div style={styles.modalOverlay}>
+            <div style={styles.modalBici}>
               <button
-                className='modal-cerrar'
+                style={styles.modalCerrar}
                 onClick={() => setMostrarBici(false)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#c1d4ff';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#a3c1ff';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.transform = 'scale(0.95)';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
               >
                 ✕
               </button>
-              <h3 className='modal-title'>Registrar bicicleta</h3>
+              <h3 style={styles.modalTitle}>Registrar bicicleta</h3>
 
-              <div className='form-group'>
-                <label className='form-label'>MARCA</label>
-                <div className='input-wrapper'>
-                  <Bike
-                    size={20}
-                    color={colorIcono}
-                    className='input-icon'
-                  />
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>MARCA</label>
+                <div style={styles.inputWrapper}>
+                  <Bike size={20} color={colorIcono} style={styles.inputIcon} />
                   <input
-                    name='brand'
-                    placeholder='Oxford'
+                    name="brand"
+                    placeholder="Oxford"
                     value={bicycle.brand}
                     onChange={handleBicycleChange}
-                    className='form-input'
+                    style={styles.formInput}
                   />
                 </div>
               </div>
 
-              <div className='form-group'>
-                <label className='form-label'>MODELO</label>
-                <div className='input-wrapper'>
-                  <Bike
-                    size={20}
-                    color={colorIcono}
-                    className='input-icon'
-                  />
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>MODELO</label>
+                <div style={styles.inputWrapper}>
+                  <Bike size={20} color={colorIcono} style={styles.inputIcon} />
                   <input
-                    name='model'
-                    placeholder='MTB 300'
+                    name="model"
+                    placeholder="MTB 300"
                     value={bicycle.model}
                     onChange={handleBicycleChange}
-                    className='form-input'
+                    style={styles.formInput}
                   />
                 </div>
               </div>
 
-              <div className='form-group'>
-                <label className='form-label'>COLOR</label>
-                <div className='input-wrapper'>
-                  <Bike
-                    size={20}
-                    color={colorIcono}
-                    className='input-icon'
-                  />
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>COLOR</label>
+                <div style={styles.inputWrapper}>
+                  <Bike size={20} color={colorIcono} style={styles.inputIcon} />
                   <input
-                    name='color'
-                    placeholder='Azul'
+                    name="color"
+                    placeholder="Azul"
                     value={bicycle.color}
                     onChange={handleBicycleChange}
-                    className='form-input'
+                    style={styles.formInput}
                   />
                 </div>
               </div>
 
-              <div className='form-group'>
-                <label className='form-label'>FOTO DE LA BICICLETA</label>
-                <label className='register-file-btn'>
-                  <Bike
-                    size={18}
-                    color={colorIcono}
-                  />
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>FOTO DE LA BICICLETA</label>
+                <label
+                  style={styles.fileBtn}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 10px rgba(163, 193, 255, 0.15)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                >
+                  <Bike size={18} color={colorIcono} />
                   <span>Seleccionar archivo</span>
                   <input
-                    type='file'
-                    name='photo'
-                    accept='image/*'
+                    type="file"
+                    name="photo"
+                    accept="image/*"
                     onChange={handleFileChange}
+                    style={styles.fileInput}
                   />
                 </label>
-                {photo && <p className='register-file-name'>{photo.name}</p>}
+                {photo && <p style={styles.fileName}>{photo.name}</p>}
               </div>
             </div>
           </div>

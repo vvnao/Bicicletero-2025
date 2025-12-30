@@ -14,7 +14,7 @@ const NavBarAdmin = ({ sidebarHover }) => {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0 30px',
-    zIndex: 999,
+    zIndex: 10001,
     color: '#ffffff',
     borderBottom: '0.3px solid rgba(255, 255, 255, 0.1)', // ← Esta es mi recomendación
     backdropFilter: 'blur(10px)',

@@ -4,7 +4,7 @@ import { handleSuccess, handleErrorServer, handleErrorClient } from "../Handlers
 export async function getUserRequestHistoryController(req, res) {
   try {
     const filters = req.query || {};
-   
+
     const allowedFilters = {};
     if (filters.userId) allowedFilters.user = { id: parseInt(filters.userId) };
     if (filters.newStatus) allowedFilters.newStatus = filters.newStatus;

@@ -2,6 +2,20 @@ import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
+  History,
+  Filter,
+  Calendar,
+  AlertCircle,
+  Eye,
+  Trash2,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Info,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+import {
   getMyIncidenceReports,
   getIncidenceFormOptions,
   deleteIncidence,
@@ -11,18 +25,25 @@ import IncidentDetailsModal from './IncidentDetailsModal';
 import '@styles/IncidentHistory.css';
 
 const IncidentHistory = () => {
-  const [incidences, setIncidences] = useState([]);
-  const [filteredIncidences, setFilteredIncidences] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedIncidence, setSelectedIncidence] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [formOptions, setFormOptions] = useState({
+  //* Estados principales
+  const [historyIncidences, setHistoryIncidences] = useState([]);
+  const [filteredHistoryIncidences, setFilteredHistoryIncidences] = useState(
+    []
+  );
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [selectedHistoryIncidence, setSelectedHistoryIncidence] =
+    useState(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [loadingHistoryDetail, setLoadingHistoryDetail] = useState(false);
+
+  //* Estados para filtros
+  const [formOptionsHistory, setFormOptionsHistory] = useState({
     types: [],
     severities: [],
     bikeracks: [],
   });
-  const [filters, setFilters] = useState({
+
+  const [historyFilters, setHistoryFilters] = useState({
     startDate: null,
     endDate: null,
     type: 'all',
@@ -30,127 +51,135 @@ const IncidentHistory = () => {
     status: 'all',
   });
 
+  //* Estados para expandir/contraer filtros
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
+
+  //* Cargar datos iniciales
   useEffect(() => {
-    const loadAllData = async () => {
+    const loadAllHistoryData = async () => {
       try {
-        setLoading(true);
+        setLoadingHistory(true);
         const incidencesData = await getMyIncidenceReports();
-        setIncidences(incidencesData);
-        setFilteredIncidences(incidencesData);
+        setHistoryIncidences(incidencesData);
+        setFilteredHistoryIncidences(incidencesData);
 
         const optionsData = await getIncidenceFormOptions();
-        setFormOptions(optionsData);
+        setFormOptionsHistory(optionsData);
       } catch (error) {
-        console.error('Error cargando datos:', error);
+        console.error('Error cargando datos históricos:', error);
       } finally {
-        setLoading(false);
+        setLoadingHistory(false);
       }
     };
-    loadAllData();
+
+    loadAllHistoryData();
   }, []);
 
+  //* Aplicar filtros cuando cambian
   useEffect(() => {
-    applyFilters();
-  }, [incidences, filters]);
+    applyHistoryFilters();
+  }, [historyIncidences, historyFilters]);
 
-  const loadIncidences = async () => {
+  //* Para recargar incidencias
+  const reloadHistoryIncidences = async () => {
     try {
       const data = await getMyIncidenceReports();
-      setIncidences(data);
-      setFilteredIncidences(data);
+      setHistoryIncidences(data);
+      setFilteredHistoryIncidences(data);
     } catch (error) {
-      console.error('Error cargando incidencias:', error);
+      console.error('Error recargando incidencias históricas:', error);
     }
   };
 
-const handleDeleteIncidence = async (incidenceId) => {
-  const incidenceNumber = incidenceId.toString().padStart(3, '0');
+  //* eliminación de incidencia
+  const handleDeleteHistoryIncidence = async (incidenceId) => {
+    const confirmMessage = `¿Estás seguro de que deseas eliminar la incidencia #${incidenceId
+      ?.toString()
+      .padStart(3, '0')}?\n\nEsta acción no se puede deshacer.`;
 
-  const userConfirmed = window.confirm(
-      `¿Estás seguro de que deseas eliminar la incidencia #${incidenceNumber}?\n\n` +
-      `Esta acción no se puede deshacer.`
-  );
+    const isConfirmed = window.confirm(confirmMessage);
 
-  if (!userConfirmed) {
-    return; 
-  }
+    if (!isConfirmed) {
+      return;
+    }
 
-  try {
-    await deleteIncidence(incidenceId);
-    await loadIncidences(); 
-    window.alert(`Incidencia #${incidenceNumber} eliminada correctamente`);
-  } catch (error) {
-    console.error('Error al eliminar incidencia:', error);
-    window.alert(`Error: ${error.message}`);
-  }
-};
-
-  const openIncidenceDetails = async (incidence) => {
     try {
-      setLoadingDetail(true);
-      setSelectedIncidence(null);
+      await deleteIncidence(incidenceId);
+      await reloadHistoryIncidences();
+    } catch (error) {
+      console.error('Error al eliminar incidencia histórica:', error);
+      alert('Error al eliminar la incidencia. Por favor, inténtalo de nuevo.');
+    }
+  };
 
-      console.log('🔍 Obteniendo detalles de incidencia ID:', incidence.id);
+  //* Abrir detalles de incidencia
+  const openHistoryIncidenceDetails = async (incidence) => {
+    try {
+      setLoadingHistoryDetail(true);
+      setSelectedHistoryIncidence(null);
+
       const incidenceDetail = await getIncidenceDetail(incidence.id);
 
-      console.log('✅ Datos recibidos:', incidenceDetail);
-
       setTimeout(() => {
-        setSelectedIncidence(incidenceDetail);
-        setShowModal(true);
+        setSelectedHistoryIncidence(incidenceDetail);
+        setShowHistoryModal(true);
       }, 50);
     } catch (error) {
-      console.error(' Error obteniendo detalles:', error);
-      console.error(' Usando datos de lista como fallback');
+      console.error('Error obteniendo detalles históricos:', error);
 
       setTimeout(() => {
-        setSelectedIncidence(incidence);
-        setShowModal(true);
+        setSelectedHistoryIncidence(incidence);
+        setShowHistoryModal(true);
       }, 50);
     } finally {
       setTimeout(() => {
-        setLoadingDetail(false);
+        setLoadingHistoryDetail(false);
       }, 100);
     }
   };
 
-  const applyFilters = () => {
-    let filtered = [...incidences];
+  const applyHistoryFilters = () => {
+    let filtered = [...historyIncidences];
 
-    if (filters.startDate) {
+    if (historyFilters.startDate) {
       filtered = filtered.filter(
-        (inc) => new Date(inc.dateTimeIncident) >= filters.startDate
+        (inc) => new Date(inc.dateTimeIncident) >= historyFilters.startDate
       );
     }
-    if (filters.endDate) {
-      const endDate = new Date(filters.endDate);
+
+    if (historyFilters.endDate) {
+      const endDate = new Date(historyFilters.endDate);
       endDate.setHours(23, 59, 59, 999);
       filtered = filtered.filter(
         (inc) => new Date(inc.dateTimeIncident) <= endDate
       );
     }
 
-    if (filters.type !== 'all') {
-      filtered = filtered.filter((inc) => inc.incidenceType === filters.type);
+    if (historyFilters.type !== 'all') {
+      filtered = filtered.filter(
+        (inc) => inc.incidenceType === historyFilters.type
+      );
     }
 
-    if (filters.severity !== 'all') {
-      filtered = filtered.filter((inc) => inc.severity === filters.severity);
+    if (historyFilters.severity !== 'all') {
+      filtered = filtered.filter(
+        (inc) => inc.severity === historyFilters.severity
+      );
     }
 
-    if (filters.status !== 'all') {
-      filtered = filtered.filter((inc) => inc.status === filters.status);
+    if (historyFilters.status !== 'all') {
+      filtered = filtered.filter((inc) => inc.status === historyFilters.status);
     }
 
-    setFilteredIncidences(filtered);
+    setFilteredHistoryIncidences(filtered);
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+  const handleHistoryFilterChange = (key, value) => {
+    setHistoryFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const resetFilters = () => {
-    setFilters({
+  const resetHistoryFilters = () => {
+    setHistoryFilters({
       startDate: null,
       endDate: null,
       type: 'all',
@@ -159,233 +188,346 @@ const handleDeleteIncidence = async (incidenceId) => {
     });
   };
 
-  const currentItems = filteredIncidences;
-
-  const uniqueTypes = [...new Set(incidences.map((i) => i.incidenceType))];
-  const uniqueSeverities = [...new Set(incidences.map((i) => i.severity))];
-  const uniqueStatuses = [...new Set(incidences.map((i) => i.status))];
-
-  const formatDate = (dateString) => {
+  //* Formatear fecha
+  const formatHistoryDate = (dateString) => {
     const date = new Date(dateString);
     return `${date.getDate().toString().padStart(2, '0')}/${(
       date.getMonth() + 1
     )
       .toString()
-      .padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date
-      .getMinutes()
+      .padStart(2, '0')}/${date.getFullYear()} ${date
+      .getHours()
       .toString()
-      .padStart(2, '0')}`;
+      .padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
 
-  const getSeverityIcon = (severity) => {
+  const getHistorySeverityIcon = (severity) => {
     switch (severity) {
       case 'Alta':
-        return '🔴';
+        return <AlertCircle className='history-severity-icon history-high' />;
       case 'Media':
-        return '🟠';
+        return (
+          <AlertTriangle className='history-severity-icon history-medium' />
+        );
       case 'Baja':
-        return '🟢';
+        return <Info className='history-severity-icon history-low' />;
       default:
-        return '⚪';
+        return <Info className='history-severity-icon' />;
     }
   };
 
-  if (loading) {
+  const getHistoryStatusIcon = (status) => {
+    switch (status.toLowerCase()) {
+      case 'abierta':
+        return (
+          <AlertCircle className='history-status-icon history-status-open' />
+        );
+      case 'en proceso':
+        return <Clock className='history-status-icon history-status-process' />;
+      case 'resuelta':
+        return (
+          <CheckCircle className='history-status-icon history-status-resolved' />
+        );
+      case 'cerrada':
+        return (
+          <CheckCircle className='history-status-icon history-status-closed' />
+        );
+      default:
+        return <Info className='history-status-icon' />;
+    }
+  };
+
+  const uniqueHistoryTypes = [
+    ...new Set(historyIncidences.map((i) => i.incidenceType)),
+  ];
+  const uniqueHistorySeverities = [
+    ...new Set(historyIncidences.map((i) => i.severity)),
+  ];
+  const uniqueHistoryStatuses = [
+    ...new Set(historyIncidences.map((i) => i.status)),
+  ];
+
+  if (loadingHistory) {
     return (
-      <div className='incidents-loading'>
-        <div className='spinner'></div>
+      <div className='history-loading-container'>
+        <div className='history-spinner'></div>
         <p>Cargando historial de incidencias...</p>
       </div>
     );
   }
 
   return (
-    <div className='incident-history'>
-      <h2> Historial de Reportes</h2>
-      <p className='summary'>
-        Total de incidencias: {incidences.length} | Mostrando:{' '}
-        {filteredIncidences.length}
-      </p>
+    <div className='history-main-container'>
+      {/* Encabezado */}
+      <div className='history-header-section'>
+        <h1 className='history-title'>
+          <History className='history-title-icon' />
+          Historial de Reportes
+        </h1>
 
-      {/* filtros */}
-      <div className='filters-section'>
-        <h3> Filtros</h3>
-        <div className='filters-grid'>
-          <div className='filter-group'>
-            <label>Fecha desde</label>
-            <DatePicker
-  selected={filters.startDate}
-  onChange={(date) => handleFilterChange('startDate', date)}
-  dateFormat='dd/MM/yyyy'
-  placeholderText='DD/MM/AAAA'
-  className='datepicker-default' // <- Nueva clase
-/>
-          </div>
-
-          <div className='filter-group'>
-            <label>Fecha hasta</label>
-            <DatePicker
-              selected={filters.endDate}
-              onChange={(date) => handleFilterChange('endDate', date)}
-              dateFormat='dd/MM/yyyy'
-              placeholderText='DD/MM/AAAA'
-              className='filter-input'
-            />
-          </div>
-          
-
-          <div className='filter-group'>
-            <label>Tipo</label>
-            <select
-              value={filters.type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
-              className='filter-select'
-            >
-              <option value='all'>Todos</option>
-              {uniqueTypes.map((type) => (
-                <option
-                  key={type}
-                  value={type}
-                >
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className='filter-group'>
-            <label>Gravedad</label>
-            <select
-              value={filters.severity}
-              onChange={(e) => handleFilterChange('severity', e.target.value)}
-              className='filter-select'
-            >
-              <option value='all'>Todas</option>
-              {uniqueSeverities.map((sev) => (
-                <option
-                  key={sev}
-                  value={sev}
-                >
-                  {sev}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className='filter-group'>
-            <label>Estado</label>
-            <select
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              className='filter-select'
-            >
-              <option value='all'>Todos</option>
-              {uniqueStatuses.map((status) => (
-                <option
-                  key={status}
-                  value={status}
-                >
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className='filter-actions'>
-          <button
-            onClick={applyFilters}
-            className='btn btn-apply'
-          >
-            Aplicar Filtros
-          </button>
-          <button
-            onClick={resetFilters}
-            className='btn btn-reset'
-          >
-            Limpiar Filtros
-          </button>
+        <div className='history-summary'>
+          <span className='history-summary-item'>
+            <span className='history-summary-label'>Total:</span>
+            <span className='history-summary-value'>
+              {historyIncidences.length}
+            </span>
+          </span>
+          <span className='history-summary-item'>
+            <span className='history-summary-label'>Mostrando:</span>
+            <span className='history-summary-value'>
+              {filteredHistoryIncidences.length}
+            </span>
+          </span>
         </div>
       </div>
 
-      {/* tabla de incidencias */}
-      <div className='incidence-table-section'>
-        <div className='table-header'>
-          <h3> Reportes Registrados</h3>
-          <span className='counter'>
-            {filteredIncidences.length} incidencias
+      {/* Sección de Filtros */}
+      <div className='history-filters-container'>
+        <div
+          className='history-filters-header'
+          onClick={() => setFiltersExpanded(!filtersExpanded)}
+        >
+          <Filter className='history-filters-icon' />
+          <h2 className='history-filters-title'>Filtros</h2>
+          {filtersExpanded ? (
+            <ChevronUp className='history-expand-icon' />
+          ) : (
+            <ChevronDown className='history-expand-icon' />
+          )}
+        </div>
+
+        {filtersExpanded && (
+          <>
+            <div className='history-filters-grid'>
+              <div className='history-filter-group'>
+                <label className='history-filter-label'>
+                  <Calendar className='history-filter-icon' />
+                  Fecha desde
+                </label>
+                <DatePicker
+                  selected={historyFilters.startDate}
+                  onChange={(date) =>
+                    handleHistoryFilterChange('startDate', date)
+                  }
+                  dateFormat='dd/MM/yyyy'
+                  placeholderText='DD/MM/AAAA'
+                  className='history-filter-input'
+                  isClearable
+                />
+              </div>
+
+              <div className='history-filter-group'>
+                <label className='history-filter-label'>
+                  <Calendar className='history-filter-icon' />
+                  Fecha hasta
+                </label>
+                <DatePicker
+                  selected={historyFilters.endDate}
+                  onChange={(date) =>
+                    handleHistoryFilterChange('endDate', date)
+                  }
+                  dateFormat='dd/MM/yyyy'
+                  placeholderText='DD/MM/AAAA'
+                  className='history-filter-input'
+                  isClearable
+                />
+              </div>
+
+              <div className='history-filter-group'>
+                <label className='history-filter-label'>Tipo</label>
+                <select
+                  value={historyFilters.type}
+                  onChange={(e) =>
+                    handleHistoryFilterChange('type', e.target.value)
+                  }
+                  className='history-filter-select'
+                >
+                  <option value='all'>Todos los tipos</option>
+                  {uniqueHistoryTypes.map((type) => (
+                    <option
+                      key={type}
+                      value={type}
+                    >
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className='history-filter-group'>
+                <label className='history-filter-label'>Gravedad</label>
+                <select
+                  value={historyFilters.severity}
+                  onChange={(e) =>
+                    handleHistoryFilterChange('severity', e.target.value)
+                  }
+                  className='history-filter-select'
+                >
+                  <option value='all'>Todas las gravedades</option>
+                  {uniqueHistorySeverities.map((sev) => (
+                    <option
+                      key={sev}
+                      value={sev}
+                    >
+                      {sev}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className='history-filter-group'>
+                <label className='history-filter-label'>Estado</label>
+                <select
+                  value={historyFilters.status}
+                  onChange={(e) =>
+                    handleHistoryFilterChange('status', e.target.value)
+                  }
+                  className='history-filter-select'
+                >
+                  <option value='all'>Todos los estados</option>
+                  {uniqueHistoryStatuses.map((status) => (
+                    <option
+                      key={status}
+                      value={status}
+                    >
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className='history-filter-actions'>
+              <button
+                onClick={applyHistoryFilters}
+                className='history-button history-button-apply'
+              >
+                Aplicar Filtros
+              </button>
+              <button
+                onClick={resetHistoryFilters}
+                className='history-button history-button-reset'
+              >
+                Limpiar Filtros
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Sección de Tabla */}
+      <div className='history-table-section'>
+        <div className='history-table-header'>
+          <h2 className='history-table-title'>
+            <AlertCircle className='history-table-icon' />
+            Reportes Registrados
+          </h2>
+          <span className='history-table-counter'>
+            {filteredHistoryIncidences.length} incidencias
           </span>
         </div>
-        <div className='table-container'>
-          <table className='incidence-table'>
+
+        <div className='history-table-container'>
+          <table className='history-table'>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Fecha Incidente</th>
-                <th>Tipo</th>
-                <th>Gravedad</th>
-                <th>Estado</th>
-                <th>Bicicletero</th>
-                <th>Acciones</th>
+                <th className='history-th-id'>ID</th>
+                <th className='history-th-date'>Fecha Incidente</th>
+                <th className='history-th-type'>Tipo</th>
+                <th className='history-th-severity'>Gravedad</th>
+                <th className='history-th-status'>Estado</th>
+                <th className='history-th-bikerack'>Bicicletero</th>
+                <th className='history-th-actions'>Acciones</th>
               </tr>
             </thead>
+
             <tbody>
-              {currentItems.length === 0 ? (
+              {filteredHistoryIncidences.length === 0 ? (
                 <tr>
                   <td
                     colSpan='7'
-                    className='no-data'
+                    className='history-no-data'
                   >
-                    No hay incidencias que coincidan con los filtros
+                    <div className='history-empty-state'>
+                      <AlertCircle className='history-empty-icon' />
+                      <p>
+                        No hay incidencias que coincidan con los filtros
+                        seleccionados
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                currentItems.map((incidence) => (
+                filteredHistoryIncidences.map((incidence) => (
                   <tr
                     key={incidence.id}
-                    className='incidence-row'
+                    className='history-table-row'
                   >
-                    <td className='id-cell'>
-                      #{incidence.id.toString().padStart(3, '0')}
-                    </td>
-                    <td className='date-cell'>
-                      {formatDate(incidence.dateTimeIncident)}
-                    </td>
-                    <td className='type-cell'>{incidence.incidenceType}</td>
-                    <td className='severity-cell'>
-                      <span
-                        className={`severity-badge ${incidence.severity.toLowerCase()}`}
-                      >
-                        {getSeverityIcon(incidence.severity)}{' '}
-                        {incidence.severity}
+                    <td className='history-td-id'>
+                      <span className='history-id-badge'>
+                        #{incidence.id.toString().padStart(3, '0')}
                       </span>
                     </td>
-                    <td className='status-cell'>
-                      <span
-                        className={`status-badge ${incidence.status.toLowerCase()}`}
-                      >
-                        {incidence.status}
-                      </span>
+
+                    <td className='history-td-date'>
+                      <Clock className='history-date-icon' />
+                      {formatHistoryDate(incidence.dateTimeIncident)}
                     </td>
-                    <td className='bikerack-cell'>
+
+                    <td className='history-td-type'>
+                      {incidence.incidenceType}
+                    </td>
+
+                    <td className='history-td-severity'>
+                      <div className='history-severity-badge'>
+                        {getHistorySeverityIcon(incidence.severity)}
+                        <span
+                          className={`history-severity-text history-${incidence.severity.toLowerCase()}`}
+                        >
+                          {incidence.severity}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className='history-td-status'>
+                      <div className='history-status-badge'>
+                        {getHistoryStatusIcon(incidence.status)}
+                        <span
+                          className={`history-status-text history-status-${incidence.status
+                            .toLowerCase()
+                            .replace(' ', '-')}`}
+                        >
+                          {incidence.status}
+                        </span>
+                      </div>
+                    </td>
+
+                    <td className='history-td-bikerack'>
                       {incidence.bikerack?.name || 'N/A'}
                     </td>
-                    <td className='actions-cell'>
-                      <button
-                        onClick={() => openIncidenceDetails(incidence)}
-                        className='btn-view'
-                        title='Ver detalles'
-                        disabled={loadingDetail} 
-                      >
-                        {loadingDetail ? 'Cargando...' : 'Ver'}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteIncidence(incidence.id)}
-                        className='btn-delete'
-                        title='Eliminar incidencia'
-                      >
-                        🗑️
-                      </button>
+
+                    <td className='history-td-actions'>
+                      <div className='history-actions-container'>
+                        <button
+                          onClick={() => openHistoryIncidenceDetails(incidence)}
+                          className='history-button history-button-view'
+                          title='Ver detalles'
+                          disabled={loadingHistoryDetail}
+                        >
+                          <Eye className='history-action-icon' />
+                          {loadingHistoryDetail ? 'Cargando...' : 'Ver'}
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            handleDeleteHistoryIncidence(incidence.id)
+                          }
+                          className='history-button history-button-delete'
+                          title='Eliminar incidencia'
+                        >
+                          <Trash2 className='history-action-icon' />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -395,13 +537,13 @@ const handleDeleteIncidence = async (incidenceId) => {
         </div>
       </div>
 
-      {/* modal de detalles */}
-      {showModal && selectedIncidence && (
+      {/* Modal de Detalles */}
+      {showHistoryModal && selectedHistoryIncidence && (
         <IncidentDetailsModal
-          incidence={selectedIncidence}
+          incidence={selectedHistoryIncidence}
           onClose={() => {
-            setShowModal(false);
-            setSelectedIncidence(null);
+            setShowHistoryModal(false);
+            setSelectedHistoryIncidence(null);
           }}
         />
       )}

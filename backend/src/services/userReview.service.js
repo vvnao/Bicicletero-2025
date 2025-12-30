@@ -8,7 +8,7 @@ import historyService from "./history.service.js";
 const userRepository = AppDataSource.getRepository(UserEntity);
 const reviewRepository = AppDataSource.getRepository(UserReviewEntity);
 
-// GUARDIA — ver usuarios pendientes
+// GUARDIA / ver usuarios pendientes
 export async function getPendingUsers() {
     return await userRepository.find({
         where: { requestStatus: "pendiente" },
@@ -16,9 +16,9 @@ export async function getPendingUsers() {
     });
 }
 
-// GUARDIA — aprobar usuario
+// GUARDIA / aprobar usuario
 export async function approveUser(userId, guardId) {
-    // --- INICIO CÓDIGO ORIGINAL ---
+
     const user = await userRepository.findOne({ where: { id: userId } });
     if (!user) throw new Error("Usuario no encontrado");
 
@@ -47,18 +47,18 @@ export async function approveUser(userId, guardId) {
             details: {
                 action: "aprobado",
                 previousStatus: "pendiente",
-                reviewId: review.id // Guardamos referencia a la revisión original
+                reviewId: review.id 
             }
         });
     } catch (historyError) {
-        // Logeamos el error del historial pero NO detenemos la función principal
+        
         console.error("Error al registrar en historial:", historyError);
     }
 
     return user;
 }
 
-// GUARDIA — rechazar usuario
+// GUARDIA / rechazar usuario
 export async function rejectUser(userId, guardId, reason) {
    
     const user = await userRepository.findOne({ where: { id: userId } });
@@ -88,7 +88,7 @@ export async function rejectUser(userId, guardId, reason) {
             guardId: Number(guardId),
             details: {
                 action: "rechazado",
-                reason: reason, // Aquí es donde el Admin verá el "por qué"
+                reason: reason, 
                 reviewId: review.id
             }
         });
@@ -99,7 +99,7 @@ export async function rejectUser(userId, guardId, reason) {
     return user;
 }
 
-// ADMIN — historial completo
+// ADMIN / historial completo
 export async function getReviewHistory() {
     return await reviewRepository.find({
         relations: ["user", "guard"],
@@ -107,7 +107,7 @@ export async function getReviewHistory() {
     });
 }
 
-// GUARD/ADMIN — eliminar revisión del historial
+// GUARD/ADMIN / eliminar revisión del historial
 export async function deleteReview(reviewId) {
     const review = await reviewRepository.findOne({ where: { id: reviewId } });
     if (!review) throw new Error("Revisión no encontrada");
@@ -115,7 +115,7 @@ export async function deleteReview(reviewId) {
     return { message: "Revisión eliminada correctamente" };
 }
 
-// GUARD/ADMIN — cambiar estado del usuario + corregir acción en el historial
+// GUARD/ADMIN / cambiar estado del usuario + corregir acción en el historial
 export async function updateUserStatusFromReview(reviewId, newStatus, comment, guardId) {
     const review = await reviewRepository.findOne({
         where: { id: reviewId },
@@ -153,7 +153,7 @@ export async function updateUserStatusFromReview(reviewId, newStatus, comment, g
     return { user, review };
 }
 
-// ADMIN/GUARD — filtrar historial por estado
+// ADMIN/GUARD / filtrar historial por estado
 export async function getFilteredReviewHistory(action) {
     return await reviewRepository.find({
         where: { action },

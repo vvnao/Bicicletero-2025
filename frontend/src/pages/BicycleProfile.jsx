@@ -1,34 +1,29 @@
 "use strict";
 import { useState } from "react";
-import { Link } from "react-router-dom"; 
+import { Link } from "react-router-dom";
 import { FiTag, FiSettings, FiDroplet, FiHash, FiUser, FiEdit3, FiChevronRight, FiPlusCircle } from "react-icons/fi";
 import { useGetPrivateBicycles } from "@hooks/bicycles/useGetPrivateBicycles";
 import { useUpdateBicycles } from "@hooks/bicycles/useUpdateBicycles";
+import { validateBicycle } from "../utils/bicycleValidation.js";
 import Swal from "sweetalert2";
+import { ensureImageUrl } from "../helpers/imageUrl";
 
 const BicycleProfile = () => {
     const { isLoading, bicycles, refetch } = useGetPrivateBicycles();
     const { execute: updateBicycle, loading: isUpdating } = useUpdateBicycles();
-    
+
     const [currentIndex, setCurrentIndex] = useState(0);
     const [showZoomModal, setShowZoomModal] = useState(false);
-    
-    const [localImages, setLocalImages] = useState({});
-    const [localColors, setLocalColors] = useState({}); 
 
-    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-    
+    const [localImages, setLocalImages] = useState({});
+    const [localColors, setLocalColors] = useState({});
+
     const hasBicycles = bicycles && bicycles.length > 0;
     const currentBicycle = hasBicycles ? bicycles[currentIndex] : null;
 
-    const formatUrl = (path) => {
-        if (!path) return null;
-        return `${API_URL}/${path.replace(/\\/g, "/").replace("src/", "")}`;
-    };
-
-    const bicycleImageUrl = (currentBicycle && localImages[currentBicycle.id]) 
-        ? localImages[currentBicycle.id] 
-        : (currentBicycle?.photo ? formatUrl(currentBicycle.photo) : null);
+    const bicycleImageUrl = (currentBicycle && localImages[currentBicycle.id])
+        ? localImages[currentBicycle.id]
+        : ensureImageUrl(currentBicycle?.photo);
 
     const bicycleColor = (currentBicycle && localColors[currentBicycle.id])
         ? localColors[currentBicycle.id]
@@ -70,33 +65,59 @@ const BicycleProfile = () => {
                 };
             }
         });
-
         if (formValues) {
-            Swal.fire({ title: 'Actualizando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            const result = await updateBicycle(currentBicycle.id, formValues);
-
-            if (result.success) {
-                setLocalColors(prev => ({ ...prev, [currentBicycle.id]: formValues.color }));
-                if (formValues.photo) {
-                    const objectUrl = URL.createObjectURL(formValues.photo);
-                    setLocalImages(prev => ({ ...prev, [currentBicycle.id]: objectUrl }));
-                }
-                Swal.fire({ icon: 'success', title: '¡Actualizado!', timer: 1500, showConfirmButton: false });
-                if (refetch) await refetch();
-            } else {
-                Swal.fire('Error', result.error || 'No se pudo actualizar', 'error');
+            if (!formValues.color || formValues.color.trim().length < 3) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Color inválido',
+                    text: 'El color debe tener al menos 3 caracteres'
+                });
+                return;
             }
+
+            if (formValues.color.length > 40) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Color inválido',
+                    text: 'El color debe tener máximo 40 caracteres'
+                });
+                return;
+            }
+
+            if (!/^[A-Za-zÁÉÍÓÚáéíóú\s]+$/.test(formValues.color)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Color inválido',
+                    text: 'El color solo puede contener letras y espacios'
+                });
+                return;
+            }
+
+        Swal.fire({ title: 'Actualizando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const result = await updateBicycle(currentBicycle.id, formValues);
+
+        if (result.success) {
+            setLocalColors(prev => ({ ...prev, [currentBicycle.id]: formValues.color }));
+            if (formValues.photo) {
+                const objectUrl = URL.createObjectURL(formValues.photo);
+                setLocalImages(prev => ({ ...prev, [currentBicycle.id]: objectUrl }));
+            }
+            Swal.fire({ icon: 'success', title: '¡Actualizado!', timer: 1500, showConfirmButton: false });
+            if (refetch) await refetch();
+        } else {
+            Swal.fire('Error', result.error || 'No se pudo actualizar', 'error');
         }
+    }
     };
 
     return (
         <div className="min-h-screen p-4 md:p-10 text-white font-sans">
             {showZoomModal && bicycleImageUrl && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4" onClick={() => setShowZoomModal(false)}>
-                    <img 
-                        src={bicycleImageUrl} 
-                        className="max-w-full max-h-full rounded-xl object-contain animate-in zoom-in duration-300" 
-                        alt="Bicycle Zoom" 
+                    <img
+                        src={bicycleImageUrl}
+                        className="max-w-full max-h-full rounded-xl object-contain animate-in zoom-in duration-300"
+                        alt="Bicycle Zoom"
                     />
                 </div>
             )}
@@ -113,7 +134,7 @@ const BicycleProfile = () => {
                         </div>
                         <h2 className="text-3xl font-bold mb-2">No hay bicicletas aún</h2>
                         <p className="text-gray-400 mb-8">Parece que todavía no has registrado ninguna bicicleta en tu perfil.</p>
-                        <Link 
+                        <Link
                             to="/home/user/addBicycles"
                             className="inline-flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-lg shadow-blue-500/20"
                         >
@@ -125,7 +146,7 @@ const BicycleProfile = () => {
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-4 space-y-6">
                         <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/10 p-8 flex flex-col items-center">
-                            
+
                             <div className="w-48 h-48 rounded-full border-4 border-[#3b82f6]/30 overflow-hidden bg-[#1a1f37] mb-6 shadow-xl flex items-center justify-center">
                                 {bicycleImageUrl ? (
                                     <img src={bicycleImageUrl} className="w-full h-full object-cover" alt="Bicycle" />
@@ -140,14 +161,13 @@ const BicycleProfile = () => {
 
                             <h2 className="text-3xl font-bold text-center">{currentBicycle.brand}</h2>
                             <p className="text-[#3b82f6] text-sm font-bold uppercase tracking-widest mt-1 mb-8">{currentBicycle.model}</p>
-                            
+
                             <div className="w-full space-y-3">
-                                <button 
-                                    onClick={() => bicycleImageUrl && setShowZoomModal(true)} 
+                                <button
+                                    onClick={() => bicycleImageUrl && setShowZoomModal(true)}
                                     disabled={!bicycleImageUrl}
-                                    className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
-                                        bicycleImageUrl ? 'bg-[#3b82f6] hover:bg-[#2563eb]' : 'bg-gray-600 opacity-50 cursor-not-allowed'
-                                    }`}
+                                    className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${bicycleImageUrl ? 'bg-[#3b82f6] hover:bg-[#2563eb]' : 'bg-gray-600 opacity-50 cursor-not-allowed'
+                                        }`}
                                 >
                                     <FiUser /> Ver Foto
                                 </button>
@@ -160,11 +180,11 @@ const BicycleProfile = () => {
                         {bicycles.length > 1 && (
                             <div className="bg-[#272e4b]/40 rounded-2xl p-6 flex justify-between items-center border border-white/10 shadow-xl">
                                 <div>
-                                    <p className="text-xs uppercase text-white/60 font-semibold tracking-wider">Bicicleta actual</p>
-                                    <p className="font-bold text-lg mt-1">{currentIndex + 1} / {bicycles.length}</p>
+                                    <p className="text-[10px] uppercase text-white/50 font-bold tracking-tighter">Bicicleta actual</p>
+                                    <p className="font-bold text-lg">{currentIndex + 1} / {bicycles.length}</p>
                                 </div>
-                                <button 
-                                    onClick={() => setCurrentIndex((prev) => (prev + 1) % bicycles.length)} 
+                                <button
+                                    onClick={() => setCurrentIndex((prev) => (prev + 1) % bicycles.length)}
                                     className="p-3 bg-[#3b82f6]/20 text-[#3b82f6] rounded-xl hover:bg-[#3b82f6]/40 transition-all"
                                 >
                                     <FiChevronRight size={24} />
@@ -177,10 +197,10 @@ const BicycleProfile = () => {
                         <div className="bg-[#272e4b]/40 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/10 h-full p-10">
                             <h3 className="text-2xl font-bold mb-10 pb-4 border-b border-white/5">Perfil Bicicleta</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-12 gap-x-6">
-                                <InfoItem label=" Marca: " value={currentBicycle.brand} icon={<FiTag />} />
-                                <InfoItem label=" Modelo: " value={currentBicycle.model} icon={<FiSettings />} />
-                                <InfoItem label=" Color: " value={bicycleColor} icon={<FiDroplet />} />
-                                <InfoItem label=" N° Serie: " value={currentBicycle.serialNumber} icon={<FiHash />} />
+                                <InfoItem label="Marca" value={currentBicycle.brand} icon={<FiTag />} />
+                                <InfoItem label="Modelo" value={currentBicycle.model} icon={<FiSettings />} />
+                                <InfoItem label="Color" value={bicycleColor} icon={<FiDroplet />} />
+                                <InfoItem label="N° Serie" value={currentBicycle.serialNumber} icon={<FiHash />} />
                             </div>
                         </div>
                     </div>
@@ -194,7 +214,7 @@ const InfoItem = ({ label, value, icon }) => (
     <div className="flex items-center gap-5">
         <div className="p-4 bg-white/5 rounded-2xl text-[#3b82f6] border border-white/10">{icon}</div>
         <div>
-           <p className="text-xl font-semibold text-white/70 uppercase tracking-wider mb-1 p-2">{label}</p>
+            <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">{label}</p>
             <p className="text-white font-bold text-xl tracking-tight">{value || "---"}</p>
         </div>
     </div>

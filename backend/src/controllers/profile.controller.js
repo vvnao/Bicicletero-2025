@@ -1,7 +1,7 @@
 import { AppDataSource } from "../config/configDb.js";
 import UserEntity from "../entities/UserEntity.js";
 import { handleSuccess, handleErrorClient, handleErrorServer } from "../Handlers/responseHandlers.js";
-import { getPrivateProfileService, getProfilesService, softActiveProfileService, softDeleteProfileService, updatePrivateProfileService} from "../services/profile.service.js";
+import { getPrivateProfileService, getProfilesService, softActiveProfileService, softDeleteProfileService, updatePrivateProfileService } from "../services/profile.service.js";
 
 export async function getPrivateProfile(req, res) {
     try {
@@ -24,10 +24,10 @@ export async function getPrivateProfile(req, res) {
 export async function getProfiles(req, res) {
     try {
         const { role } = req.user;
-        const data= await getProfilesService(role);
+        const data = await getProfilesService(role);
 
         if (!data) return handleErrorClient(res, 403, "No tienes permiso para acceder a esta información");
-        
+
         data.forEach(user => {
             delete user.password;
         });
@@ -40,17 +40,21 @@ export async function getProfiles(req, res) {
 export async function updatePrivateProfile(req, res) {
     try {
         const userId = req.user.id;
-        
+
         const { email, contact } = req.body;
-        
+
         const data = { email, contact };
+
+        const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
 
         if (req.files) {
             if (req.files['tnePhoto']) {
-                data.tnePhoto = req.files['tnePhoto'][0].path;
+                const filename = req.files['tnePhoto'][0].filename;
+                data.tnePhoto = `${baseUrl}/uploads/tne/${filename}`;
             }
             if (req.files['personalPhoto']) {
-                data.personalPhoto = req.files['personalPhoto'][0].path;
+                const filename = req.files['personalPhoto'][0].filename;
+                data.personalPhoto = `${baseUrl}/uploads/personal/${filename}`;
             }
         }
 
@@ -71,21 +75,21 @@ export async function updatePrivateProfile(req, res) {
     }
 }
 //Solo el administrador podrá desactivar perfiles
-export async function softDeleteProfileUser(req, res){
-    try{
+export async function softDeleteProfileUser(req, res) {
+    try {
         const role = req.user.role;
         const { rut } = req.body;
 
-        if(role!=="admin"){
+        if (role !== "admin") {
             return handleErrorClient(res, 403, "No posee los permisos para realizar esta acción");
         }
 
         const user = await softDeleteProfileService(rut);
 
-        if(!user) {
+        if (!user) {
             return handleErrorClient(res, 404, "Usuario no encontrado");
         }
-        if (user==="false") {
+        if (user === "false") {
             return handleErrorClient(res, 400, "El perfil ya está desactivado");
         }
         if (user.role === req.user.role) {
@@ -93,55 +97,45 @@ export async function softDeleteProfileUser(req, res){
         }
 
         return handleSuccess(res, 200, "Perfil desactivado exitosamente");
-    }catch(error){
-        return handleErrorServer(res, 500 , "Error del servidor");
+    } catch (error) {
+        return handleErrorServer(res, 500, "Error del servidor");
     }
 }
-export async function softActivateProfile(req, res){
-    try{
+export async function softActivateProfile(req, res) {
+    try {
         const role = req.user.role;
         const { rut } = req.body;
 
-        if(role!=="admin"){
+        if (role !== "admin") {
             return handleErrorClient(res, 403, "No posee los permisos para realizar esta acción");
         }
 
         const user = await softActiveProfileService(rut);
 
-        if(!user) {
+        if (!user) {
             return handleErrorClient(res, 404, "Usuario no encontrado");
         }
-        if (user==="true") {
+        if (user === "true") {
             return handleErrorClient(res, 400, "El perfil ya está activado");
         }
 
         return handleSuccess(res, 200, "Perfil activado exitosamente");
-    }catch (error){
+    } catch (error) {
         return handleErrorServer(res, 500, "Error del servidor");
     }
 }
 
-// ================================================
-// FUNCIONES NUEVAS PARA ASIGNACIÓN DE GUARDIAS
-// ================================================
-
-/**
- * Obtener usuarios que pueden ser asignados como guardias
- * Solo para administradores
- */
 export async function getAssignableUsers(req, res) {
     try {
-        // Solo admin puede acceder
         if (req.user.role !== 'admin') {
             return handleErrorClient(res, 403, 'Solo administradores pueden ver usuarios asignables');
         }
 
         const userRepository = AppDataSource.getRepository('User');
         const guardRepository = AppDataSource.getRepository('Guard');
-        
+
         const { search, includeCurrentGuards = false } = req.query;
 
-        // Obtener usuarios activos (excluyendo admins)
         let query = userRepository.createQueryBuilder('user')
             .select([
                 'user.id',
@@ -158,7 +152,6 @@ export async function getAssignableUsers(req, res) {
             .andWhere('user.role != :adminRole', { adminRole: 'admin' })
             .orderBy('user.names', 'ASC');
 
-        // Búsqueda por texto
         if (search && search.trim() !== '') {
             query.andWhere(
                 '(user.names ILIKE :search OR user.lastName ILIKE :search OR user.rut ILIKE :search OR user.email ILIKE :search)',
@@ -168,7 +161,6 @@ export async function getAssignableUsers(req, res) {
 
         const users = await query.getMany();
 
-        // Para cada usuario, verificar si ya es guardia
         const usersWithStatus = await Promise.all(
             users.map(async (user) => {
                 const existingGuard = await guardRepository.findOne({
@@ -202,12 +194,10 @@ export async function getAssignableUsers(req, res) {
             })
         );
 
-        // Filtrar según parámetro
-        const filteredUsers = includeCurrentGuards === 'true' 
-            ? usersWithStatus 
+        const filteredUsers = includeCurrentGuards === 'true'
+            ? usersWithStatus
             : usersWithStatus.filter(user => user.canBeAssigned);
 
-        // Estadísticas
         const stats = {
             totalUsers: users.length,
             assignableUsers: usersWithStatus.filter(user => user.canBeAssigned).length,
@@ -234,33 +224,26 @@ export async function getAssignableUsers(req, res) {
     }
 }
 
-/**
- * Buscar usuario rápido por RUT, email o nombre
- * Para asignación rápida de guardias
- */
 export async function quickSearchUser(req, res) {
     try {
-        // Solo admin puede buscar
         if (req.user.role !== 'admin') {
             return handleErrorClient(res, 403, 'Solo administradores pueden buscar usuarios');
         }
 
         const { query } = req.query;
-        
+
         if (!query || query.trim().length < 2) {
             return handleErrorClient(res, 400, 'Ingrese al menos 2 caracteres para buscar');
         }
 
         const userRepository = AppDataSource.getRepository('User');
         const guardRepository = AppDataSource.getRepository('Guard');
-        
-        // Buscar por RUT exacto primero
+
         let user = await userRepository.findOne({
             where: { rut: query.trim() },
             select: ['id', 'names', 'lastName', 'email', 'rut', 'role', 'isActive', 'typePerson']
         });
 
-        // Si no encuentra por RUT, buscar por coincidencias
         if (!user) {
             user = await userRepository.findOne({
                 where: [
@@ -271,7 +254,6 @@ export async function quickSearchUser(req, res) {
             });
         }
 
-        // Si aún no encuentra, buscar por coincidencia parcial
         if (!user) {
             const users = await userRepository.createQueryBuilder('user')
                 .select(['user.id', 'user.names', 'user.lastName', 'user.email', 'user.rut', 'user.role', 'user.isActive'])
@@ -285,7 +267,6 @@ export async function quickSearchUser(req, res) {
                 return handleErrorClient(res, 404, 'No se encontraron usuarios con ese criterio');
             }
 
-            // Para múltiples resultados, devolver lista
             const usersWithStatus = await Promise.all(
                 users.map(async (u) => {
                     const existingGuard = await guardRepository.findOne({
@@ -312,7 +293,6 @@ export async function quickSearchUser(req, res) {
             });
         }
 
-        // Si encontró un usuario específico
         const existingGuard = await guardRepository.findOne({
             where: { userId: user.id }
         });
@@ -345,12 +325,8 @@ export async function quickSearchUser(req, res) {
     }
 }
 
-/**
- * Obtener información detallada de un usuario para asignación
- */
 export async function getUserDetailsForAssignment(req, res) {
     try {
-        // Solo admin puede ver detalles
         if (req.user.role !== 'admin') {
             return handleErrorClient(res, 403, 'Solo administradores pueden ver información detallada de usuarios');
         }
@@ -362,7 +338,6 @@ export async function getUserDetailsForAssignment(req, res) {
         const bicycleRepository = AppDataSource.getRepository('Bicycle');
         const historyRepository = AppDataSource.getRepository('History');
 
-        // Obtener usuario
         const user = await userRepository.findOne({
             where: { id: parseInt(userId) },
             select: ['id', 'names', 'lastName', 'email', 'rut', 'role', 'isActive', 'typePerson', 'contact', 'created_at']
@@ -372,19 +347,16 @@ export async function getUserDetailsForAssignment(req, res) {
             return handleErrorClient(res, 404, 'Usuario no encontrado');
         }
 
-        // Verificar si ya es guardia
         const existingGuard = await guardRepository.findOne({
             where: { userId: user.id },
             relations: ['assignments']
         });
 
-        // Obtener bicicletas del usuario
         const bicycles = await bicycleRepository.find({
             where: { user: { id: user.id } },
             select: ['id', 'brand', 'model', 'color', 'serialNumber', 'photo']
         });
 
-        // Historial reciente (últimos 5 registros)
         const recentHistory = await historyRepository.find({
             where: { user: { id: user.id } },
             order: { timestamp: 'DESC' },
@@ -392,9 +364,8 @@ export async function getUserDetailsForAssignment(req, res) {
             relations: ['bikerack', 'space']
         });
 
-        // Reservas activas
         const activeReservations = await AppDataSource.getRepository('Reservation').find({
-            where: { 
+            where: {
                 user: { id: user.id },
                 status: 'Activa'
             },

@@ -45,65 +45,81 @@ export const Alert = ({ type, title, message, onClose, duration = 5000 }) => {
     const style = alertStyles[type] || alertStyles.info;
     
     return (
-        <div style={{
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            minWidth: '300px',
-            maxWidth: '400px',
-            background: style.background,
-            borderLeft: `5px solid ${style.borderColor}`,
-            borderRadius: '10px',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '15px',
-            padding: '18px',
-            zIndex: 9999,
-            animation: 'slideInRight 0.3s ease-out',
-            color: style.color
-        }}>
-            <div style={{ fontSize: '24px', flexShrink: 0, marginTop: '2px' }}>
-                {iconMap[type]}
-            </div>
-            <div style={{ flex: 1 }}>
-                <div style={{ 
-                    fontWeight: '700', 
-                    fontSize: '16px', 
-                    marginBottom: '5px' 
-                }}>
-                    {title}
+        <>
+            <div style={{
+                position: 'fixed',
+                top: '90px',  // Debajo del navbar
+                right: '20px',
+                minWidth: '300px',
+                maxWidth: '400px',
+                background: style.background,
+                borderLeft: `5px solid ${style.borderColor}`,
+                borderRadius: '10px',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '15px',
+                padding: '18px',
+                zIndex: 10002,  // Por encima del navbar
+                animation: 'slideInRight 0.3s ease-out',
+                color: style.color
+            }}>
+                <div style={{ fontSize: '24px', flexShrink: 0, marginTop: '2px' }}>
+                    {iconMap[type]}
                 </div>
-                <div style={{ 
-                    fontSize: '14px', 
-                    lineHeight: '1.5' 
-                }}>
-                    {message}
+                <div style={{ flex: 1 }}>
+                    <div style={{ 
+                        fontWeight: '700', 
+                        fontSize: '16px', 
+                        marginBottom: '5px' 
+                    }}>
+                        {title}
+                    </div>
+                    <div style={{ 
+                        fontSize: '14px', 
+                        lineHeight: '1.5' 
+                    }}>
+                        {message}
+                    </div>
                 </div>
+                <button 
+                    onClick={onClose}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '20px',
+                        cursor: 'pointer',
+                        color: style.color,
+                        opacity: '0.7',
+                        padding: '0',
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '50%',
+                        transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.target.style.opacity = '1'}
+                    onMouseLeave={(e) => e.target.style.opacity = '0.7'}
+                >
+                    ×
+                </button>
             </div>
-            <button 
-                onClick={onClose}
-                style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '20px',
-                    cursor: 'pointer',
-                    color: style.color,
-                    opacity: '0.7',
-                    padding: '0',
-                    width: '24px',
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '50%',
-                    transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => e.target.style.opacity = '1'}
-                onMouseLeave={(e) => e.target.style.opacity = '0.7'}
-            >
-                ×
-            </button>
-        </div>
+            
+            {/* Animación CSS */}
+            <style>{`
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            `}</style>
+        </>
     );
 };

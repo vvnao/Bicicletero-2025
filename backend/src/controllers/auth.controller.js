@@ -21,21 +21,17 @@ export async function login(req, res) {
             return handleErrorClient(res, 400, "Email y contraseña requeridos");
         }
 
-        // 1. Hacer login (esto devuelve token y datos básicos)
         const data = await loginUser(email, password);
-        
 
-        // 2. Si el usuario es guardia, obtener su guardId
         if (data.user.role === 'guardia') {
             try {
-                // Buscar el perfil de guardia asociado a este userId
+                
                 const guard = await guardService.getGuardByUserId(data.user.id);
 
                 if (guard) {
-                    // Agregar guardId a la respuesta
+            
                     data.user.guardId = guard.id;
 
-                    // También podrías agregar más info del guardia si necesitas
                     data.user.guardInfo = {
                         phone: guard.phone,
                         isAvailable: guard.isAvailable,
@@ -44,7 +40,7 @@ export async function login(req, res) {
                 }
             } catch (guardError) {
                 console.warn(' No se pudo obtener info de guardia:', guardError.message);
-                // No fallar el login si hay error obteniendo info de guardia
+                
             }
         }
 
@@ -130,7 +126,6 @@ export async function register(req, res) {
             registrationEmailTemplate(newUser.names)
         );
 
-        // Respuesta sin password
         delete newUser.password;
         return handleSuccess(res, 201, "Usuario registrado exitosamente. Espera aprobación.", newUser);
 

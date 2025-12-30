@@ -15,7 +15,7 @@
     border-radius: 18px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     max-width: 900px;
-    width: 95%; 
+    width: 95%;
     overflow: hidden;
 }
 
@@ -26,29 +26,29 @@
     flex-direction: column;
     justify-content: center;
     color: white;
-    width: 100%; 
+    width: 100%;
 }
 
 .login-title {
     font-family: "Contrail One", sans-serif;
-    font-size: 4.5rem; 
+    font-size: 4.5rem;
     font-weight: bold;
     text-align: center;
     margin-bottom: 40px;
     letter-spacing: 1px;
     line-height: 1.2;
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .login-field {
-    margin-bottom: 35px; 
+    margin-bottom: 35px;
 }
 
 .login-label {
     font-family: 'Poppins', sans-serif;
-    font-size: 22px; 
+    font-size: 22px;
     font-weight: 600;
     color: white;
     display: block;
@@ -79,7 +79,7 @@
 
 .login-input {
     width: 100%;
-    padding: 16px 16px 16px 55px; 
+    padding: 16px 16px 16px 55px;
     background: #cadbfe;
     font-family: 'Nunito', sans-serif;
     font-size: 20px;
@@ -125,7 +125,7 @@
     font-family: 'Nunito', sans-serif;
     text-align: center;
     margin-top: 20px;
-    font-size: 16px; 
+    font-size: 16px;
 }
 
 .login-link a {
@@ -143,7 +143,7 @@
     padding: 10px 15px;
     border-radius: 5px;
     margin-bottom: 20px;
-    font-size: 16px; 
+    font-size: 16px;
     text-align: center;
     font-family: 'Nunito', sans-serif;
 }
@@ -159,7 +159,11 @@
 .login-mascot img {
     max-width: 100%;
     height: auto;
-    max-height: 350px; 
+    max-height: 350px;
+}
+
+.login-pass-wrapper {
+    position: relative;
 }
 
 .login-toggle-pass {
@@ -173,6 +177,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 3;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.login-toggle-pass:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.login-pass-wrapper .login-input {
+    padding-right: 55px !important;
 }
 
 @media (max-width: 768px) {
@@ -186,18 +203,27 @@
     }
 
     .login-mascot img {
-        max-height: 250px; 
+        max-height: 250px;
     }
 
     .login-title {
-        font-size: 3.2rem; 
+        font-size: 3.2rem;
     }
 
     .login-input {
-        font-size: 18px; 
+        font-size: 18px;
     }
 
     .login-button {
-        font-size: 24px; 
+        font-size: 24px;
+    }
+
+    .login-pass-wrapper .login-input {
+        padding-right: 50px !important;
+    }
+
+    .login-toggle-pass {
+        right: 10px;
+        padding: 6px;
     }
 }

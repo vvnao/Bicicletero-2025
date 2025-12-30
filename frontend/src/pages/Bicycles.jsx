@@ -35,7 +35,7 @@ const Bicycles = () => {
         const id = String(bike?._id || bike?.id);
         const reservedId = String(activeReservation?.bicycle?.id || "");
 
-        if (activeReservation?.status === "Pendiente" && reservedId === id) {
+        if ((activeReservation?.status === "Pendiente" || activeReservation?.status === "Activa") && reservedId === id) {
             Swal.fire("Acción bloqueada", "No puedes eliminar una bicicleta con reserva pendiente.", "error");
             return;
         }
@@ -73,7 +73,7 @@ const Bicycles = () => {
                     <input id="model" class="swal2-input" placeholder="Modelo">
                     <input id="color" class="swal2-input" placeholder="Color">
                     <input id="serial" class="swal2-input" placeholder="Número de serie">
-                    <label style="text-align: center; margin-top: 10px;">Foto de la bicicleta</label>
+                    <label style="display:block; text-align:center; margin-top:10px;">Foto de la bicicleta</label>
                     <input type="file" id="photo" class="swal2-file" accept="image/*">
                 </div>
             `,
@@ -148,7 +148,8 @@ const Bicycles = () => {
                                             const reservedId = String(activeReservation?.bicycle?.id || "");
                                             
                                             const isReserved = 
-                                                activeReservation?.status === "Pendiente" && 
+                                                (activeReservation?.status === "Pendiente" ||
+                                                activeReservation?.status === "Activa") &&
                                                 reservedId === bikeId;
 
                                             return (
@@ -175,7 +176,7 @@ const Bicycles = () => {
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan="5" className="text-center py-10 text-gray-500">No hay bicicletas.</td>
+                                            <td colSpan="5" className="text-center py-10 text-gray-500">No hay bicicletas</td>
                                         </tr>
                                     )}
                                 </tbody>

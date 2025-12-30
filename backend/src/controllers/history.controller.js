@@ -24,6 +24,8 @@ export class HistoryController {
         this.exportHistory = this.exportHistory.bind(this);
         this.cleanHistory = this.cleanHistory.bind(this);
         this.createHistoryRecord = this.createHistoryRecord.bind(this);
+         this.getAllBikerackHistory = this.getAllBikerackHistory.bind(this); 
+        this.getSpecificBikerackHistory = this.getSpecificBikerackHistory.bind(this); 
     }
 
     /**
@@ -208,14 +210,13 @@ async getGuardsHistory(req, res) {
             onlyGuards: true 
         };
 
-        const result = await historyService.getHistory(filters);
+        // CORREGIR: Usar this.historyService
+        const result = await this.historyService.getHistory(filters);
         
-        return res.status(200).json({
-            success: true,
-            ...result
-        });
+        return handleSuccess(res, 200, "Historial de guardias obtenido", result);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Error en getGuardsHistory:', error);
+        return handleErrorServer(res, 500, 'Error al obtener historial de guardias', error.message);
     }
 }
      /**
@@ -289,11 +290,13 @@ async getGuardsHistory(req, res) {
         }
     }
 
-    /**
+ /**
      * Historial de TODOS los bicicleteros (general)
      */
     async getAllBikerackHistory(req, res) {
         try {
+            console.log('🔍 [getAllBikerackHistory] Iniciando...');
+            
             if (!['admin', 'guardia'].includes(req.user.role)) {
                 return handleErrorClient(res, 403, 'No tiene permisos para ver el historial general de bicicleteros');
             }
@@ -304,14 +307,20 @@ async getGuardsHistory(req, res) {
                 search: req.query.search,
                 startDate: req.query.startDate,
                 endDate: req.query.endDate,
-                historyType: req.query.historyType // Permitir filtrar por tipo
+                historyType: req.query.historyType
             };
 
-            // Obtener historial específico de bicicleteros
-            const result = await this.historyService.getBikerackHistory(null, filters);
+            console.log('🔍 Filtros aplicados:', filters);
+            
+            // Usar this.historyService
+            const result = await this.historyService.getAllBikerackHistory(filters);
+            
+            console.log('✅ Historial obtenido:', result?.data?.length || 0, 'registros');
+            
             return handleSuccess(res, 200, 'Historial general de bicicleteros obtenido', result);
         } catch (error) {
-            console.error('Error en getAllBikerackHistory:', error);
+            console.error('❌ Error en getAllBikerackHistory:', error);
+            console.error('❌ Error stack:', error.stack);
             return handleErrorServer(res, 500, 'Error al obtener historial general de bicicleteros', error.message);
         }
     }
@@ -319,8 +328,9 @@ async getGuardsHistory(req, res) {
     /**
      * Historial de bicicletero específico
      */
-  async getSpecificBikerackHistory(req, res) {
+    async getSpecificBikerackHistory(req, res) {
         try {
+            console.log('🔍 [getSpecificBikerackHistory] Iniciando...');
             const { bikerackId } = req.params;
             
             // Validamos que sea uno de tus 4 bicicleteros (ID del 1 al 4)
@@ -334,15 +344,20 @@ async getGuardsHistory(req, res) {
                 limit: parseInt(req.query.limit) || 20
             };
 
-            // Llamamos al servicio (asegúrate que historyService esté importado arriba)
-            const result = await historyService.getBikerackHistory(idNum, filters);
+            console.log('🔍 Bicicletero ID:', idNum, 'Filtros:', filters);
+            
+            // Usar this.historyService
+            const result = await this.historyService.getBikerackHistory(idNum, filters);
+            
+            console.log('✅ Historial específico obtenido:', result?.data?.length || 0, 'registros');
             
             return handleSuccess(res, 200, 'Historial obtenido correctamente', result);
         } catch (error) {
+            console.error('❌ Error en getSpecificBikerackHistory:', error);
+            console.error('❌ Error stack:', error.stack);
             return handleErrorServer(res, 500, 'Error en el servidor', error.message);
         }
     }
-
 
 
    

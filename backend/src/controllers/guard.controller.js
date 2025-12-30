@@ -74,7 +74,7 @@ async createGuard(req, res) {
         });
     }
 }
-w
+
     /**
      * Obtener todos los guardias - ADMIN Y GUARDIA
      */

@@ -3,7 +3,6 @@ import { Router } from 'express';
 import authRoutes from './auth.routes.js';
 import bicycleRoutes from './bicycle.routes.js';
 import profileRoutes from './profile.routes.js';
-import reportsRoutes from '../routes/reports.routes.js';
 import reviewRoutes from './review.routes.js';
 import historyRoutes from './history.routes.js';
 import userRequestHistoryRoutes from './userRequestHistory.routes.js';
@@ -21,7 +20,6 @@ export function routerApi(app) {
   const router = Router();
   app.use('/api', router);
 
-  router.use('/reports', reportsRoutes);
   router.use('/auth', authRoutes);
   router.use('/dashboard', dashboardRoutes);
   router.use('/bicycles', bicycleRoutes);

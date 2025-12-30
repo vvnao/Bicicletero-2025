@@ -9,10 +9,10 @@ const BikerackRow = ({ rack, bicycles, activeReservation, onReserved }) => {
     const [hours, setHours] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const isThisMyReservation = activeReservation?.spaceId === rack.id;
-    const hasAnyActiveRes = Boolean(activeReservation);
+    const isThisMyReservation = Number(activeReservation?.bikerackId) === Number(rack.id);
+    const hasAnyActivesReservations = Boolean(activeReservation); 
     const isFull = rack.availableSpaces <= 0;
-
+    
     const handleReserve = async () => {
         if (!selectedBicycle) {
             return Swal.fire("Aviso", "Selecciona una bicicleta", "warning");
@@ -32,7 +32,7 @@ const BikerackRow = ({ rack, bicycles, activeReservation, onReserved }) => {
     };
 
     return (
-        <tr className={`border-b border-gray-100 ${isThisMyReservation ? "bg-blue-50" : ""}`}>
+        <tr className={`border-b border-gray-100 ${isThisMyReservation ? "bg-blue-100" : ""}`}>
             <td className="px-6 py-5">
                 <div className="font-bold text-gray-800">{rack.name}</div>
                 <div className="text-xs text-gray-400">Capacidad: {rack.capacity}</div>
@@ -45,23 +45,25 @@ const BikerackRow = ({ rack, bicycles, activeReservation, onReserved }) => {
             </td>
 
             <td className="px-6 py-5">
-                {!isThisMyReservation ? (
-                    <select
-                        disabled={isFull || hasAnyActiveRes}
-                        className="w-full border rounded-lg p-2 text-sm"
-                        value={selectedBicycle}
-                        onChange={(e) => setSelectedBicycle(e.target.value)}
+                {!isThisMyReservation ? ( <select disabled={isFull || hasAnyActivesReservations}
+                    className="w-full border rounded-lg p-2 text-sm"
+                    value={selectedBicycle}
+                    onChange={(e) => setSelectedBicycle(e.target.value)}
                     >
-                        <option value="">Elegir bicicleta...</option>
-                        {bicycles.map((b) => (
-                            <option key={b.id} value={b.id}>
-                                {b.brand} - {b.model}
-                            </option>
-                        ))}
+                    <option value="">Elegir bicicleta...</option>
+                    {bicycles.map((b) => (
+                        <option key={b.id} value={b.id}>
+                        {b.brand} - {b.model}
+                        </option>
+                    ))}
                     </select>
+                ) : activeReservation?.status === "Pendiente" ? (
+                    <span className="text-sm font-medium text-amber-600 italic">
+                    Bicicleta pendiente en reserva
+                    </span>
                 ) : (
                     <span className="text-sm font-medium text-blue-700 italic">
-                        Bicicleta en uso
+                    Bicicleta reservada
                     </span>
                 )}
             </td>
@@ -69,11 +71,8 @@ const BikerackRow = ({ rack, bicycles, activeReservation, onReserved }) => {
             <td className="px-6 py-5">
                 {!isThisMyReservation && (
                     <select
-                        disabled={isFull || hasAnyActiveRes}
-                        className="border rounded-lg p-2 text-sm"
-                        value={hours}
-                        onChange={(e) => setHours(e.target.value)}
-                    >
+                        disabled={isFull || hasAnyActivesReservations}
+                        className="border rounded-lg p-2 text-sm" value={hours} onChange={(e) => setHours(e.target.value)}>
                         {[...Array(24)].map((_, i) => (
                             <option key={i + 1} value={i + 1}>
                                 {i + 1} hrs
@@ -85,14 +84,8 @@ const BikerackRow = ({ rack, bicycles, activeReservation, onReserved }) => {
 
             <td className="px-6 py-5 text-center">
                 {!isThisMyReservation && (
-                    <button
-                        onClick={handleReserve}
-                        disabled={isFull || isSubmitting || hasAnyActiveRes}
-                        className={`px-4 py-2 rounded-lg font-bold text-sm text-white
-                        ${(isFull || hasAnyActiveRes)
-                            ? "bg-gray-300 cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-700"}`}
-                    >
+                    <button onClick={handleReserve} disabled={isFull || isSubmitting || hasAnyActivesReservations}
+                        className={`px-4 py-2 rounded-lg font-bold text-sm text-white${(isFull || hasAnyActivesReservations) ? "bg-gray-300 cursor-not-allowed": "bg-blue-600 hover:bg-blue-700"}`}>
                         Reservar
                     </button>
                 )}
@@ -149,7 +142,6 @@ export default function Reservation() {
 
     return (
         <div className="p-8 max-w-6xl mx-auto">
-            {/* HEADER */}
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl font-bold text-white">
                     Reservas de Bicicleteros
@@ -165,17 +157,26 @@ export default function Reservation() {
                 )}
             </div>
 
-            {/* MENSAJE ESTÁTICO */}
             {activeRes?.status === "Pendiente" && (
-    <div className="mb-6 bg-amber-100 border border-amber-300 text-amber-800 px-4 py-3 rounded-lg text-sm font-medium">
-        Tienes una reserva pendiente para tu bicicleta:{" "}
-        <strong>
-            {activeRes?.bicycle?.brand} {activeRes?.bicycle?.model}
-        </strong>
-    </div>
-)}
+                <div className="mb-6 bg-amber-100 border border-amber-300 text-amber-800 px-4 py-3 rounded-lg text-sm font-medium">
+                    Tienes una reserva pendiente para tu bicicleta:{" "}
+                    <strong>
+                        {activeRes?.bicycle?.brand} {activeRes?.bicycle?.model}
+                    </strong>
+                    <div className="mt-1 pt-3 text-sm font-normal">
+                        Recibirás un correo con la información
+                    </div>
+                </div>
+            )}
+            {activeRes?.status === "Activa" && (
+                <div className="mb-6 bg-amber-100 border border-amber-300 text-amber-800 px-4 py-3 rounded-lg text-sm font-medium">
+                    Tienes una reserva activa para tu bicicleta:{" "}
+                    <strong>
+                        {activeRes?.bicycle?.brand} {activeRes?.bicycle?.model}
+                    </strong>
+                </div>
+            )}
 
-            {/* TABLA */}
             <div className="bg-white shadow rounded-2xl overflow-hidden">
                 <table className="min-w-full">
                     <thead className="bg-gray-50 text-gray-400 text-xs font-bold uppercase">

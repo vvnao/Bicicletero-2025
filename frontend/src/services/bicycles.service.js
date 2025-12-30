@@ -50,16 +50,14 @@ export async function getBicyclesByUserId(id) {
         return error.response?.data || { message: 'Error al obtener bicicleta del usuario' };
     }
 }
-
 export async function deleteBicycles(id) {
     try {
         const token = cookies.get('jwt-auth');
         
-        const response = await axios.delete('/bicycles', {
+        const response = await axios.delete(`bicycles/soft/${id}`, {
             headers: { 
                 Authorization: `Bearer ${token}` 
-            },
-            data: { id } 
+            }
         });
 
         return { ok: true, data: response.data };
@@ -67,7 +65,8 @@ export async function deleteBicycles(id) {
     } catch (error) {
         return { 
             ok: false, 
-            error: error.response?.data?.message || 'Error al eliminar bicicleta' };
+            error: error.response?.data?.error || 'Error al eliminar bicicleta' 
+        };
     }
 }
 export async function updateBicycles(id, formValues) { 

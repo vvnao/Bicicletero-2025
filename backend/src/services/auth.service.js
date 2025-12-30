@@ -1,4 +1,3 @@
-// auth.service.js - VERSIÓN CORREGIDA
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { findUserByEmail } from "./user.service.js";

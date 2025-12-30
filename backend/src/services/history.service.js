@@ -28,7 +28,8 @@ async getHistory(filters = {}) {
         search,
         startDate,
         endDate,
-        onlyGuards = false 
+        onlyGuards = false,
+        onlyBikeracks = false // Añade este nuevo filtro
     } = filters;
 
     const queryBuilder = this.historyRepository
@@ -37,13 +38,15 @@ async getHistory(filters = {}) {
         .leftJoinAndSelect("history.guard", "guard")
         .leftJoinAndSelect("history.bicycle", "bicycle")
         .leftJoinAndSelect("history.reservation", "reservation")
-        .leftJoinAndSelect("history.bikerack", "bikerack");
+        .leftJoinAndSelect("history.bikerack", "bikerack")
+        .leftJoinAndSelect("history.space", "space");
 
-    // --- FILTRO DE SEPARACIÓN ---
-    if (onlyGuards) {
-      
-       queryBuilder.andWhere("guard.id IS NOT NULL");
+    // --- FILTRO PARA SOLO BICICLETEROS ---
+    if (onlyBikeracks) {
+        // Solo eventos relacionados con bicicleteros
+        queryBuilder.andWhere("bikerack.id IS NOT NULL");
     }
+    
 
     // 1. Filtro por Tipo de Evento
     const finalType = type || historyType;
@@ -254,6 +257,48 @@ async logReservationCreated(reservation) {
     }
 }
 
+async getAllBikerackHistory(filters = {}) {
+    try {
+        console.log('🔄 [SERVICIO] getAllBikerackHistory - Iniciando...');
+        
+        // Solo eventos relacionados con bicicleteros
+        const bikerackRelatedTypes = [
+            'user_checkin',
+            'user_checkout', 
+            'infraction',
+            'reservation_create',
+            'reservation_cancel',
+            'reservation_expired',
+            'space_occupied',
+            'space_freed'
+        ];
+        
+        const queryBuilder = this.historyRepository
+            .createQueryBuilder("history")
+            .leftJoinAndSelect("history.user", "user")
+            .leftJoinAndSelect("history.guard", "guard")
+            .leftJoinAndSelect("history.bicycle", "bicycle")
+            .leftJoinAndSelect("history.reservation", "reservation")
+            .leftJoinAndSelect("history.bikerack", "bikerack")
+            .leftJoinAndSelect("history.space", "space")
+            .where("history.bikerack IS NOT NULL") // ← AÑADIR ESTO para filtrar
+            .orderBy("history.created_at", "DESC");
+        
+        // Aplicar filtros de tipo
+        if (filters.historyType) {
+            queryBuilder.andWhere("history.type = :type", { type: filters.historyType });
+        } else {
+            // Si no se especifica tipo, usar los relacionados
+            queryBuilder.andWhere("history.type IN (:...types)", { types: bikerackRelatedTypes });
+        }
+        
+        // ... resto del método igual
+    } catch (error) {
+        console.error('❌ [SERVICIO] Error en getAllBikerackHistory:', error);
+        throw error;
+    }
+}
+
   /* ====== WRAPPERS SEMÁNTICOS ====== */
 
   async logUserCheckin(user, bicycle, bikerack) {
@@ -401,30 +446,7 @@ async getBicycleOccupancyHistory(page = 1, limit = 20) {
     });
   }
 
-  /**
-   * Método para registrar eventos (LogEvent)
-   * Este es el que usaremos en bikerack.controller.js
-   */
-  async logEvent(data) {
-    try {
-      const newRecord = this.historyRepository.create({
-        type: data.historyType,
-        description: data.description,
-        user: data.userId ? { id: data.userId } : null,
-        guard: data.guardId ? { id: data.guardId } : null,
-        bicycle: data.bicycleId ? { id: data.bicycleId } : null,
-        bikerack: data.bikerackId ? { id: data.bikerackId } : null,
-        space: data.spaceId ? { id: data.spaceId } : null,
-        details: data.details || {}
-      });
-
-      return await this.historyRepository.save(newRecord);
-    } catch (error) {
-      console.error("Error al guardar en historial:", error);
-      // No lanzamos error para no romper la ejecución principal del controlador
-      return null;
-    }
-  }
+ 
 //BICICLETAS SPACES HISTORY
 async getBikerackUsageHistory(page = 1, limit = 20) {
     const usageTypes = ['user_checkin', 'user_checkout', 'infraction'];

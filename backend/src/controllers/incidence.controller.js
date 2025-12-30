@@ -1,6 +1,6 @@
 'use strict';
 import { AppDataSource } from '../config/configDb.js';
-import BikerackEntity from '../entities/BikerackEntity.js';
+import Bikerack from '../entities/BikerackEntity.js';
 import SpaceEntity from '../entities/SpaceEntity.js';
 import UserEntity from '../entities/UserEntity.js';
 import EvidenceEntity from '../entities/EvidenceEntity.js';
@@ -18,9 +18,14 @@ import {
   handleErrorClient,
   handleErrorServer,
 } from '../Handlers/responseHandlers.js';
+import {
+  transformEvidenceUrls,
+  transformObjectUrls,
+  buildFileUrl,
+} from '../helpers/url.helper.js';
 import IncidenceEntity from '../entities/IncidenceEntity.js';
 
-const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
+const bikerackRepository = AppDataSource.getRepository(Bikerack);
 const spaceRepository = AppDataSource.getRepository(SpaceEntity);
 const userRepository = AppDataSource.getRepository(UserEntity);
 const incidenceRepository = AppDataSource.getRepository(IncidenceEntity);
@@ -41,8 +46,10 @@ export async function createIncidenceReportController(req, res) {
       for (let i = 0; i < evidenceFiles.length; i++) {
         const file = evidenceFiles[i];
 
+        const evidenceUrl = buildFileUrl(req, file.filename, 'evidence');
+
         const evidence = evidenceRepository.create({
-          url: `/uploads/evidence/${file.filename}`,
+          url: evidenceUrl,
           filename: file.filename,
           originalName: file.originalname,
           mimeType: file.mimetype,
@@ -174,11 +181,16 @@ export async function getMyIncidenceReportsController(req, res) {
 
     const incidences = await getIncidencesByGuard(guardId);
 
+    const transformedIncidences = incidences.map((incidence) => ({
+      ...incidence,
+      evidences: transformEvidenceUrls(incidence.evidences, req),
+    }));
+
     return handleSuccess(
       res,
       200,
       'Reportes de incidencias del guardia',
-      incidences
+      transformedIncidences
     );
   } catch (error) {
     console.error('Error en getMyIncidenceReportsController:', error);
@@ -314,7 +326,22 @@ export async function getIncidenceByIdController(req, res) {
       );
     }
 
-    return handleSuccess(res, 200, 'Incidencia obtenida', incidence);
+    if (incidence.evidences) {
+      incidence.evidences = transformEvidenceUrls(incidence.evidences, req);
+    }
+
+    const responseIncidence = {
+      ...incidence,
+      dateTimeReport: incidence.dateTimeReport
+        ? incidence.dateTimeReport.toISOString()
+        : null,
+      dateTimeIncident: incidence.dateTimeIncident
+        ? incidence.dateTimeIncident.toISOString()
+        : null,
+      evidences: transformedEvidences || [],
+    };
+
+    return handleSuccess(res, 200, 'Incidencia obtenida', responseIncidence);
   } catch (error) {
     console.error('Error en getIncidenceByIdController:', error);
     return handleErrorServer(

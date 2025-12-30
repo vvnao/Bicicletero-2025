@@ -1,0 +1,39 @@
+:root {
+  --mon-primary: #272e4b;
+  --mon-primary-light: #3a4265;
+  --mon-primary-dark: #1a2038;
+
+  --mon-secondary: #2c3e50;
+  --mon-secondary-light: #34495e;
+  --mon-accent: #4a90e2;
+  --mon-accent-light: #6ba8f0;
+
+  --mon-success: #38b2ac;
+  --mon-warning: #ed8936;
+  --mon-danger: #f56565;
+  --mon-info: #4299e1;
+
+  --mon-bg: #f5f7fa;
+  --mon-card-bg: #ffffff;
+  --mon-text: #2c3e50;
+  --mon-text-light: #7f8c8d;
+  --mon-text-lighter: #bdc3c7;
+  --mon-border: #e0e0e0;
+  --mon-shadow: rgba(0, 0, 0, 0.08);
+
+  --mon-font-heading: 'Inter', 'Public Sans', sans-serif;
+  --mon-font-body: 'Nunito', 'Noto Sans KR', sans-serif;
+  --mon-font-mono: 'Contrail One', monospace;
+
+  --mon-space-xs: 0.5rem;
+  --mon-space-sm: 1rem;
+  --mon-space-md: 1.5rem;
+  --mon-space-lg: 2rem;
+  --mon-space-xl: 3rem;
+
+  --mon-radius-sm: 4px;
+  --mon-radius-md: 8px;
+  --mon-radius-lg: 12px;
+
+  --mon-transition: all 0.2s ease;
+}

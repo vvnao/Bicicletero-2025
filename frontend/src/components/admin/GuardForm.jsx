@@ -7,13 +7,13 @@ const GuardForm = ({ onSubmit, onCancel, initialData = {} }) => {
         lastName: '',
         email: '',
         rut: '',
-        typePerson: 'funcionario',
+       typePerson: 'funcionario',
         phone: '',
         address: '',
         emergencyContact: '',
         emergencyPhone: '',
         password: '',
-        ...initialData
+        ...initialDataz
     });
 
     const [errors, setErrors] = useState({});
@@ -123,7 +123,7 @@ const GuardForm = ({ onSubmit, onCancel, initialData = {} }) => {
                     <span className={hintStyle}>Opcional - se generará automáticamente</span>
                 </div>
 
-                <div className={inputContainerStyle}>
+               <div className={inputContainerStyle}>
                     <label className={labelStyle}>Tipo de Persona</label>
                     <select
                         name="typePerson"
@@ -192,8 +192,7 @@ const GuardForm = ({ onSubmit, onCancel, initialData = {} }) => {
                         placeholder="Nombre del contacto"
                     />
                 </div>
-
-                <div className={inputContainerStyle}>
+  <div className={inputContainerStyle}>
                     <label className={labelStyle}>Tel. Emergencia</label>
                     <input
                         type="tel"
@@ -204,6 +203,7 @@ const GuardForm = ({ onSubmit, onCancel, initialData = {} }) => {
                         placeholder="+56987654321"
                     />
                 </div>
+            
             </div>
 
             {/* Botones */}

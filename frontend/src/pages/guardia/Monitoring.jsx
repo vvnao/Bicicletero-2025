@@ -1,116 +1,80 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getBikeracks } from '@services/bikerack.service';
+import { Bike, RefreshCw } from 'lucide-react';
 import '@styles/Monitoring.css';
 
 const Monitoring = () => {
   const [bikeracks, setBikeracks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchBikeracks = async () => {
-    setIsRefreshing(true);
+    setRefreshing(true);
     try {
       const data = await getBikeracks();
-      const sortedData = orderBikeracks(data);
-      setBikeracks(sortedData);
+      const sorted = [...data].sort((a, b) => a.name.localeCompare(b.name));
+      setBikeracks(sorted);
     } catch (error) {
-      console.error('Error cargando monitoreo', error);
+      console.error('Error cargando datos:', error);
     } finally {
       setLoading(false);
-      setIsRefreshing(false);
+      setRefreshing(false);
     }
   };
 
-  const orderBikeracks = (racks) => {
-    const order = ['NORTE', 'SUR', 'ESTE', 'OESTE'];
-    return [...racks].sort((a, b) => {
-      const indexA = order.findIndex((dir) =>
-        a.name.toUpperCase().includes(dir)
-      );
-      const indexB = order.findIndex((dir) =>
-        b.name.toUpperCase().includes(dir)
-      );
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-      return indexA - indexB;
-    });
+  const getOccupancyPercentage = (inUse, capacity) => {
+    return capacity > 0 ? Math.round((inUse / capacity) * 100) : 0;
   };
 
-  const getOccupancyColor = (inUse, capacity) => {
-    const percentage = (inUse / capacity) * 100;
+  const getOccupancyStatus = (percentage) => {
     if (percentage >= 90) return 'full';
     if (percentage >= 70) return 'high';
-    return '';
+    return 'normal';
   };
 
-  const formatUpdateTime = (timeString) => {
-    if (!timeString) {
+  const formatDate = (dateString) => {
+    if (!dateString || dateString === 'null' || dateString === 'undefined') {
       return 'Sin datos de actualización';
     }
 
     try {
-      const date = new Date(timeString);
+      const date = new Date(dateString);
 
       if (isNaN(date.getTime())) {
-        return `Última actualización: ${timeString}`;
+        return `Actualizado: ${dateString}`;
       }
 
-      return `Última actualización: ${date.toLocaleString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      })}`;
+      const now = new Date();
+      const diffMs = now - date;
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+
+      //* menos de 24 horas
+      if (diffHours < 24) {
+        return `hace ${diffHours} h`;
+      }
+
+      //*24 horas o más
+      const diffDays = Math.floor(diffHours / 24);
+      return diffDays === 1 ? 'hace 1 día' : `hace ${diffDays} días`;
     } catch (error) {
-      return `Actualizado: ${timeString}`;
+      return 'Sin datos';
     }
   };
 
   useEffect(() => {
     fetchBikeracks();
-    const interval = setInterval(fetchBikeracks, 60000);
+    const interval = setInterval(fetchBikeracks, 80000);
     return () => clearInterval(interval);
   }, []);
 
   if (loading) {
     return (
       <div className='monitoring-container'>
-        <div
-          className='skeleton'
-          style={{ height: '90px', marginBottom: '2rem' }}
-        ></div>
-        <div className='bikeracks-grid'>
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className='bikerack-card'
-            >
-              <div
-                className='skeleton'
-                style={{ height: '28px', width: '70%', marginBottom: '1rem' }}
-              ></div>
-              <div
-                className='skeleton'
-                style={{ height: '45px', width: '40%', marginBottom: '1rem' }}
-              ></div>
-              <div
-                className='skeleton'
-                style={{
-                  height: '20px',
-                  width: '100%',
-                  marginBottom: '0.5rem',
-                }}
-              ></div>
-              <div
-                className='skeleton'
-                style={{ height: '45px', width: '100%' }}
-              ></div>
-            </div>
-          ))}
+        <div className='monitoring-loading'>
+          <div className='loading-spinner'></div>
+          <p>Cargando bicicleteros...</p>
         </div>
       </div>
     );
@@ -118,59 +82,66 @@ const Monitoring = () => {
 
   return (
     <div className='monitoring-container'>
-      <header className='monitoring-header'>
-        <div>
-          <h1>🚴 Panel de Monitoreo</h1>
-          <p
-            style={{
-              opacity: 0.9,
-              fontSize: '0.9rem',
-              marginTop: '0.5rem',
-              color: 'var(--mon-text-secondary)',
-            }}
-          >
-            {bikeracks.length} bicicleteros activos • Actualización automática
-            cada 60 segundos
-          </p>
+      {/* header */}
+      <div className='monitoring-header'>
+        <div className='header-title-wrapper'>
+          <Bike
+            size={24}
+            className='bike-icon'
+          />
+          <h1>Panel de Monitoreo</h1>
         </div>
-        <button
-          className={`refresh-btn ${isRefreshing ? 'spinning' : ''}`}
-          onClick={fetchBikeracks}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? 'Actualizando...' : 'Actualizar ahora'}
-        </button>
-      </header>
 
-      <section className='bikeracks-grid'>
+        <button
+          className={`refresh-btn ${refreshing ? 'refreshing' : ''}`}
+          onClick={fetchBikeracks}
+          disabled={refreshing}
+        >
+          <RefreshCw
+            size={16}
+            className={`refresh-icon ${refreshing ? 'spin' : ''}`}
+          />
+          {refreshing ? 'Actualizando...' : 'Actualizar'}
+        </button>
+      </div>
+
+      {/* grid bicicleteros */}
+      <div className='bikeracks-grid'>
         {bikeracks.map((rack) => {
-          const occupancyClass = getOccupancyColor(
+          const percentage = getOccupancyPercentage(
             rack.totalInUse,
             rack.capacity
           );
+          const status = getOccupancyStatus(percentage);
 
           return (
             <div
               key={rack.id}
               className='bikerack-card'
             >
-              <div className='card-main-info'>
+              <div className='card-header'>
                 <h2>{rack.name}</h2>
+                <div className={`occupancy-badge ${status}`}>
+                  {rack.totalInUse}/{rack.capacity}
+                </div>
               </div>
 
-              <p className='update-time'>{formatUpdateTime(rack.lastUpdate)}</p>
+              <div className='card-info'>
+                <p className='update-time'>
+                  Última actualización: {formatDate(rack.lastUpdate)}
+                </p>
+              </div>
 
               <button
-                className='view-details-btn'
+                className='details-btn'
                 onClick={() => navigate(`/home/guardia/monitoring/${rack.id}`)}
-                title={`Ver detalles de ${rack.name}`}
               >
-                <span>Ver vista detallada</span>
+                Ver vista detallada →
               </button>
             </div>
           );
         })}
-      </section>
+      </div>
     </div>
   );
 };

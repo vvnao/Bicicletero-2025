@@ -1,61 +1,84 @@
-// controllers/bicycle.controller.js - CON HISTORIAL
 "use strict";
 
 import { AppDataSource } from "../config/configDb.js";
 import BicycleEntity from "../entities/BicycleEntity.js";
-import HistoryService from "../services/history.service.js"; // ← IMPORTAR
-import { 
-    handleSuccess, 
-    handleErrorClient, 
-    handleErrorServer 
+import HistoryService from "../services/history.service.js";
+import {
+    handleSuccess,
+    handleErrorClient,
+    handleErrorServer
 } from "../Handlers/responseHandlers.js";
-import { 
-    createBicycleService, 
-    getBicyclesServices, 
-    updateBicyclesServices, 
-    deleteBicyclesServices 
+import {
+    createBicycleService,
+    getBicyclesServices,
+    updateBicyclesServices,
+    deleteBicyclesServices,
+    deleteBicyclesServicesSoft,
 } from "../services/bicycle.service.js";
 import { bicycleValidation } from "../validations/bicycle.validation.js";
 
 export async function createBicycle(req, res) {
     try {
-        console.log('[createBicycle] Iniciando creación...');
-        
+        console.log('🚲 [createBicycle] Iniciando creación de bicicleta...');
+
         const { error } = bicycleValidation.validate(req.body);
         if (error) {
-            return handleErrorClient(res, 400, error.details[0].message);
+            const mensaje = error.details[0].message;
+            console.log('❌ Validación falló:', mensaje);
+            return handleErrorClient(res, 400, mensaje);
         }
-        
+
         const userId = req.user?.id;
-        if (!userId) return handleErrorClient(res, 401, "Usuario no autenticado");
-
-        const bicycleData = { ...req.body };
-
-        if (req.file) {
-            bicycleData.photo = req.file.path;
-        } else if (req.files && req.files['photo']) {
-            bicycleData.photo = req.files['photo'][0].path;
+        if (!userId) {
+            console.log('❌ Usuario no autenticado');
+            return handleErrorClient(res, 401, "Usuario no autenticado");
         }
 
-        console.log('🚲 Datos con foto:', bicycleData);
-        
-        const newBicycle = await createBicycleService(bicycleData, userId);
-        
+        console.log('📁 Archivos recibidos:', req.files);
+
+        const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+
+        if (req.files && (req.files.photo || req.files.bicyclePhoto)) {
+            const photoFile = req.files.photo?.[0] || req.files.bicyclePhoto?.[0];
+            if (photoFile) {
+                req.body.photo = `${baseUrl}/uploads/bicycle/${photoFile.filename}`;
+            }
+        }
+
+        console.log('🚲 Datos finales para crear:', req.body);
+
+        const newBicycle = await createBicycleService(req.body, userId);
+        console.log('✅ Bicicleta creada ID:', newBicycle.id);
+
         try {
+            console.log('📝 Registrando en historial...');
             await HistoryService.logEvent({
                 historyType: 'bicycle_registration',
-                description: `Nueva bicicleta: ${newBicycle.brand}`,
-                details: { bicycleId: newBicycle.id, photo: newBicycle.photo },
+                description: `Nueva bicicleta registrada: ${newBicycle.brand} ${newBicycle.model}`,
+                details: {
+                    bicycleId: newBicycle.id,
+                    brand: newBicycle.brand,
+                    model: newBicycle.model,
+                    color: newBicycle.color,
+                    serialNumber: newBicycle.serialNumber,
+                    userId: userId,
+                    userEmail: req.user.email,
+                    userNames: req.user.names,
+                    timestamp: new Date().toISOString()
+                },
                 bicycleId: newBicycle.id,
                 userId: userId,
-                ipAddress: req.ip
+                ipAddress: req.ip,
+                userAgent: req.headers['user-agent']
             });
+            console.log('✅ Historial registrado exitosamente');
         } catch (histError) {
-            console.error('Error historial:', histError);
+            console.error('⚠️ Error registrando historial (continuando...):', histError);
         }
-        
+
         handleSuccess(res, 201, "Bicicleta creada exitosamente", newBicycle);
     } catch (error) {
+        console.error('❌ Error en createBicycle:', error.message);
         handleErrorServer(res, 500, error.message);
     }
 }
@@ -66,17 +89,16 @@ export async function deleteBicycles(req, res) {
         const { id } = req.body;
 
         console.log('🚲 [deleteBicycle] Eliminando bicicleta ID:', id, 'del usuario ID:', userId);
-        
+
         if (!id) {
             console.log('❌ ID de bicicleta no proporcionado');
             return handleErrorClient(res, 400, "ID de bicicleta requerido");
         }
 
-        // Obtener info de la bicicleta antes de eliminar
         const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
         const bicycle = await bicycleRepository.findOne({
             where: { id: id, user: { id: userId } },
-            relations: ['user']
+            relations: ['user'],
         });
 
         if (!bicycle) {
@@ -88,15 +110,14 @@ export async function deleteBicycles(req, res) {
             id: bicycle.id,
             brand: bicycle.brand,
             model: bicycle.model,
-            owner: bicycle.user ? `${bicycle.user.names} ${bicycle.user.lastName}` : 'N/A'
+            owner: bicycle.user ? `${bicycle.user.names} ${bicycle.user.lastName} ` : 'N/A'
         });
 
-        // 🟢 1. REGISTRAR EN HISTORIAL ANTES DE ELIMINAR
         try {
             console.log('📝 Registrando eliminación en historial...');
             await HistoryService.logEvent({
                 historyType: 'bicycle_deleted',
-                description: `Bicicleta eliminada: ${bicycle.brand} ${bicycle.model}`,
+                description: `Bicicleta eliminada: ${bicycle.brand} ${bicycle.model} `,
                 details: {
                     bicycleId: bicycle.id,
                     brand: bicycle.brand,
@@ -119,11 +140,10 @@ export async function deleteBicycles(req, res) {
             console.error('⚠️ Error registrando historial de eliminación:', histError);
         }
 
-        // 2. Eliminar la bicicleta (servicio)
         await deleteBicyclesServices(userId, id);
-        
+
         console.log('✅ Bicicleta eliminada exitosamente');
-        
+
         return handleSuccess(res, 200, "Bicicleta eliminada exitosamente", {
             id: id,
             message: 'Bicicleta eliminada'
@@ -133,14 +153,41 @@ export async function deleteBicycles(req, res) {
         handleErrorServer(res, 500, "Error del servidor", error);
     }
 }
+export async function softDeleteBicyclesController(req, res) {
+    const userId = req.user.id; 
+    const { id } = req.params;   
+
+    const result = await softDeleteBicycles(Number(id), userId);
+
+    if (result.success) return res.json({ message: "Bicicleta eliminada (soft delete)" });
+    return res.status(400).json({ error: result.message });
+}
+
+export async function deleteBicyclesSoft(req, res) {
+    try {
+        const userId = req.user.id; 
+        const { bicycleId } = req.params; 
+
+        const result = await deleteBicyclesServicesSoft(userId, parseInt(bicycleId));
+
+        if (result) {
+            return res.json({ message: "Bicicleta desactivada correctamente" });
+        } else {
+            return res.status(404).json({ error: "Bicicleta no encontrada o no pertenece al usuario" });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Error al desactivar la bicicleta" });
+    }
+}
 export async function getBicycles(req, res) {
     try {
         const userId = req.user.id;
-        
+
         const bicycles = await getBicyclesServices(userId);
 
         if (!bicycles || bicycles.length === 0) {
-            return handleSuccess(res, 200, "El usuario no tiene bicicletas registradas", bicycles);
+            handleSuccess(res, 200, "El usuario no tiene bicicletas registradas", bicycles);
         }
         const SeeBicycles = bicycles.map(({ user, ...bike }) => bike);
         return handleSuccess(res, 200, "Bicicleta(s) obtenida(s) exitosamente", SeeBicycles);
@@ -153,44 +200,29 @@ export async function getAllBicycles(req, res) {
         const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
         const bicycles = await bicycleRepository.find();
         if (!bicycles) {
-            return handleSuccess(res, 200, "No hay bicicletas registradas", bicycles);
+            handleSuccess(res, 200, "No hay bicicletas registradas", bicycles);
         }
-        return handleSuccess(res, 200, "Bicicletas obtenidas exitosamente", bicycles);
+        handleSuccess(res, 200, "Bicicletas obtenidas exitosamente", bicycles);
     } catch (error) {
-        return handleErrorServer(res, 500, "Error del servidor", error);
+        handleErrorServer(res, 500, "Error del servidor", error);
     }
 }
 export async function updateBicycles(req, res) {
     try {
-        const userId = req.user.id; 
-        const { id } = req.params; 
-        const { color } = req.body;
-        
-        const data = {};
-        if (color) data.color = color;
+        const userId = req.user.id;
+        const data = req.body;
 
-        if (req.files && req.files['photo']) {
-            data.photo = req.files['photo'][0].path;
-        } else if (req.file) { 
-            data.photo = req.file.path;
-        }
+        const updatedBike = await updateBicyclesServices(userId, data);
 
-        const updatedBicycle = await updateBicyclesServices(id, userId, data);
+        if (!updatedBike)
+            return handleErrorClient(res, 404, "Bicicleta no encontrada");
 
-        if (!updatedBicycle) {
-            return handleErrorClient(
-                res, 
-                404, 
-                "Bicicleta no encontrada o no tienes permiso para editarla"
-            );
-        }
-
-        return handleSuccess(res, 200, "Bicicleta actualizada exitosamente", {
-            color: updatedBicycle.color,
-            photo: updatedBicycle.photo,
+        return handleSuccess(res, 200, "Perfil de bicicleta actualizado exitosamente", {
+            color: updatedBike.color,
+            photo: updatedBike.photo,
         });
     } catch (error) {
-        handleErrorServer(res, 500, "Error al actualizar la bicicleta", error);
+        handleErrorServer(res, 500, "Error del servidor", error);
     }
 }
 

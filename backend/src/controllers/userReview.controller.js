@@ -10,7 +10,7 @@ import {
 import { handleSuccess, handleErrorClient } from "../Handlers/responseHandlers.js";
 
 export const UserReview = {
-    // GET usuarios pendientes
+
     async pending(req, res) {
         try {
             const users = await getPendingUsers();
@@ -20,7 +20,6 @@ export const UserReview = {
         }
     },
 
-    // POST aprobar usuario
     async approve(req, res) {
         try {
             const userId = Number(req.params.id);
@@ -37,7 +36,6 @@ export const UserReview = {
         }
     },
 
-    // POST rechazar usuario
     async reject(req, res) {
         try {
             const userId = Number(req.params.id);
@@ -55,7 +53,6 @@ export const UserReview = {
         }
     },
 
-    // GET historial
     async history(req, res) {
         try {
             const history = await getReviewHistory();
@@ -65,7 +62,6 @@ export const UserReview = {
         }
     },
 
-    // DELETE historial
     async delete(req, res) {
         try {
             const reviewId = Number(req.params.id);
@@ -81,7 +77,6 @@ export const UserReview = {
         }
     },
 
-    // PUT actualizar estado desde historial
     async updateStatus(req, res) {
         try {
             const reviewId = Number(req.params.id);
@@ -109,7 +104,6 @@ export const UserReview = {
         }
     },
 
-    // GET historial filtrado
     async filterByStatus(req, res) {
         try {
             const { action } = req.query;

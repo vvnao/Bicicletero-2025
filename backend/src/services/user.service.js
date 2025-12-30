@@ -7,7 +7,6 @@ import bcrypt from "bcrypt";
 const userRepository = AppDataSource.getRepository(UserEntity);
 const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
 
-// CREAR USUARIO
 export async function createUser(data) {
 
     const existingUser = await userRepository.findOne({
@@ -22,7 +21,6 @@ export async function createUser(data) {
         throw new Error("Este usuario ya está registrado.");
     }
 
-    // Actualizar usuario rechazado
     if (existingUser && existingUser.requestStatus === "rechazado") {
 
         Object.assign(existingUser, {
@@ -61,33 +59,32 @@ export async function createUser(data) {
         return reloaded;
     }
 
-   const hashedPassword = await bcrypt.hash(data.password, 10);
-const newUser = userRepository.create({
-    names: data.names,       // 🚩 Asegúrate de pasar cada campo
-    lastName: data.lastName,
-    rut: data.rut,
-    email: data.email,
-    password: hashedPassword, // Usamos la contraseña ya encriptada
-    contact: data.contact,
-    typePerson: data.typePerson,
-    tnePhoto: data.tnePhoto,
-    position: data.position,
-    positionDescription: data.positionDescription,
-    role: "user",
-    requestStatus: "pendiente",
-});
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const newUser = userRepository.create({
+        names: data.names,
+        lastName: data.lastName,
+        rut: data.rut,
+        email: data.email,
+        password: hashedPassword,
+        contact: data.contact,
+        typePerson: data.typePerson,
+        tnePhoto: data.tnePhoto,
+        position: data.position,
+        positionDescription: data.positionDescription,
+        role: "user",
+        requestStatus: "pendiente",
+    });
 
-const savedUser = await userRepository.save(newUser);
+    const savedUser = await userRepository.save(newUser);
 
 
-await historyService.logEvent({
-    type: "user_register",
-    description: `Nuevo usuario registrado: ${savedUser.names} ${savedUser.lastName}`,
-    userId: savedUser.id,
-    details: { email: savedUser.email, role: savedUser.role }
-});
-   
-    // Si vienen datos de bicicleta
+    await historyService.logEvent({
+        type: "user_register",
+        description: `Nuevo usuario registrado: ${savedUser.names} ${savedUser.lastName}`,
+        userId: savedUser.id,
+        details: { email: savedUser.email, role: savedUser.role }
+    });
+
     if (data.bicycle) {
         const { brand, model, color, serialNumber, photo } = data.bicycle;
 
@@ -102,7 +99,6 @@ await historyService.logEvent({
 
         const savedBicycle = await bicycleRepository.save(newBicycle);
 
-        // 🚩 REGISTRO EN EL HISTORIAL: Bicicleta registrada
         await historyService.logEvent({
             type: "bicycle_register",
             description: `Bicicleta ${brand} ${model} registrada para ${savedUser.email}`,
@@ -115,11 +111,10 @@ await historyService.logEvent({
     return savedUser;
 }
 
-// BUSCAR USUARIO POR EMAIL
 export async function findUserByEmail(email) {
     return await userRepository.findOne({
         where: { email },
-        relations: ["bicycles"], // incluir bicicletas si las tiene
+        relations: ["bicycles"],
     });
 }
 async function getAssignableUsers(filters = {}) {
@@ -136,8 +131,8 @@ async function getAssignableUsers(filters = {}) {
                 'user.typePerson'
             ])
             .where('user.isActive = :isActive', { isActive: true })
-            .andWhere('user.role != :adminRole', { adminRole: 'admin' }) // Excluir admins
-            .leftJoinAndSelect('user.guard', 'guard') // Para saber si ya es guardia
+            .andWhere('user.role != :adminRole', { adminRole: 'admin' })
+            .leftJoinAndSelect('user.guard', 'guard')
             .orderBy('user.names', 'ASC');
 
         if (filters.search) {
@@ -157,7 +152,6 @@ async function getAssignableUsers(filters = {}) {
 
         const users = await query.getMany();
 
-        // Formatear respuesta
         return users.map(user => ({
             id: user.id,
             names: user.names,
@@ -167,7 +161,7 @@ async function getAssignableUsers(filters = {}) {
             rut: user.rut,
             role: user.role,
             typePerson: user.typePerson,
-            isAlreadyGuard: !!user.guard, // Importante: saber si ya es guardia
+            isAlreadyGuard: !!user.guard,
             guardInfo: user.guard ? {
                 id: user.guard.id,
                 isAvailable: user.guard.isAvailable,

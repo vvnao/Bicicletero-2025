@@ -4,7 +4,6 @@ import UserReviewHistory from "../UserReviewHistory";
 import { getToken } from '../../services/auth.service'; 
 import HistoryService from '../../services/history.service';
 import { 
-  Bike,
   Users,
   Shield,
   ClipboardList,
@@ -12,13 +11,12 @@ import {
 } from "lucide-react";
 
 function HistorialAdmin() {
-  const [activeTab, setActiveTab] = useState("bicycles");
+  const [activeTab, setActiveTab] = useState("users"); // Cambiado a "users" como pestaña inicial
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
   
-  // Verificar si hay token
   const token = getToken();
 
   const styles = {
@@ -165,18 +163,8 @@ function HistorialAdmin() {
       let result;
       
       switch(activeTab) {
-        case "bicycles":
-          result = await HistoryService.getOccupancyHistory(page, 10);
-          break;
         case "users":
-          // Verificar si existe getManagementMovements, si no usar otro método
-          if (HistoryService.getManagementMovements) {
-            result = await HistoryService.getManagementMovements(page, 10);
-          } else {
-            // Intentar con otro método o ruta alternativa
-            console.warn("getManagementMovements no disponible, usando getGuardsHistory como fallback");
-            result = await HistoryService.getGuardsHistory(page, 10);
-          }
+          result = await HistoryService.getManagementMovements(page, 10);
           break;
         case "sistema":
           result = await HistoryService.getGuardsHistory(page, 10);
@@ -185,16 +173,12 @@ function HistorialAdmin() {
           result = null;
       }
 
-      console.log(`📊 Resultado para ${activeTab}:`, result);
-
       if (result) {
-        // Manejar diferentes formatos de respuesta
         if (result.success || result.status === "Success" || result.status === 200) {
           const rawData = result.data?.data || result.data || [];
           setData(rawData);
           setPagination(result.data?.pagination || { page, totalPages: 1 });
         } else {
-          // Si la respuesta no tiene success/status pero tiene data
           if (Array.isArray(result.data)) {
             setData(result.data);
           } else if (Array.isArray(result)) {
@@ -211,8 +195,8 @@ function HistorialAdmin() {
       
       let errorMessage = "No se pudo conectar con el servidor.";
       
-      if (err.message.includes("getManagementMovements no disponible")) {
-        errorMessage = "El servicio para historial de usuarios no está disponible.";
+      if (err.message.includes("no disponible")) {
+        errorMessage = `El servicio para historial de ${activeTab} no está disponible.`;
       } else if (err.response) {
         errorMessage = `Error ${err.response.status}: ${err.response.data?.message || "Error del servidor"}`;
       } else if (err.request) {
@@ -236,411 +220,295 @@ function HistorialAdmin() {
 
   const handleTabChange = (tab) => {
     if (tab === activeTab) return;
+    setActiveTab(tab);
     setData([]);
     setError(null);
     setLoading(true);
-    setActiveTab(tab);
+    setPagination({ page: 1, totalPages: 1 });
   };
 
-  // Función para debugging
-  useEffect(() => {
-    console.log("📋 Métodos disponibles en HistoryService:", Object.keys(HistoryService));
-  }, []);
-
-  // Renderizar tabla de bicicletas 
-const renderBicyclesTable = () => (
-  <table style={styles.table}>
-    <thead>
-      <tr>
-        <th style={styles.th}>Fecha</th>
-        <th style={styles.th}>Usuario</th>
-        <th style={styles.th}>Bicicleta</th>
-        <th style={styles.th}>Bicicletero</th>
-        <th style={styles.th}>Acción</th>
-        <th style={styles.th}>Detalles</th>
-      </tr>
-    </thead>
-    <tbody>
-      {data.map((item, i) => {
-        const userName = item.user ? `${item.user.names || ''} ${item.user.lastName || ''}`.trim() : "Sistema";
-        const userEmail = item.user?.email || null;
-        const userRut = item.user?.rut || null;
-        
-        const bikeBrand = item.bicycle?.brand || item.marca || "---";
-        const bikeColor = item.bicycle?.color || item.color || "---";
-        const bikeModel = item.bicycle?.model || item.modelo || "---";
-        
-        const bikerackName = item.bikerack?.name || item.bicicletero || "---";
-        const bikerackLocation = item.bikerack?.location || item.ubicacion || null;
-        
-        const action = item.type || item.accion || "---";
-        const details = item.description || item.detalles || "Sin detalles";
-        
-        return (
-          <tr key={item.id || i} style={{
-            backgroundColor: i % 2 === 0 ? "#ffffff" : "#fafbfc"
-          }}>
-            <td style={styles.td}>
-              {item.fecha || item.created_at
-                ? new Date(item.fecha || item.created_at).toLocaleString('es-CL', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) 
-                : '---'}
-            </td>
-            <td style={styles.td}>
-              <div style={{ fontWeight: "600", color: "#1e40af" }}>
-                {userName}
-              </div>
-              {userEmail && (
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                  ✉️ {userEmail}
-                </div>
-              )}
-              {userRut && (
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                  📋 {userRut}
-                </div>
-              )}
-            </td>
-            <td style={styles.td}>
-              <div style={{ fontWeight: "600" }}>
-                {bikeBrand} {bikeModel}
-              </div>
-              {bikeColor && (
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                   {bikeColor}
-                </div>
-              )}
-            </td>
-            <td style={styles.td}>
-              <div style={{ fontWeight: "600" }}>
-                {bikerackName}
-              </div>
-              {bikerackLocation && (
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                   {bikerackLocation}
-                </div>
-              )}
-            </td>
-            <td style={styles.td}>
-              <span style={styles.badge(action)}>
-                {action?.replace(/_/g, ' ')}
-              </span>
-            </td>
-            <td style={styles.td}>
-              <div style={{ fontSize: '13px', color: '#4b5563' }}>
-                {details}
-              </div>
-              {item.slot && (
-                <div style={{ 
-                  fontSize: '12px', 
-                  color: '#6b7280',
-                  marginTop: '4px',
-                  backgroundColor: "#f3f4f6",
-                  padding: "4px 8px",
-                  borderRadius: "4px",
-                  display: "inline-block"
-                }}>
-                  🅿️ Espacio: {item.slot}
-                </div>
-              )}
-            </td>
-          </tr>
-        );
-      })}
-    </tbody>
-  </table>
-);
-  // Renderizar tabla de usuarios - VERSIÓN CORREGIDA
-const renderUsersTable = () => (
-  <table style={styles.table}>
-    <thead>
-      <tr>
-        <th style={styles.th}>Fecha</th>
-        <th style={styles.th}>Usuario</th>
-        <th style={styles.th}>Tipo de Usuario</th>
-        <th style={styles.th}>Acción</th>
-        <th style={styles.th}>Detalles</th>
-      </tr>
-    </thead>
-    <tbody>
-      {data.map((item, i) => {
-        // Extraer información del usuario de diferentes formatos posibles
-        const userName = item.usuario || 
-                       (item.user ? `${item.user.names || ''} ${item.user.lastName || ''}`.trim() : "Sistema") ||
-                       item.nombre || 
-                       "---";
-        
-        const userType = item.userType || 
-                        item.user?.typePerson || 
-                        item.user?.type || 
-                        item.tipoUsuario || 
-                        item.tipo || 
-                        "---";
-        
-        const action = item.accion || 
-                      item.action || 
-                      item.type || 
-                      item.operation || 
-                      "---";
-        
-        const details = item.detalles || 
-                       item.description || 
-                       item.details || 
-                       item.comment ||
-                       "Sin detalles adicionales";
-        
-        return (
-          <tr key={item.id || i} style={{
-            backgroundColor: i % 2 === 0 ? "#ffffff" : "#fafbfc"
-          }}>
-            <td style={styles.td}>
-              {item.fecha || item.created_at || item.date || item.timestamp
-                ? new Date(item.fecha || item.created_at || item.date || item.timestamp).toLocaleString('es-CL', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) 
-                : '---'}
-            </td>
-            <td style={styles.td}>
-              <div style={{ fontWeight: "600", color: "#1e40af" }}>
-                {userName}
-              </div>
-              {item.user?.email && (
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                  ✉️ {item.user.email}
-                </div>
-              )}
-              {item.user?.rut && (
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                  📋 {item.user.rut}
-                </div>
-              )}
-            </td>
-            <td style={styles.td}>
-              <div style={{ 
-                fontWeight: "600",
-                color: userType === "funcionario" ? "#1e40af" : 
-                       userType === "estudiante" ? "#166534" : 
-                       userType === "externo" ? "#92400e" : "#374151"
-              }}>
-                {userType}
-              </div>
-            </td>
-            <td style={styles.td}>
-              <span style={styles.badge(action)}>
-                {action}
-              </span>
-            </td>
-            <td style={styles.td}>
-              <div style={{ fontSize: '13px', color: '#4b5563' }}>
-                {details}
-              </div>
-              {item.changes && (
-                <div style={{ 
-                  fontSize: '12px', 
-                  color: '#6b7280',
-                  marginTop: '4px',
-                  backgroundColor: "#f3f4f6",
-                  padding: "4px 8px",
-                  borderRadius: "4px"
-                }}>
-                  📝 {item.changes}
-                </div>
-              )}
-              {item.reason && (
-                <div style={{ 
-                  fontSize: '12px', 
-                  color: '#6b7280',
-                  marginTop: '4px',
-                  backgroundColor: "#fef3c7",
-                  padding: "4px 8px",
-                  borderRadius: "4px"
-                }}>
-                  📋 Motivo: {item.reason}
-                </div>
-              )}
-            </td>
-          </tr>
-        );
-      })}
-    </tbody>
-  </table>
-);
-
-  // Renderizar tabla de guardias - VERSIÓN CORREGIDA
-const renderGuardsTable = () => (
-  <table style={styles.table}>
-    <thead>
-      <tr>
-        <th style={styles.th}>Fecha</th>
-        <th style={styles.th}>Guardia</th>
-        <th style={styles.th}>Contacto</th>
-        <th style={styles.th}>Bicicletero</th>
-        <th style={styles.th}>Estado</th>
-        <th style={styles.th}>Acción</th>
-        <th style={styles.th}>Detalles</th>
-      </tr>
-    </thead>
-    <tbody>
-      {data.map((item, i) => {
-        // Extraer información del guardia de diferentes formatos posibles
-        const guardName = item.guard?.names || 
-                         item.guard?.name || 
-                         item.nombreGuardia || 
-                         item.guardName || 
-                         item.user?.names || 
+  const renderUsersTable = () => (
+    <table style={styles.table}>
+      <thead>
+        <tr>
+          <th style={styles.th}>Fecha</th>
+          <th style={styles.th}>Usuario</th>
+          <th style={styles.th}>Tipo de Usuario</th>
+          <th style={styles.th}>Acción</th>
+          <th style={styles.th}>Detalles</th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((item, i) => {
+          const userName = item.usuario || 
+                         (item.user ? `${item.user.names || ''} ${item.user.lastName || ''}`.trim() : "Sistema") ||
+                         item.nombre || 
                          "---";
-        
-        const guardLastName = item.guard?.lastName || 
-                            item.guard?.last_name || 
-                            item.apellidoGuardia || 
-                            item.user?.lastName || 
-                            "";
-        
-        const guardEmail = item.guard?.email || 
-                          item.email || 
-                          item.user?.email || 
-                          null;
-        
-        const guardPhone = item.guard?.phone || 
-                          item.phone || 
-                          item.telefono || 
-                          item.user?.phone || 
-                          null;
-        
-        const guardRut = item.guard?.rut || 
-                        item.rut || 
-                        item.user?.rut || 
-                        null;
-        
-        const bikerackName = item.bikerack?.name || 
-                            item.bicicletero || 
-                            item.bikerackName || 
-                            "---";
-        
-        const bikerackLocation = item.bikerack?.location || 
-                                item.ubicacion || 
-                                item.location || 
-                                null;
-        
-        const status = item.estado || 
-                      item.status || 
-                      item.guard?.status || 
-                      "---";
-        
-        const action = item.accion || 
-                      item.action || 
-                      item.type || 
-                      "---";
-        
-        const details = item.detalles || 
-                       item.description || 
-                       item.details || 
-                       "Sin detalles adicionales";
-        
-        return (
-          <tr key={item.id || i} style={{
-            backgroundColor: i % 2 === 0 ? "#ffffff" : "#fafbfc"
-          }}>
-            <td style={styles.td}>
-              {item.fecha || item.created_at || item.date
-                ? new Date(item.fecha || item.created_at || item.date).toLocaleString('es-CL', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) 
-                : '---'}
-            </td>
-            <td style={styles.td}>
-              <div style={{ fontWeight: "600", color: "#1e40af" }}>
-                {guardName} {guardLastName}
-              </div>
-              {guardRut && (
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                  📋 {guardRut}
+          
+          const userType = item.userType || 
+                          item.user?.typePerson || 
+                          item.user?.type || 
+                          item.tipoUsuario || 
+                          item.tipo || 
+                          "---";
+          
+          const action = item.accion || 
+                        item.action || 
+                        item.type || 
+                        item.operation || 
+                        "---";
+          
+          const details = item.detalles || 
+                         item.description || 
+                         item.details || 
+                         item.comment ||
+                         "Sin detalles adicionales";
+          
+          return (
+            <tr key={item.id || i} style={{
+              backgroundColor: i % 2 === 0 ? "#ffffff" : "#fafbfc"
+            }}>
+              <td style={styles.td}>
+                {item.fecha || item.created_at || item.date || item.timestamp
+                  ? new Date(item.fecha || item.created_at || item.date || item.timestamp).toLocaleString('es-CL', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) 
+                  : '---'}
+              </td>
+              <td style={styles.td}>
+                <div style={{ fontWeight: "600", color: "#1e40af" }}>
+                  {userName}
                 </div>
-              )}
-            </td>
-            <td style={styles.td}>
-              {guardEmail && (
-                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
-                  ✉️ {guardEmail}
-                </div>
-              )}
-              {guardPhone && (
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                  📞 {guardPhone}
-                </div>
-              )}
-            </td>
-            <td style={styles.td}>
-              <div style={{ fontWeight: "600" }}>
-                {bikerackName}
-              </div>
-              {bikerackLocation && (
-                <div style={{ fontSize: "12px", color: "#6b7280" }}>
-                  📍 {bikerackLocation}
-                </div>
-              )}
-            </td>
-            <td style={styles.td}>
-              <span style={styles.guardBadge(status)}>
-                {status}
-              </span>
-            </td>
-            <td style={styles.td}>
-              <span style={styles.badge(action)}>
-                {action}
-              </span>
-            </td>
-            <td style={styles.td}>
-              <div style={{ fontSize: '13px', color: '#4b5563' }}>
-                {details}
-              </div>
-              {item.horario && (
+                {item.user?.email && (
+                  <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                    ✉️ {item.user.email}
+                  </div>
+                )}
+                {item.user?.rut && (
+                  <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                    📋 {item.user.rut}
+                  </div>
+                )}
+              </td>
+              <td style={styles.td}>
                 <div style={{ 
-                  fontSize: '12px', 
-                  color: '#6b7280',
-                  marginTop: '4px',
-                  backgroundColor: "#f3f4f6",
-                  padding: "4px 8px",
-                  borderRadius: "4px",
-                  display: "inline-block",
-                  marginRight: "8px"
+                  fontWeight: "600",
+                  color: userType === "funcionario" ? "#1e40af" : 
+                         userType === "estudiante" ? "#166534" : 
+                         userType === "externo" ? "#92400e" : "#374151"
                 }}>
-                  🕒 {item.horario}
+                  {userType}
                 </div>
-              )}
-              {item.turno && (
-                <div style={{ 
-                  fontSize: '12px', 
-                  color: '#6b7280',
-                  marginTop: '4px',
-                  backgroundColor: "#e0e7ff",
-                  padding: "4px 8px",
-                  borderRadius: "4px",
-                  display: "inline-block"
-                }}>
-                  🔄 Turno: {item.turno}
+              </td>
+              <td style={styles.td}>
+                <span style={styles.badge(action)}>
+                  {action}
+                </span>
+              </td>
+              <td style={styles.td}>
+                <div style={{ fontSize: '13px', color: '#4b5563' }}>
+                  {details}
                 </div>
-              )}
-            </td>
-          </tr>
-        );
-      })}
-    </tbody>
-  </table>
-);
+                {item.changes && (
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#6b7280',
+                    marginTop: '4px',
+                    backgroundColor: "#f3f4f6",
+                    padding: "4px 8px",
+                    borderRadius: "4px"
+                  }}>
+                    📝 {item.changes}
+                  </div>
+                )}
+                {item.reason && (
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#6b7280',
+                    marginTop: '4px',
+                    backgroundColor: "#fef3c7",
+                    padding: "4px 8px",
+                    borderRadius: "4px"
+                  }}>
+                    📋 Motivo: {item.reason}
+                  </div>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+
+  const renderGuardsTable = () => (
+    <table style={styles.table}>
+      <thead>
+        <tr>
+          <th style={styles.th}>Fecha</th>
+          <th style={styles.th}>Guardia</th>
+          <th style={styles.th}>Contacto</th>
+          <th style={styles.th}>Bicicletero</th>
+          <th style={styles.th}>Estado</th>
+          <th style={styles.th}>Acción</th>
+          <th style={styles.th}>Detalles</th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((item, i) => {
+          const guardName = item.guard?.names || 
+                           item.guard?.name || 
+                           item.nombreGuardia || 
+                           item.guardName || 
+                           item.user?.names || 
+                           "---";
+          
+          const guardLastName = item.guard?.lastName || 
+                              item.guard?.last_name || 
+                              item.apellidoGuardia || 
+                              item.user?.lastName || 
+                              "";
+          
+          const guardEmail = item.guard?.email || 
+                            item.email || 
+                            item.user?.email || 
+                            null;
+          
+          const guardPhone = item.guard?.phone || 
+                            item.phone || 
+                            item.telefono || 
+                            item.user?.phone || 
+                            null;
+          
+          const guardRut = item.guard?.rut || 
+                          item.rut || 
+                          item.user?.rut || 
+                          null;
+          
+          const bikerackName = item.bikerack?.name || 
+                              item.bicicletero || 
+                              item.bikerackName || 
+                              "---";
+          
+          const bikerackLocation = item.bikerack?.location || 
+                                  item.ubicacion || 
+                                  item.location || 
+                                  null;
+          
+          const status = item.estado || 
+                        item.status || 
+                        item.guard?.status || 
+                        "---";
+          
+          const action = item.accion || 
+                        item.action || 
+                        item.type || 
+                        "---";
+          
+          const details = item.detalles || 
+                         item.description || 
+                         item.details || 
+                         "Sin detalles adicionales";
+          
+          return (
+            <tr key={item.id || i} style={{
+              backgroundColor: i % 2 === 0 ? "#ffffff" : "#fafbfc"
+            }}>
+              <td style={styles.td}>
+                {item.fecha || item.created_at || item.date
+                  ? new Date(item.fecha || item.created_at || item.date).toLocaleString('es-CL', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) 
+                  : '---'}
+              </td>
+              <td style={styles.td}>
+                <div style={{ fontWeight: "600", color: "#1e40af" }}>
+                  {guardName} {guardLastName}
+                </div>
+                {guardRut && (
+                  <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                    📋 {guardRut}
+                  </div>
+                )}
+              </td>
+              <td style={styles.td}>
+                {guardEmail && (
+                  <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>
+                    ✉️ {guardEmail}
+                  </div>
+                )}
+                {guardPhone && (
+                  <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                    📞 {guardPhone}
+                  </div>
+                )}
+              </td>
+              <td style={styles.td}>
+                <div style={{ fontWeight: "600" }}>
+                  {bikerackName}
+                </div>
+                {bikerackLocation && (
+                  <div style={{ fontSize: "12px", color: "#6b7280" }}>
+                    📍 {bikerackLocation}
+                  </div>
+                )}
+              </td>
+              <td style={styles.td}>
+                <span style={styles.guardBadge(status)}>
+                  {status}
+                </span>
+              </td>
+              <td style={styles.td}>
+                <span style={styles.badge(action)}>
+                  {action}
+                </span>
+              </td>
+              <td style={styles.td}>
+                <div style={{ fontSize: '13px', color: '#4b5563' }}>
+                  {details}
+                </div>
+                {item.horario && (
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#6b7280',
+                    marginTop: '4px',
+                    backgroundColor: "#f3f4f6",
+                    padding: "4px 8px",
+                    borderRadius: "4px",
+                    display: "inline-block",
+                    marginRight: "8px"
+                  }}>
+                    🕒 {item.horario}
+                  </div>
+                )}
+                {item.turno && (
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#6b7280',
+                    marginTop: '4px',
+                    backgroundColor: "#e0e7ff",
+                    padding: "4px 8px",
+                    borderRadius: "4px",
+                    display: "inline-block"
+                  }}>
+                    🔄 Turno: {item.turno}
+                  </div>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
 
   const renderPagination = () => {
     if (pagination.totalPages <= 1) return null;
@@ -696,12 +564,10 @@ const renderGuardsTable = () => (
   };
 
   const renderContent = () => {
-    // Si es la pestaña de solicitudes, usar el componente separado
     if (activeTab === "requests") {
       return <UserReviewHistory />;
     }
 
-    // Para las otras pestañas
     return (
       <>
         {loading ? (
@@ -717,8 +583,8 @@ const renderGuardsTable = () => (
               marginBottom: "20px"
             }} />
             <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-            <p style={{ color: "#4b5563", fontWeight: "600", fontFamily: "Nunito, sans-serif" }}>
-              Cargando historial de {activeTab === "bicycles" ? "bicicletas" : activeTab === "users" ? "usuarios" : "guardias"}...
+            <p style={{ color: "#6b7280", fontFamily: "Nunito, sans-serif" }}>
+              Cargando historial...
             </p>
           </div>
         ) : error ? (
@@ -730,40 +596,22 @@ const renderGuardsTable = () => (
             <p style={{ color: "#6b7280", marginBottom: "20px", fontFamily: "Nunito, sans-serif" }}>
               {error}
             </p>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-              <button
-                onClick={() => fetchData(1)}
-                style={{ 
-                  cursor: "pointer",
-                  padding: "10px 24px",
-                  backgroundColor: "#272e4b",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontFamily: "Nunito, sans-serif",
-                  fontWeight: "600",
-                  fontSize: "14px"
-                }}
-              >
-                Reintentar
-              </button>
-              <button
-                onClick={() => console.log("Debug info:", { activeTab, data, error })}
-                style={{ 
-                  cursor: "pointer",
-                  padding: "10px 24px",
-                  backgroundColor: "#6b7280",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontFamily: "Nunito, sans-serif",
-                  fontWeight: "600",
-                  fontSize: "14px"
-                }}
-              >
-                Debug Info
-              </button>
-            </div>
+            <button
+              onClick={() => fetchData(1)}
+              style={{ 
+                cursor: "pointer",
+                padding: "10px 24px",
+                backgroundColor: "#272e4b",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontFamily: "Nunito, sans-serif",
+                fontWeight: "600",
+                fontSize: "14px"
+              }}
+            >
+              Reintentar
+            </button>
           </div>
         ) : data.length > 0 ? (
           <>
@@ -785,7 +633,6 @@ const renderGuardsTable = () => (
                   fontWeight: "700",
                   fontSize: "18px"
                 }}>
-                  {activeTab === "bicycles" && "📊 Historial de Bicicletas"}
                   {activeTab === "users" && "👥 Historial de Usuarios"}
                   {activeTab === "sistema" && "🛡️ Historial de Guardias"}
                 </h3>
@@ -795,7 +642,6 @@ const renderGuardsTable = () => (
                   fontFamily: "Nunito, sans-serif",
                   fontSize: "14px"
                 }}>
-                  {activeTab === "bicycles" && "Movimientos de ingreso y salida de bicicletas"}
                   {activeTab === "users" && "Solicitudes y cambios de estado de usuarios"}
                   {activeTab === "sistema" && "Asignación y gestión de guardias por bicicletero"}
                 </p>
@@ -813,7 +659,6 @@ const renderGuardsTable = () => (
               </div>
             </div>
 
-            {activeTab === "bicycles" && renderBicyclesTable()}
             {activeTab === "users" && renderUsersTable()}
             {activeTab === "sistema" && renderGuardsTable()}
             
@@ -832,15 +677,13 @@ const renderGuardsTable = () => (
               margin: "0 auto 20px",
               fontSize: "32px"
             }}>
-              {activeTab === "bicycles" && "🚲"}
               {activeTab === "users" && "👤"}
               {activeTab === "sistema" && "🛡️"}
             </div>
-            <h3 style={{ color: "#374151", marginBottom: "10px", fontFamily: "Nunito, sans-serif", fontWeight: "700" }}>
+            <h3 style={{ color: "#374151", marginBottom: "10px", fontFamily: "Nunito, sans-serif", fontWeight: "700"}}>
               No hay registros
             </h3>
             <p style={{ color: "#9ca3af", fontFamily: "Nunito, sans-serif" }}>
-              {activeTab === "bicycles" && "No se encontraron movimientos de bicicletas."}
               {activeTab === "users" && "No se encontraron cambios en usuarios."}
               {activeTab === "sistema" && "No se encontraron movimientos de guardias."}
             </p>
@@ -876,16 +719,10 @@ const renderGuardsTable = () => (
 
           <div style={styles.tabs}>
             <button 
-              style={styles.tabBtn(activeTab === "bicycles")} 
-              onClick={() => handleTabChange("bicycles")}
-            >
-              <Bike size={20} /> Bicicletas
-            </button>
-            <button 
               style={styles.tabBtn(activeTab === "users")} 
               onClick={() => handleTabChange("users")}
             >
-              <Users size={20} /> Usuarios
+              <Users size={20} /> Registros
             </button>
             <button 
               style={styles.tabBtn(activeTab === "sistema")} 
@@ -901,7 +738,6 @@ const renderGuardsTable = () => (
             </button>
           </div>
 
-          {/* CONTENIDO PRINCIPAL */}
           {renderContent()}
         </div>
       </div>

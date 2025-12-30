@@ -37,9 +37,6 @@ function HomeAdmin() {
         navigate("/home/admin/historial");
     };
 
-    const navigateToReportes = () => {
-        navigate("/home/admin/reportes");
-    };
     const navigateToPerfil = () => {
         navigate("/home/admin/perfil");
     };

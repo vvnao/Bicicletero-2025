@@ -2,6 +2,22 @@ import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
+  Calendar,
+  MapPin,
+  Tag,
+  User,
+  FileText,
+  Image as ImageIcon,
+  X,
+  Search,
+  CheckCircle,
+  XCircle,
+  Upload,
+  Clock,
+  Send,
+  Trash2,
+} from 'lucide-react';
+import {
   getBikerackSpaces,
   searchUserByRut,
   createIncidence,
@@ -10,7 +26,7 @@ import {
 import '@styles/IncidentForm.css';
 
 const IncidentForm = ({ formOptions }) => {
-  const [formData, setFormData] = useState({
+  const [formDataIncident, setFormDataIncident] = useState({
     bikerackId: '',
     spaceId: '',
     incidenceType: '',
@@ -20,56 +36,58 @@ const IncidentForm = ({ formOptions }) => {
     dateTimeIncident: new Date(),
   });
 
-  const [spaces, setSpaces] = useState([]);
-  const [loadingSpaces, setLoadingSpaces] = useState(false);
-  const [rutInput, setRutInput] = useState('');
-  const [searchingUser, setSearchingUser] = useState(false);
-  const [userResult, setUserResult] = useState(null);
-  const [evidenceFiles, setEvidenceFiles] = useState([]);
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [spacesIncident, setSpacesIncident] = useState([]);
+  const [loadingSpacesIncident, setLoadingSpacesIncident] = useState(false);
+  const [rutInputIncident, setRutInputIncident] = useState('');
+  const [searchingUserIncident, setSearchingUserIncident] = useState(false);
+  const [userResultIncident, setUserResultIncident] = useState(null);
+  const [evidenceFilesIncident, setEvidenceFilesIncident] = useState([]);
+  const [errorsIncident, setErrorsIncident] = useState({});
+  const [submittingIncident, setSubmittingIncident] = useState(false);
+  const [successIncident, setSuccessIncident] = useState(false);
 
-  const [hour, setHour] = useState('00');
-  const [minute, setMinute] = useState('00');
+  const [hourIncident, setHourIncident] = useState('00');
+  const [minuteIncident, setMinuteIncident] = useState('00');
 
   useEffect(() => {
-    if (formData.bikerackId) {
-      loadSpaces(formData.bikerackId);
+    if (formDataIncident.bikerackId) {
+      loadSpaces(formDataIncident.bikerackId);
     } else {
-      setSpaces([]);
-      setFormData((prev) => ({ ...prev, spaceId: '' }));
+      setSpacesIncident([]);
+      setFormDataIncident((prev) => ({ ...prev, spaceId: '' }));
     }
-  }, [formData.bikerackId]);
+  }, [formDataIncident.bikerackId]);
 
   useEffect(() => {
-    const newDate = new Date(formData.dateTimeIncident);
-    newDate.setHours(parseInt(hour), parseInt(minute));
-    setFormData((prev) => ({ ...prev, dateTimeIncident: newDate }));
-  }, [hour, minute]);
+    const newDate = new Date(formDataIncident.dateTimeIncident);
+    newDate.setHours(parseInt(hourIncident), parseInt(minuteIncident));
+    setFormDataIncident((prev) => ({ ...prev, dateTimeIncident: newDate }));
+  }, [hourIncident, minuteIncident]);
 
   const loadSpaces = async (bikerackId) => {
     try {
-      setLoadingSpaces(true);
+      setLoadingSpacesIncident(true);
       const spacesData = await getBikerackSpaces(bikerackId);
-      setSpaces(spacesData);
+      setSpacesIncident(spacesData);
     } catch (error) {
-      setErrors((prev) => ({ ...prev, spaces: 'Error al cargar espacios' }));
+      setErrorsIncident((prev) => ({
+        ...prev,
+        spaces: 'Error al cargar espacios',
+      }));
     } finally {
-      setLoadingSpaces(false);
+      setLoadingSpacesIncident(false);
     }
   };
 
   const handleSearchUser = async () => {
-    if (!rutInput.trim()) {
-      setErrors((prev) => ({ ...prev, rut: 'Ingrese un RUT' }));
-      setUserResult(null);
+    if (!rutInputIncident.trim()) {
+      setErrorsIncident((prev) => ({ ...prev, rut: 'Ingrese un RUT' }));
       return;
     }
 
     const rutRegex = /^(\d{1,2}\.\d{3}\.\d{3}-[\dkK]|\d{7,8}-[\dkK])$/i;
-    if (!rutRegex.test(rutInput)) {
-      setErrors((prev) => ({
+    if (!rutRegex.test(rutInputIncident)) {
+      setErrorsIncident((prev) => ({
         ...prev,
         rut: 'Formato de RUT inválido. Use: 12.345.678-9 o 12345678-9',
       }));
@@ -77,25 +95,25 @@ const IncidentForm = ({ formOptions }) => {
     }
 
     try {
-      setSearchingUser(true);
-      setErrors((prev) => ({ ...prev, rut: null }));
-      setUserResult(null);
+      setSearchingUserIncident(true);
+      setErrorsIncident((prev) => ({ ...prev, rut: null }));
+      setUserResultIncident(null);
 
-      const result = await searchUserByRut(rutInput);
+      const result = await searchUserByRut(rutInputIncident);
 
-      if (!result.found) {
-        setErrors((prev) => ({
-          ...prev,
-          rut: result.message || 'El RUT no está registrado en el sistema',
-        }));
-        setUserResult(null);
-      } else {
-        setUserResult(result);
-        setFormData((prev) => ({
+      if (result.found) {
+        setUserResultIncident(result);
+        setFormDataIncident((prev) => ({
           ...prev,
           involvedUserId: parseInt(result.user.id),
           involvedUserRut: result.user.rut,
         }));
+      } else {
+        setErrorsIncident((prev) => ({
+          ...prev,
+          rut: `El RUT ${rutInputIncident} no está registrado. Puede continuar sin vincular usuario.`,
+        }));
+        setUserResultIncident(null);
       }
     } catch (error) {
       const errorMsg =
@@ -103,27 +121,27 @@ const IncidentForm = ({ formOptions }) => {
         error.message ||
         'Error al buscar usuario. Intente nuevamente.';
 
-      setErrors((prev) => ({
+      setErrorsIncident((prev) => ({
         ...prev,
         rut: errorMsg,
       }));
 
-      setUserResult(null);
+      setUserResultIncident(null);
     } finally {
-      setSearchingUser(false);
+      setSearchingUserIncident(false);
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: null }));
+    setFormDataIncident((prev) => ({ ...prev, [name]: value }));
+    setErrorsIncident((prev) => ({ ...prev, [name]: null }));
   };
 
   const handleDateChange = (date) => {
     const newDate = new Date(date);
-    newDate.setHours(parseInt(hour), parseInt(minute));
-    setFormData((prev) => ({ ...prev, dateTimeIncident: newDate }));
+    newDate.setHours(parseInt(hourIncident), parseInt(minuteIncident));
+    setFormDataIncident((prev) => ({ ...prev, dateTimeIncident: newDate }));
   };
 
   const handleFileChange = (e) => {
@@ -132,121 +150,143 @@ const IncidentForm = ({ formOptions }) => {
     const validFiles = files.filter((file) => file.size <= maxSize);
 
     if (validFiles.length !== files.length) {
-      setErrors((prev) => ({
+      setErrorsIncident((prev) => ({
         ...prev,
         evidence: 'Algunos archivos superan 5MB',
       }));
     }
 
-    if (evidenceFiles.length + validFiles.length > 5) {
-      setErrors((prev) => ({
+    if (evidenceFilesIncident.length + validFiles.length > 5) {
+      setErrorsIncident((prev) => ({
         ...prev,
         evidence: 'Máximo 5 imágenes por incidencia',
       }));
       return;
     }
 
-    setEvidenceFiles((prev) => [...prev, ...validFiles]);
-    setErrors((prev) => ({ ...prev, evidence: null }));
+    setEvidenceFilesIncident((prev) => [...prev, ...validFiles]);
+    setErrorsIncident((prev) => ({ ...prev, evidence: null }));
   };
 
   const removeFile = (index) => {
-    setEvidenceFiles((prev) => prev.filter((_, i) => i !== index));
+    if (evidenceFilesIncident[index]) {
+      URL.revokeObjectURL(evidenceFilesIncident[index]);
+    }
+    setEvidenceFilesIncident((prev) => prev.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.bikerackId)
+    if (!formDataIncident.bikerackId)
       newErrors.bikerackId = 'Seleccione un bicicletero';
-    if (!formData.incidenceType)
+    if (!formDataIncident.incidenceType)
       newErrors.incidenceType = 'Seleccione tipo de incidencia';
-    if (!formData.severity) newErrors.severity = 'Seleccione gravedad';
+    if (!formDataIncident.severity) newErrors.severity = 'Seleccione gravedad';
     if (
-      !formData.description.trim() ||
-      formData.description.trim().length < 10
+      !formDataIncident.description.trim() ||
+      formDataIncident.description.trim().length < 10
     ) {
       newErrors.description = 'Descripción debe tener al menos 10 caracteres';
     }
-    if (!formData.dateTimeIncident || formData.dateTimeIncident > new Date()) {
+    if (
+      !formDataIncident.dateTimeIncident ||
+      formDataIncident.dateTimeIncident > new Date()
+    ) {
       newErrors.dateTimeIncident = 'Fecha no puede ser futura';
     }
 
-    setErrors(newErrors);
+    setErrorsIncident(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      setErrors({});
-
-      const incidenceData = {
-        bikerackId: parseInt(formData.bikerackId),
-        spaceId: formData.spaceId ? parseInt(formData.spaceId) : null,
-        incidenceType: formData.incidenceType,
-        severity: formData.severity,
-        description: formData.description.trim(),
-        dateTimeIncident: formData.dateTimeIncident.toISOString(),
-        involvedUserId: formData.involvedUserId || null,
-      };
-
-      let result;
-      if (evidenceFiles.length > 0) {
-        result = await createIncidenceWithEvidence(
-          incidenceData,
-          evidenceFiles
-        );
-      } else {
-        result = await createIncidence(incidenceData);
-      }
-
-      resetForm();
-
-      window.alert(
-        `Incidencia #${result.id
-          .toString()
-          .padStart(3, '0')} creada exitosamente`
-      );
-    } catch (error) {
-      setErrors((prev) => ({
-        ...prev,
-        submit: error.response?.data?.message || 'Error al enviar reporte',
-      }));
-
-      window.alert(
-        `Error: ${
-          error.response?.data?.message || 'No se pudo enviar el reporte'
-        }`
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const resetForm = () => {
-    setFormData({
+    const now = new Date();
+
+    setFormDataIncident({
       bikerackId: '',
       spaceId: '',
       incidenceType: '',
       severity: 'Media',
       description: '',
       involvedUserId: null,
-      dateTimeIncident: new Date(),
+      dateTimeIncident: now,
     });
-    setSpaces([]);
-    setRutInput('');
-    setUserResult(null);
-    setEvidenceFiles([]);
-    setErrors({});
-    setHour('00');
-    setMinute('00');
+
+    setSpacesIncident([]);
+    setRutInputIncident('');
+    setUserResultIncident(null);
+
+    //* Limpiar URLs de las imágenes
+    evidenceFilesIncident.forEach((file) => {
+      if (typeof file === 'object' && file !== null) {
+        if (file.preview) {
+          URL.revokeObjectURL(file.preview);
+        }
+      }
+    });
+    setEvidenceFilesIncident([]);
+
+    setErrorsIncident({});
+    setHourIncident(now.getHours().toString().padStart(2, '0'));
+    setMinuteIncident(now.getMinutes().toString().padStart(2, '0'));
+    setSubmittingIncident(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (submittingIncident || successIncident) {
+      return;
+    }
+
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setSubmittingIncident(true);
+      setErrorsIncident({});
+
+      const incidenceData = {
+        bikerackId: parseInt(formDataIncident.bikerackId),
+        incidenceType: formDataIncident.incidenceType,
+        severity: formDataIncident.severity,
+        description: formDataIncident.description.trim(),
+        dateTimeIncident: formDataIncident.dateTimeIncident.toISOString(),
+        spaceId: formDataIncident.spaceId
+          ? parseInt(formDataIncident.spaceId)
+          : null,
+        involvedUserId: formDataIncident.involvedUserId
+          ? Number(formDataIncident.involvedUserId)
+          : null,
+      };
+
+      let result;
+      if (evidenceFilesIncident.length > 0) {
+        result = await createIncidenceWithEvidence(
+          incidenceData,
+          evidenceFilesIncident
+        );
+      } else {
+        result = await createIncidence(incidenceData);
+      }
+
+      setSuccessIncident(true);
+
+      resetForm();
+
+      setTimeout(() => {
+        setSuccessIncident(false);
+      }, 3000);
+    } catch (error) {
+      setErrorsIncident((prev) => ({
+        ...prev,
+        submit: error.response?.data?.message || 'Error al enviar reporte',
+      }));
+    } finally {
+      setSubmittingIncident(false);
+    }
   };
 
   const hourOptions = Array.from({ length: 24 }, (_, i) =>
@@ -257,388 +297,481 @@ const IncidentForm = ({ formOptions }) => {
   );
 
   return (
-    <form
-      className='incident-form'
-      onSubmit={handleSubmit}
-    >
-      {success && (
-        <div className='alert alert-success'>Reporte enviado exitosamente</div>
-      )}
-
-      {errors.submit && (
-        <div className='alert alert-error'> {errors.submit}</div>
-      )}
-
-      <div className='form-section'>
-        <h2 className='section-title'>Fecha y Hora del Incidente *</h2>
-        <div className='datetime-group'>
-          <div className='form-group'>
-            <label>Fecha</label>
-            <DatePicker
-              selected={formData.dateTimeIncident}
-              onChange={handleDateChange}
-              dateFormat='dd/MM/yyyy'
-              maxDate={new Date()}
-              className={`form-control ${
-                errors.dateTimeIncident ? 'error' : ''
-              }`}
-              placeholderText='Seleccione fecha'
-            />
+    <div className='incident-form-wrapper'>
+      <form
+        className='incident-form-container'
+        onSubmit={handleSubmit}
+      >
+        {successIncident && (
+          <div className='incident-alert-success'>
+            <CheckCircle className='incident-alert-icon' />
+            Reporte enviado exitosamente
           </div>
-
-          <div className='time-group'>
-            <div className='form-group'>
-              <label>Hora</label>
-              <select
-                value={hour}
-                onChange={(e) => setHour(e.target.value)}
-                className='form-control time-select'
-              >
-                {hourOptions.map((h) => (
-                  <option
-                    key={h}
-                    value={h}
-                  >
-                    {h}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className='form-group'>
-              <label>Minutos</label>
-              <select
-                value={minute}
-                onChange={(e) => setMinute(e.target.value)}
-                className='form-control time-select'
-              >
-                {minuteOptions.map((m) => (
-                  <option
-                    key={m}
-                    value={m}
-                  >
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-        {errors.dateTimeIncident && (
-          <span className='error-text'>{errors.dateTimeIncident}</span>
         )}
-      </div>
 
-      <div className='form-section'>
-        <h2 className='section-title'> Ubicación</h2>
-        <div className='form-row'>
-          <div className='form-group'>
-            <label>Bicicletero Afectado *</label>
-            <select
-              name='bikerackId'
-              value={formData.bikerackId}
-              onChange={handleInputChange}
-              className={`form-control ${errors.bikerackId ? 'error' : ''}`}
-            >
-              <option value=''>Seleccione un bicicletero</option>
-              {formOptions.bikeracks?.map((bikerack) => (
-                <option
-                  key={bikerack.id}
-                  value={bikerack.id}
-                >
-                  {bikerack.name} (Capacidad: {bikerack.capacity})
-                </option>
-              ))}
-            </select>
-            {errors.bikerackId && (
-              <span className='error-text'>{errors.bikerackId}</span>
-            )}
+        {errorsIncident.submit && (
+          <div className='incident-alert-error'>
+            <XCircle className='incident-alert-icon' />
+            {errorsIncident.submit}
           </div>
+        )}
 
-          <div className='form-group'>
-            <label>Espacio (Opcional)</label>
-            <select
-              name='spaceId'
-              value={formData.spaceId}
-              onChange={handleInputChange}
-              className='form-control'
-              disabled={!formData.bikerackId || loadingSpaces}
-            >
-              <option value=''>
-                {loadingSpaces ? 'Cargando...' : 'Seleccione un espacio'}
-              </option>
-              {spaces.map((space) => (
-                <option
-                  key={space.id}
-                  value={space.id}
-                >
-                  {space.spaceCode} ({space.status})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+        {/* Sección de Fecha y Hora */}
+        <div className='incident-form-section'>
+          <h2 className='incident-section-title'>
+            <Calendar className='incident-section-icon' />
+            Fecha y Hora del Incidente{' '}
+            <span className='incident-required-asterisk'>*</span>
+          </h2>
+          <div className='incident-datetime-group'>
+            <div className='incident-form-group'>
+              <label className='incident-form-label'>Fecha</label>
+              <DatePicker
+                selected={formDataIncident.dateTimeIncident}
+                onChange={handleDateChange}
+                dateFormat='dd/MM/yyyy'
+                maxDate={new Date()}
+                className={`incident-form-control ${
+                  errorsIncident.dateTimeIncident ? 'incident-form-error' : ''
+                }`}
+                placeholderText='Seleccione fecha'
+              />
+            </div>
 
-      <div className='form-section'>
-        <h2 className='section-title'> Clasificación</h2>
-        <div className='form-row'>
-          <div className='form-group'>
-            <label>Tipo de Incidencia *</label>
-            <select
-              name='incidenceType'
-              value={formData.incidenceType}
-              onChange={handleInputChange}
-              className={`form-control ${errors.incidenceType ? 'error' : ''}`}
-            >
-              <option value=''>Seleccione tipo</option>
-              {formOptions.types?.map((type, index) => (
-                <option
-                  key={index}
-                  value={type}
-                >
-                  {type}
-                </option>
-              ))}
-            </select>
-            {errors.incidenceType && (
-              <span className='error-text'>{errors.incidenceType}</span>
-            )}
-          </div>
-
-          <div className='form-group'>
-            <label>Gravedad *</label>
-            <div className='severity-options'>
-              {(formOptions.severities || ['Baja', 'Media', 'Alta']).map(
-                (sev, index) => (
-                  <label
-                    key={index}
-                    className='severity-label'
+            <div className='incident-time-group'>
+              <div className='incident-form-group'>
+                <label className='incident-form-label'>Hora</label>
+                <div className='incident-select-wrapper'>
+                  <Clock className='incident-select-icon' />
+                  <select
+                    value={hourIncident}
+                    onChange={(e) => setHourIncident(e.target.value)}
+                    className='incident-form-control incident-time-select'
                   >
-                    <input
-                      type='radio'
-                      name='severity'
-                      value={sev}
-                      checked={formData.severity === sev}
-                      onChange={handleInputChange}
-                      className='severity-radio'
-                    />
-                    <span className={`severity-badge ${sev.toLowerCase()}`}>
-                      {sev}
-                    </span>
-                  </label>
-                )
+                    {hourOptions.map((h) => (
+                      <option
+                        key={h}
+                        value={h}
+                      >
+                        {h}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className='incident-form-group'>
+                <label className='incident-form-label'>Minutos</label>
+                <div className='incident-select-wrapper'>
+                  <Clock className='incident-select-icon' />
+                  <select
+                    value={minuteIncident}
+                    onChange={(e) => setMinuteIncident(e.target.value)}
+                    className='incident-form-control incident-time-select'
+                  >
+                    {minuteOptions.map((m) => (
+                      <option
+                        key={m}
+                        value={m}
+                      >
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          {errorsIncident.dateTimeIncident && (
+            <span className='incident-error-text'>
+              {errorsIncident.dateTimeIncident}
+            </span>
+          )}
+        </div>
+
+        {/* Sección de Ubicación */}
+        <div className='incident-form-section'>
+          <h2 className='incident-section-title'>
+            <MapPin className='incident-section-icon' />
+            Ubicación
+          </h2>
+          <div className='incident-form-row'>
+            <div className='incident-form-group'>
+              <label className='incident-form-label'>
+                Bicicletero Afectado{' '}
+                <span className='incident-required-asterisk'>*</span>
+              </label>
+              <div className='incident-select-wrapper'>
+                <MapPin className='incident-select-icon' />
+                <select
+                  name='bikerackId'
+                  value={formDataIncident.bikerackId}
+                  onChange={handleInputChange}
+                  className={`incident-form-control ${
+                    errorsIncident.bikerackId ? 'incident-form-error' : ''
+                  }`}
+                >
+                  <option value=''>Seleccione un bicicletero</option>
+                  {formOptions.bikeracks?.map((bikerack) => (
+                    <option
+                      key={bikerack.id}
+                      value={bikerack.id}
+                    >
+                      {bikerack.name} (Capacidad: {bikerack.capacity})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {errorsIncident.bikerackId && (
+                <span className='incident-error-text'>
+                  {errorsIncident.bikerackId}
+                </span>
               )}
             </div>
-            {errors.severity && (
-              <span className='error-text'>{errors.severity}</span>
+
+            <div className='incident-form-group'>
+              <label className='incident-form-label'>Espacio (Opcional)</label>
+              <div className='incident-select-wrapper'>
+                <MapPin className='incident-select-icon' />
+                <select
+                  name='spaceId'
+                  value={formDataIncident.spaceId}
+                  onChange={handleInputChange}
+                  className='incident-form-control'
+                  disabled={
+                    !formDataIncident.bikerackId || loadingSpacesIncident
+                  }
+                >
+                  <option value=''>
+                    {loadingSpacesIncident
+                      ? 'Cargando...'
+                      : 'Seleccione un espacio'}
+                  </option>
+                  {spacesIncident.map((space) => (
+                    <option
+                      key={space.id}
+                      value={space.id}
+                    >
+                      {space.spaceCode} ({space.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sección de Clasificación */}
+        <div className='incident-form-section'>
+          <h2 className='incident-section-title'>
+            <Tag className='incident-section-icon' />
+            Clasificación
+          </h2>
+          <div className='incident-form-row'>
+            <div className='incident-form-group'>
+              <label className='incident-form-label'>
+                Tipo de Incidencia{' '}
+                <span className='incident-required-asterisk'>*</span>
+              </label>
+              <div className='incident-select-wrapper'>
+                <Tag className='incident-select-icon' />
+                <select
+                  name='incidenceType'
+                  value={formDataIncident.incidenceType}
+                  onChange={handleInputChange}
+                  className={`incident-form-control ${
+                    errorsIncident.incidenceType ? 'incident-form-error' : ''
+                  }`}
+                >
+                  <option value=''>Seleccione tipo</option>
+                  {formOptions.types?.map((type, index) => (
+                    <option
+                      key={index}
+                      value={type}
+                    >
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {errorsIncident.incidenceType && (
+                <span className='incident-error-text'>
+                  {errorsIncident.incidenceType}
+                </span>
+              )}
+            </div>
+
+            <div className='incident-form-group'>
+              <label className='incident-form-label'>
+                Gravedad <span className='incident-required-asterisk'>*</span>
+              </label>
+              <div className='incident-severity-options'>
+                {(formOptions.severities || ['Baja', 'Media', 'Alta']).map(
+                  (sev, index) => (
+                    <label
+                      key={index}
+                      className='incident-severity-label'
+                    >
+                      <input
+                        type='radio'
+                        name='severity'
+                        value={sev}
+                        checked={formDataIncident.severity === sev}
+                        onChange={handleInputChange}
+                        className='incident-severity-radio'
+                      />
+                      <span
+                        className={`incident-severity-badge incident-severity-${sev.toLowerCase()}`}
+                      >
+                        {sev}
+                      </span>
+                    </label>
+                  )
+                )}
+              </div>
+              {errorsIncident.severity && (
+                <span className='incident-error-text'>
+                  {errorsIncident.severity}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Sección de Usuario */}
+        <div className='incident-form-section'>
+          <h2 className='incident-section-title'>
+            <User className='incident-section-icon' />
+            Usuario Involucrado (Opcional)
+          </h2>
+          <div className='incident-user-search-group'>
+            <div className='incident-form-group'>
+              <label className='incident-form-label'>Buscar por RUT</label>
+              <div className='incident-search-input-group'>
+                <div className='incident-input-wrapper'>
+                  <User className='incident-input-icon' />
+                  <input
+                    type='text'
+                    value={rutInputIncident}
+                    onChange={(e) => {
+                      setRutInputIncident(e.target.value);
+                      setErrorsIncident((prev) => ({ ...prev, rut: null }));
+                    }}
+                    placeholder='Ej: 12.345.678-9'
+                    className={`incident-form-control ${
+                      errorsIncident.rut ? 'incident-form-error' : ''
+                    }`}
+                  />
+                </div>
+                <button
+                  type='button'
+                  onClick={handleSearchUser}
+                  disabled={searchingUserIncident || !rutInputIncident.trim()}
+                  className='incident-search-button'
+                >
+                  <Search className='incident-search-icon' />
+                  {searchingUserIncident ? 'Buscando...' : 'Buscar'}
+                </button>
+              </div>
+              {errorsIncident.rut && (
+                <span className='incident-error-text'>
+                  {errorsIncident.rut}
+                </span>
+              )}
+            </div>
+
+            {userResultIncident && userResultIncident.found && (
+              <div className='incident-user-result incident-user-found'>
+                <div className='incident-user-info'>
+                  <div className='incident-user-header'>
+                    <CheckCircle className='incident-user-status-icon' />
+                    <div>
+                      <strong>Usuario encontrado</strong>
+                      <span className='incident-user-status'>
+                        Vinculado al reporte
+                      </span>
+                    </div>
+                  </div>
+                  <div className='incident-user-details-grid'>
+                    <div className='incident-detail-item'>
+                      <span className='incident-detail-label'>Nombre:</span>
+                      <span className='incident-detail-value'>
+                        {userResultIncident.user.fullName}
+                      </span>
+                    </div>
+                    <div className='incident-detail-item'>
+                      <span className='incident-detail-label'>RUT:</span>
+                      <span className='incident-detail-value'>
+                        {userResultIncident.user.rut}
+                      </span>
+                    </div>
+                    <div className='incident-detail-item'>
+                      <span className='incident-detail-label'>Email:</span>
+                      <span className='incident-detail-value'>
+                        {userResultIncident.user.email}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type='button'
+                  onClick={() => {
+                    setRutInputIncident('');
+                    setUserResultIncident(null);
+                    setFormDataIncident((prev) => ({
+                      ...prev,
+                      involvedUserId: null,
+                      involvedUserRut: null,
+                    }));
+                  }}
+                  className='incident-clear-user-button'
+                  title='Desvincular usuario'
+                >
+                  <X className='incident-clear-icon' />
+                </button>
+              </div>
             )}
           </div>
         </div>
-      </div>
 
-      <div className='form-section'>
-        <h2 className='section-title'> Usuario Involucrado (Opcional)</h2>
-
-        <div className='user-search-group'>
-          <div className='form-group'>
-            <label>Buscar por RUT</label>
-            <div className='search-input-group'>
-              <input
-                type='text'
-                value={rutInput}
-                onChange={(e) => {
-                  setRutInput(e.target.value);
-                  setErrors((prev) => ({ ...prev, rut: null }));
-                  setUserResult(null);
-                }}
-                placeholder='Ej: 12.345.678-9'
-                className={`form-control ${errors.rut ? 'error' : ''}`}
+        {/* Sección de Descripción */}
+        <div className='incident-form-section'>
+          <div className='incident-form-group'>
+            <label className='incident-form-label'>
+              Descripción Detallada{' '}
+              <span className='incident-required-asterisk'>*</span>
+            </label>
+            <div className='incident-textarea-wrapper'>
+              <FileText className='incident-textarea-icon' />
+              <textarea
+                name='description'
+                value={formDataIncident.description}
+                onChange={handleInputChange}
+                className={`incident-form-control incident-textarea ${
+                  errorsIncident.description ? 'incident-form-error' : ''
+                }`}
+                placeholder='Describa los hechos en detalle...'
+                rows='5'
               />
-              <button
-                type='button'
-                onClick={handleSearchUser}
-                disabled={searchingUser || !rutInput.trim()}
-                className='search-btn'
-              >
-                {searchingUser ? 'Buscando...' : 'Buscar'}
-              </button>
             </div>
-
-            {/* mensaje de error rut */}
-            {errors.rut && <span className='error-text'>{errors.rut}</span>}
-
-            {/* mensaje informativo cuando el campo está vacío */}
-            {!errors.rut && !rutInput && (
-              <span className='hint-text'>
-                Busque un usuario por RUT para vincularlo al reporte
+            <div className='incident-textarea-info'>
+              <span
+                className={`incident-char-count ${
+                  formDataIncident.description.length < 10
+                    ? 'incident-char-warning'
+                    : ''
+                }`}
+              >
+                {formDataIncident.description.length} caracteres
+              </span>
+              <span>Mínimo 10 caracteres</span>
+            </div>
+            {errorsIncident.description && (
+              <span className='incident-error-text'>
+                {errorsIncident.description}
               </span>
             )}
           </div>
+        </div>
 
-          {/* mostrar cuando usuario fue encontrado */}
-          {userResult && userResult.found && (
-            <div className='user-result found'>
-              <div className='user-info'>
-                <div className='user-header'>
-                  <strong> Usuario encontrado</strong>
-                  <span className='user-status'>Vinculado al reporte</span>
-                </div>
-                <div className='user-details'>
-                  <div className='detail-row'>
-                    <span className='detail-label'>Nombre:</span>
-                    <span className='detail-value'>
-                      {userResult.user.fullName}
-                    </span>
-                  </div>
-                  <div className='detail-row'>
-                    <span className='detail-label'>RUT:</span>
-                    <span className='detail-value'>{userResult.user.rut}</span>
-                  </div>
-                  <div className='detail-row'>
-                    <span className='detail-label'>Email:</span>
-                    <span className='detail-value'>
-                      {userResult.user.email}
-                    </span>
-                  </div>
-                  {userResult.user.bicycles &&
-                    userResult.user.bicycles.length > 0 && (
-                      <div className='detail-row'>
-                        <span className='detail-label'>Bicicletas:</span>
-                        <span className='detail-value'>
-                          {userResult.user.bicycles.length} registrada(s)
-                        </span>
-                      </div>
-                    )}
-                </div>
-              </div>
-              <button
-                type='button'
-                onClick={() => {
-                  setRutInput('');
-                  setUserResult(null);
-                  setFormData((prev) => ({
-                    ...prev,
-                    involvedUserId: null,
-                    involvedUserRut: null,
-                  }));
-                }}
-                className='clear-user-btn'
-                title='Desvincular usuario'
+        {/* Sección de Evidencia */}
+        <div className='incident-form-section'>
+          <h2 className='incident-section-title'>
+            <ImageIcon className='incident-section-icon' />
+            Evidencia (Opcional)
+          </h2>
+          <div className='incident-form-group'>
+            <div className='incident-file-upload-area'>
+              <input
+                type='file'
+                id='evidence-upload-incident'
+                multiple
+                accept='image/jpeg,image/png,image/gif'
+                onChange={handleFileChange}
+                className='incident-file-input'
+              />
+              <label
+                htmlFor='evidence-upload-incident'
+                className='incident-file-upload-label'
               >
-                ✕
-              </button>
+                <Upload className='incident-upload-icon' />
+                Subir imágenes
+              </label>
+              <span className='incident-file-info'>
+                Máximo 5 imágenes, 5MB cada una
+              </span>
             </div>
-          )}
-        </div>
-      </div>
 
-      <div className='form-section'>
-        <h2 className='section-title'> Descripción Detallada *</h2>
-        <div className='form-group'>
-          <textarea
-            name='description'
-            value={formData.description}
-            onChange={handleInputChange}
-            className={`form-control textarea ${
-              errors.description ? 'error' : ''
-            }`}
-            placeholder='Describa los hechos en detalle...'
-            rows='5'
-          />
-          <div className='textarea-info'>
-            <span
-              className={`char-count ${
-                formData.description.length < 10 ? 'warning' : ''
-              }`}
-            >
-              {formData.description.length} caracteres
-            </span>
-            <span>Mínimo 10 caracteres</span>
-          </div>
-          {errors.description && (
-            <span className='error-text'>{errors.description}</span>
-          )}
-        </div>
-      </div>
+            {errorsIncident.evidence && (
+              <span className='incident-error-text'>
+                {errorsIncident.evidence}
+              </span>
+            )}
 
-      <div className='form-section'>
-        <h2 className='section-title'> Evidencia (Opcional)</h2>
-        <div className='form-group'>
-          <div className='file-upload-area'>
-            <input
-              type='file'
-              id='evidence-upload'
-              multiple
-              accept='image/jpeg,image/png,image/gif'
-              onChange={handleFileChange}
-              className='file-input'
-            />
-            <label
-              htmlFor='evidence-upload'
-              className='file-upload-label'
-            >
-              Subir imágenes
-            </label>
-            <span className='file-info'>Máximo 5 imágenes, 5MB cada una</span>
-          </div>
-
-          {errors.evidence && (
-            <span className='error-text'>{errors.evidence}</span>
-          )}
-
-          {evidenceFiles.length > 0 && (
-            <div className='file-previews'>
-              <h4>Imágenes adjuntadas ({evidenceFiles.length}/5):</h4>
-              <div className='preview-grid'>
-                {evidenceFiles.map((file, index) => (
-                  <div
-                    key={index}
-                    className='file-preview'
-                  >
-                    <img
-                      src={URL.createObjectURL(file)}
-                      alt={`Evidencia ${index + 1}`}
-                      className='preview-image'
-                    />
-                    <div className='file-info'>
-                      <span>{file.name}</span>
-                      <span>{(file.size / 1024).toFixed(1)} KB</span>
-                    </div>
-                    <button
-                      type='button'
-                      onClick={() => removeFile(index)}
-                      className='remove-file-btn'
+            {evidenceFilesIncident.length > 0 && (
+              <div className='incident-file-previews'>
+                <h4>Imágenes adjuntadas ({evidenceFilesIncident.length}/5):</h4>
+                <div className='incident-preview-grid'>
+                  {evidenceFilesIncident.map((file, index) => (
+                    <div
+                      key={index}
+                      className='incident-file-preview'
                     >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Evidencia ${index + 1}`}
+                        className='incident-preview-image'
+                      />
+                      <div className='incident-file-info'>
+                        <span>{file.name}</span>
+                        <span>{(file.size / 1024).toFixed(1)} KB</span>
+                      </div>
+                      <button
+                        type='button'
+                        onClick={() => removeFile(index)}
+                        className='incident-remove-file-button'
+                        title='Eliminar archivo'
+                      >
+                        <Trash2 className='incident-remove-icon' />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className='form-actions'>
-        <button
-          type='button'
-          onClick={resetForm}
-          className='btn btn-secondary'
-          disabled={submitting}
-        >
-          Limpiar Formulario
-        </button>
+        {/* Botones de acción */}
+        <div className='incident-form-actions'>
+          <button
+            type='button'
+            onClick={() => {
+              resetForm();
+              setSuccessIncident(false);
+            }}
+            className='incident-button incident-button-secondary'
+            disabled={submittingIncident || successIncident}
+          >
+            <Trash2 className='incident-button-icon' />
+            Limpiar Formulario
+          </button>
 
-        <button
-          type='submit'
-          className='btn btn-primary'
-          disabled={submitting}
-        >
-          {submitting ? 'Enviando...' : 'Enviar Reporte'}
-        </button>
-      </div>
-    </form>
+          <button
+            type='submit'
+            className='incident-button incident-button-primary'
+            disabled={submittingIncident || successIncident}
+          >
+            <Send className='incident-button-icon' />
+            {submittingIncident
+              ? 'Enviando...'
+              : successIncident
+              ? 'Enviado ✓'
+              : 'Enviar Reporte'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

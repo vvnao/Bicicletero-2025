@@ -2,98 +2,68 @@
 import { AppDataSource } from "../config/configDb.js"
 import { BicycleEntity } from "../entities/BicycleEntity.js"
 import { UserEntity } from "../entities/UserEntity.js"
-import { ReservationEntity } from "../entities/ReservationEntity.js";
 
-export async function createBicycleService(data, userId) {
+export async function createBicycleService(data, userId){
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
     const userRepository = AppDataSource.getRepository(UserEntity);
 
     const user = await userRepository.findOneBy({ id: userId });
-    if (!user) throw new Error("Usuario no encontrado");
+    if(!user) throw new Error("Usuario no encontrado");
 
     const count = await bicycleRepository.count({ 
-    where: { 
-        user: { id: userId },
-        active: true,
-    } 
-});
+        where: { 
+            user: { id: userId },
+            active: true 
+        } 
+    });
     if (count >= 3) throw new Error("Ya tiene el máximo de 3 bicicletas registradas");
 
-    if (data.serialNumber) {
-        const existing = await bicycleRepository.findOneBy({ serialNumber: data.serialNumber });
-        if (existing) throw new Error("Ya existe una bicicleta con ese número de serie");
-    }
-    
     const newBicycle = bicycleRepository.create({
-        brand: data.brand,
-        model: data.model,
-        color: data.color,
-        serialNumber: data.serialNumber,
-        photo: data.photo || null, 
+        ...data,
         user: user,
     });
     
-    const saved = await bicycleRepository.save(newBicycle);
-    
-    return await bicycleRepository.findOne({
-        where: { id: saved.id },
-        relations: ['user']
-    });
+    return await bicycleRepository.save(newBicycle);
 }
 
 export async function getBicyclesServices(userId) {
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
-
-    const bicycles = await bicycleRepository.find({
-    where: {
-        user: { id: userId },
-        active: true,
-    },
-    relations: ['user'],
-});
-
-    return bicycles;
+    return await bicycleRepository.find({
+        where: { user: { id: userId }, active: true },
+        relations: ['user'], 
+    });
 }
 
-export async function updateBicyclesServices(id, userId, data) {
-    try {
-        const { color, photo } = data;
-        const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
-
-        const bicycle = await bicycleRepository.findOne({
-            where: {
-                id: id,
-                user: { id: userId }
-            },
-            relations: ['user'] 
-        });
-
-        if (!bicycle) return null;
-
-        if (color !== undefined) bicycle.color = color;
-        if (photo !== undefined) bicycle.photo = photo;
-
-        const updated = await bicycleRepository.save(bicycle);
-        
-        return updated;
-        
-    } catch (error) {
-        console.error("Error en updateBicyclesServices:", error);
-        throw error;
-    }
-}export async function deleteBicyclesServices(userId, bicycleId) {
+export async function updateBicyclesServices(userId, data) {
+    const { id, color, photo } = data;
     const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
-
     const bicycle = await bicycleRepository.findOne({
-        where: {
-            id: bicycleId,
-            user: { id: userId }
-        },
-        relations: ['user'],
+        where: { id: id, user: { id: userId } }
     });
 
-    if (!bicycle) return false;
+    if (!bicycle) return null;
+    if (color !== undefined) bicycle.color = color;
+    if (photo !== undefined) bicycle.photo = photo;
 
-    bicycle.active = false;
+    return await bicycleRepository.save(bicycle);
+}
+
+// ESTA ES LA QUE FALTABA SEGÚN TU ERROR DE SYNTAX
+export async function deleteBicyclesServices(userId, bicycleId) {
+    const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
+    const bicycle = await bicycleRepository.findOne({
+        where: { id: bicycleId, user: { id: userId } }
+    });
+    if (!bicycle) return false;
+    return await bicycleRepository.remove(bicycle);
+}
+
+export async function deleteBicyclesServicesSoft(userId, bicycleId) {
+    const bicycleRepository = AppDataSource.getRepository(BicycleEntity);
+    const bicycle = await bicycleRepository.findOne({
+        where: { id: bicycleId, user: { id: userId } }
+    });
+    if (!bicycle) return false;
+    bicycle.active = false; 
     return await bicycleRepository.save(bicycle);
 }

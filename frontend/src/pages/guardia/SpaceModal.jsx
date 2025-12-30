@@ -1,66 +1,70 @@
-import React, { useEffect, useState } from 'react';
-import { getSpaceDetails } from '@services/spaces.service';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
+  getSpaceDetails,
   occupyWithoutReservation,
   occupyWithReservation,
   liberateSpace,
   getUserByRut,
 } from '@services/spaces.service';
 import '@styles/SpaceModal.css';
-
 import {
-  X,
-  Loader2,
-  Search,
-  User,
-  Bike,
-  Clock,
-  Calendar,
-  AlertCircle,
-  CheckCircle,
-  FileText,
-  Lock,
-  Unlock,
-  Mail,
-  Hash,
-  ShieldAlert,
-  ShieldCheck,
-  CalendarCheck,
-  ClipboardCheck,
-  UserCheck,
-  Tag,
-} from 'lucide-react';
+  FiUser,
+  FiClock,
+  FiBattery,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiX,
+  FiSearch,
+  FiLock,
+  FiUnlock,
+  FiCalendar,
+  FiMail,
+  FiHash,
+  FiPackage,
+  FiAlertTriangle,
+  FiCreditCard,
+  FiCheckSquare,
+  FiArrowRight,
+  FiHelpCircle,
+} from 'react-icons/fi';
 
 const SpaceModal = ({ spaceId, onClose }) => {
-  const [details, setDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [rut, setRut] = useState('');
-  const [hours, setHours] = useState('');
+  const [spaceDetails, setSpaceDetails] = useState(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(true);
+  const [userRut, setUserRut] = useState('');
+  const [estimatedHours, setEstimatedHours] = useState('');
   const [retrievalCode, setRetrievalCode] = useState('');
   const [foundUser, setFoundUser] = useState(null);
   const [selectedBicycleId, setSelectedBicycleId] = useState('');
-  const [error, setError] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [hoursError, setHoursError] = useState('');
 
-  //* para obtener el nombre completo del usuario
-  const getUserFullName = (user) => {
-    if (!user) return 'No disponible';
-
-    if (user.name) return user.name;
-
-    if (user.names && user.lastName) {
-      return `${user.names} ${user.lastName}`;
-    }
-
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
-
-    return 'Nombre no disponible';
+  const SPACE_STATUS = {
+    LIBRE: 'Libre',
+    RESERVADO: 'Reservado',
+    OCUPADO: 'Ocupado',
+    INFRACCION: 'Tiempo Excedido',
   };
 
-  //* para formatear fecha
-  const formatDateTime = (dateString) => {
+  const STATUS_COLORS = {
+    LIBRE: '#10b981',
+    RESERVADO: '#f59e0b',
+    OCUPADO: '#ef4444',
+    INFRACCION: '#f97316',
+  };
+
+  const formatUserName = useCallback((user) => {
+    if (!user) return 'No disponible';
+    if (user.name) return user.name;
+    if (user.names && user.lastName) return `${user.names} ${user.lastName}`;
+    if (user.firstName && user.lastName)
+      return `${user.firstName} ${user.lastName}`;
+    return 'Nombre no disponible';
+  }, []);
+
+  //* función para formatear fecha y hora
+  const formatDateTime = useCallback((dateString) => {
     if (!dateString) return '--';
     const date = new Date(dateString);
     return date.toLocaleString('es-CL', {
@@ -70,31 +74,27 @@ const SpaceModal = ({ spaceId, onClose }) => {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
+  }, []);
 
-  //* para formatear minutos de infracción
-  const formatInfractionTime = (minutes) => {
+  //* Función para formatear minutos de infracción
+  const formatInfractionTime = useCallback((minutes) => {
     if (!minutes || minutes <= 0) return '0 minutos';
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
 
-    if (hours > 0 && mins > 0) {
-      return `${hours}h ${mins}min`;
-    } else if (hours > 0) {
-      return `${hours}h`;
-    } else {
-      return `${mins}min`;
-    }
-  };
+    if (hours > 0 && mins > 0) return `${hours}h ${mins}min`;
+    if (hours > 0) return `${hours}h`;
+    return `${mins}min`;
+  }, []);
 
-  //* cargar detalles del espacio
+  //* Cargar detalles del espacio
   useEffect(() => {
-    const loadData = async () => {
+    const loadSpaceData = async () => {
       try {
-        setLoading(true);
+        setIsLoadingDetails(true);
         const data = await getSpaceDetails(spaceId);
 
-        if (data && data.status === 'En Infracción' && data.times) {
+        if (data && data.status === SPACE_STATUS.INFRACCION && data.times) {
           const now = new Date();
           const infractionStart = new Date(data.times.infractionStart);
           const infractionMs = now - infractionStart;
@@ -102,210 +102,183 @@ const SpaceModal = ({ spaceId, onClose }) => {
             Math.floor(infractionMs / (1000 * 60)),
             0
           );
-
           data.times.infractionMinutes = infractionMinutes;
         }
 
-        setDetails(data);
-        setError('');
-      } catch (e) {
-        console.error('Error al cargar detalles:', e);
+        setSpaceDetails(data);
+        setErrorMessage('');
+      } catch (error) {
+        console.error('Error al cargar detalles:', error);
         const errorMsg =
-          e.response?.data?.message || e.message || 'Error desconocido';
-        setError(`Error al cargar detalles: ${errorMsg}`);
-        setDetails(null);
+          error.response?.data?.message || error.message || 'Error desconocido';
+        setErrorMessage(`Error al cargar detalles: ${errorMsg}`);
+        setSpaceDetails(null);
       } finally {
-        setLoading(false);
+        setIsLoadingDetails(false);
       }
     };
-    loadData();
+    loadSpaceData();
   }, [spaceId]);
 
+  //* Buscar usuario por RUT
   const handleSearchUser = async () => {
-    setError('');
-    setFoundUser(null);
-
-    const rutInput = rut.trim();
-
-    if (!rutInput) {
-      setError('Ingrese un RUT para buscar');
-      return;
-    }
-
-    const rutRegex = /^(\d{1,2}\.\d{3}\.\d{3}-[\dkK]|\d{7,8}-[\dkK])$/i;
-    if (!rutRegex.test(rutInput)) {
-      const errorMsg = 'Formato inválido. Use: 12.345.678-9 o 12345678-9';
-      setError(errorMsg);
-      alert(errorMsg);
+    if (!userRut.trim()) {
+      alert('Ingrese un RUT');
       return;
     }
 
     try {
-      setActionLoading(true);
-      const user = await getUserByRut(rutInput);
+      setIsProcessingAction(true);
+      const userData = await getUserByRut(userRut.trim());
+      setFoundUser(userData);
+      setErrorMessage('');
 
-      if (user && user.id) {
-        setFoundUser(user);
-        if (user.bicycles && user.bicycles.length > 0) {
-          setSelectedBicycleId(user.bicycles[0].id.toString());
-        }
+      if (userData.bicycles?.length > 0) {
+        setSelectedBicycleId(userData.bicycles[0].id.toString());
       } else {
-        const errorMsg = 'Usuario no se encuentra registrado';
-        setError(errorMsg);
-        alert(errorMsg);
+        setErrorMessage('El usuario no tiene bicicletas registradas');
+        setFoundUser(null);
       }
-    } catch (e) {
-      console.error('Error al buscar usuario:', e);
-      let errorMessage = 'Usuario no se encuentra registrado';
-
-      const errorText = e.message?.toLowerCase() || '';
-      if (
-        errorText.includes('network') ||
-        errorText.includes('conexión') ||
-        errorText.includes('internet') ||
-        e.code === 'ERR_NETWORK'
-      ) {
-        errorMessage = 'Error de conexión. Verifique su internet.';
-      }
-
-      setError(errorMessage);
-      alert(errorMessage);
+    } catch (error) {
+      console.error('Error al buscar usuario:', error);
+      setFoundUser(null);
+      setErrorMessage('Usuario no encontrado o error en la búsqueda');
     } finally {
-      setActionLoading(false);
+      setIsProcessingAction(false);
     }
   };
 
-  //* ocupar espacio sin reserva
+  //* Ocupar espacio sin reserva
   const handleOccupyManual = async () => {
     if (!foundUser) {
-      alert('Debe buscar un usuario primero');
+      setHoursError('Debe buscar un usuario primero');
       return;
     }
     if (!selectedBicycleId) {
-      alert('Debe seleccionar una bicicleta');
+      setHoursError('Debe seleccionar una bicicleta');
+      return;
+    }
+    if (!estimatedHours || estimatedHours.trim() === '') {
+      setHoursError('Ingrese horas estimadas');
       return;
     }
 
-    if (!hours.trim()) {
-      alert('Ingrese las horas estimadas de estadía');
+    const hours = parseInt(estimatedHours);
+    if (isNaN(hours) || hours < 1 || hours > 24) {
+      setHoursError('Ingrese un número entero entre 1 y 24 horas');
+      return;
+    }
+    if (parseFloat(estimatedHours) !== hours) {
+      setHoursError('Solo se permiten números enteros (sin decimales)');
       return;
     }
 
-    if (!/^\d+$/.test(hours)) {
-      alert('Hora inválida, debe ser un número entero entre 1 y 24');
-      return;
-    }
-
-    const hoursNum = parseInt(hours);
-
-    if (hoursNum < 1 || hoursNum > 24) {
-      alert('Hora inválida, debe ser un número entero entre 1 y 24');
-      return;
-    }
+    setHoursError('');
 
     try {
-      setActionLoading(true);
+      setIsProcessingAction(true);
       await occupyWithoutReservation(spaceId, {
-        rut: rut.trim(),
-        estimatedHours: hoursNum,
+        rut: userRut.trim(),
+        estimatedHours: hours,
         bicycleId: parseInt(selectedBicycleId),
       });
-      alert('¡Ingreso registrado con éxito!');
+      alert('¡Ingreso manual registrado con éxito!');
       onClose();
-    } catch (e) {
-      console.error('Error al ocupar espacio:', e);
+    } catch (error) {
+      console.error('Error al ocupar espacio:', error);
       alert(
-        e.response?.data?.message || e.message || 'Error al ocupar el espacio'
+        error.response?.data?.message ||
+          error.message ||
+          'Error al ocupar el espacio'
       );
     } finally {
-      setActionLoading(false);
+      setIsProcessingAction(false);
     }
   };
 
+  //* Confirmar reserva
   const handleOccupyReservation = async () => {
-    if (!details?.reservation?.code) {
+    if (!spaceDetails?.reservation?.code) {
       alert('Error: No hay código de reserva disponible');
       return;
     }
 
     const confirmed = window.confirm(
-      `¿Confirmar ingreso para la reserva ${details.reservation.code}?`
+      `¿Confirmar ingreso para la reserva ${spaceDetails.reservation.code}?\n\n`
     );
 
     if (!confirmed) return;
 
     try {
-      setActionLoading(true);
-      await occupyWithReservation(details.reservation.code);
-      alert('¡Reserva confirmada con éxito!');
-      onClose();
-    } catch (e) {
-      console.error('Error al confirmar reserva:', e);
-      const errorMessage =
-        e.response?.data?.message ||
-        e.message ||
-        'Error al confirmar la reserva';
+      setIsProcessingAction(true);
+      const result = await occupyWithReservation(spaceDetails.reservation.code);
 
+      alert(`¡Reserva confirmada con éxito!\n\n`);
+      onClose();
+    } catch (error) {
+      console.error('Error al confirmar reserva:', error);
+      const errorMsg =
+        error.response?.data?.message ||
+        error.message ||
+        'Error al confirmar la reserva';
       alert(
-        `Error: ${errorMessage}\n\nVerifica que el código de reserva sea válido y esté activo.`
+        `Error: ${errorMsg}\n\nVerifica que el código de reserva sea válido y esté activo.`
       );
     } finally {
-      setActionLoading(false);
+      setIsProcessingAction(false);
     }
   };
 
-  //* liberar espacio
-  const handleLiberate = async () => {
+  //* Liberar espacio
+  const handleLiberateSpace = async () => {
     if (!retrievalCode.trim()) {
       alert('Ingrese el código de retiro');
       return;
     }
 
     try {
-      setActionLoading(true);
+      setIsProcessingAction(true);
       await liberateSpace(spaceId, retrievalCode.trim());
       alert('¡Espacio liberado exitosamente!');
       onClose();
-    } catch (e) {
-      console.error('Error al liberar espacio:', e);
+    } catch (error) {
+      console.error('Error al liberar espacio:', error);
       const errorMsg =
-        e.response?.data?.message || e.message || 'Error al liberar el espacio';
-      alert(`Código de retiro inválido`);
+        error.response?.data?.message ||
+        error.message ||
+        'Error al liberar el espacio';
+      alert(`Código de retiro incorrecto`);
     } finally {
-      setActionLoading(false);
+      setIsProcessingAction(false);
     }
   };
 
-  if (loading) {
+  const isSpaceFree = spaceDetails?.status === SPACE_STATUS.LIBRE;
+  const isSpaceOccupied = spaceDetails?.status === SPACE_STATUS.OCUPADO;
+  const isSpaceReserved = spaceDetails?.status === SPACE_STATUS.RESERVADO;
+  const isSpaceInInfraction = spaceDetails?.status === SPACE_STATUS.INFRACCION;
+
+  if (isLoadingDetails) {
     return (
-      <div className='modal-overlay'>
-        <div className='modal-content loading-modal'>
-          <Loader2
-            className='loading-spinner'
-            size={40}
-          />
+      <div className='space-modal-overlay'>
+        <div className='space-modal-content loading-modal'>
+          <div className='loading-spinner'></div>
           <p>Cargando información del espacio...</p>
         </div>
       </div>
     );
   }
 
-  if (error && !details) {
+  if (errorMessage && !spaceDetails) {
     return (
-      <div className='modal-overlay'>
-        <div className='modal-content error-modal'>
-          <AlertCircle
-            size={48}
-            color='var(--mon-danger)'
-          />
+      <div className='space-modal-overlay'>
+        <div className='space-modal-content error-modal'>
+          <FiAlertTriangle className='error-icon' />
           <h3>Error</h3>
-          <p>{error}</p>
+          <p className='error-text'>{errorMessage}</p>
           <div className='error-details'>
             <p>
               <small>Espacio ID: {spaceId}</small>
-            </p>
-            <p>
-              <small>Intenta cerrar y abrir nuevamente</small>
             </p>
           </div>
           <button
@@ -319,14 +292,10 @@ const SpaceModal = ({ spaceId, onClose }) => {
     );
   }
 
-  if (!details) {
+  if (!spaceDetails) {
     return (
-      <div className='modal-overlay'>
-        <div className='modal-content'>
-          <AlertCircle
-            size={48}
-            color='var(--mon-warning)'
-          />
+      <div className='space-modal-overlay'>
+        <div className='space-modal-content'>
           <p>No se encontró información del espacio.</p>
           <button
             onClick={onClose}
@@ -339,137 +308,120 @@ const SpaceModal = ({ spaceId, onClose }) => {
     );
   }
 
-  const { space, user, bicycle, times, status, reservation } = details;
-  const isFree = status === 'Libre';
-  const isOccupied = status === 'Ocupado';
-  const isReserved = status === 'Reservado';
-  const isInfraction = status === 'Tiempo Excedido';
+  const isValidHours =
+    estimatedHours &&
+    !isNaN(parseInt(estimatedHours)) &&
+    parseInt(estimatedHours) >= 1 &&
+    parseInt(estimatedHours) <= 24 &&
+    Number.isInteger(parseFloat(estimatedHours));
 
   return (
     <div
-      className='modal-overlay'
+      className='space-modal-overlay'
       onClick={onClose}
     >
       <div
-        className='modal-content'
+        className='space-modal-content'
         onClick={(e) => e.stopPropagation()}
       >
-        <header className='modal-header'>
-          <h2>
-            <Tag
-              size={20}
-              style={{ marginRight: '10px' }}
-            />
-            ESPACIO {details.spaceCode}:{' '}
-            <span
-              className={`status-badge status-${status
-                .toLowerCase()
-                .replace(' ', '-')}`}
-            >
-              {status.toUpperCase()}
-            </span>
-          </h2>
+        {/* Header del modal */}
+        <header className='space-modal-header'>
+          <div className='space-modal-header-content'>
+            <h2 className='space-modal-title'>
+              ESPACIO {spaceDetails.spaceCode}
+              <span
+                className='space-status-badge'
+                style={{
+                  backgroundColor:
+                    STATUS_COLORS[
+                      spaceDetails.status.replace(' ', '_').toUpperCase()
+                    ] || '#6b7280',
+                }}
+              >
+                {spaceDetails.status.toUpperCase()}
+              </span>
+            </h2>
+          </div>
           <button
-            className='close-btn'
+            className='space-modal-close'
             onClick={onClose}
-            disabled={actionLoading}
+            disabled={isProcessingAction}
           >
-            <X size={20} />
+            <FiX />
           </button>
         </header>
 
-        {/* ESPACIO LIBRE */}
-        {isFree && (
-          <div className='modal-body'>
-            <div className='form-section'>
-              <h3 className='section-title'>
-                <FileText size={18} />
-                Registro Manual de Ingreso
-              </h3>
+        {/* Cuerpo del modal */}
+        <div className='space-modal-body'>
+          {/* ESPACIO LIBRE */}
+          {isSpaceFree && (
+            <div className='free-space-section'>
+              <div className='section-header'>
+                <FiCheckSquare className='section-icon' />
+                <h3>Registro Manual de Ingreso</h3>
+              </div>
 
               <div className='form-group'>
-                <label>
-                  <Search
-                    size={16}
-                    style={{ marginRight: '8px' }}
-                  />
-                  Buscar usuario por RUT:
+                <label className='form-label'>
+                  <FiSearch className='label-icon' />
+                  Buscar usuario por RUT
                 </label>
                 <div className='input-group'>
                   <input
                     type='text'
-                    value={rut}
-                    onChange={(e) => setRut(e.target.value)}
+                    className='form-input'
+                    value={userRut}
+                    onChange={(e) => setUserRut(e.target.value)}
                     placeholder='19.157.881-3'
-                    disabled={actionLoading}
+                    disabled={isProcessingAction}
                   />
                   <button
+                    className='btn-search-user'
                     onClick={handleSearchUser}
-                    className='btn-search'
-                    disabled={actionLoading || !rut.trim()}
+                    disabled={isProcessingAction || !userRut.trim()}
                   >
-                    {actionLoading ? (
-                      <>
-                        <Loader2
-                          size={16}
-                          className='loading-spinner'
-                        />
-                        Buscando...
-                      </>
-                    ) : (
-                      <>
-                        <Search size={16} />
-                        Buscar
-                      </>
-                    )}
+                    <FiSearch />
+                    {isProcessingAction ? 'Buscando...' : 'Buscar'}
                   </button>
                 </div>
               </div>
 
               {foundUser && (
-                <div className='user-section'>
-                  <div className='user-info-card'>
-                    <h4>
-                      <UserCheck size={18} />
-                      Usuario Encontrado
-                    </h4>
-                    <p>
-                      <strong>Nombre:</strong> {foundUser.name}
-                    </p>
-                    <p>
-                      <strong>RUT:</strong> {foundUser.rut}
-                    </p>
+                <div className='user-found-section'>
+                  <div className='info-card'>
+                    <div className='info-card-header'>
+                      <FiUser className='card-icon' />
+                      <h4>Usuario Encontrado</h4>
+                    </div>
+                    <div className='info-card-content'>
+                      <p>
+                        <strong>Nombre:</strong> {foundUser.name}
+                      </p>
+                      <p>
+                        <strong>RUT:</strong> {foundUser.rut}
+                      </p>
 
-                    <div className='form-group'>
-                      <label>
-                        <Bike
-                          size={16}
-                          style={{ marginRight: '8px' }}
-                        />
-                        Seleccionar Bicicleta:
-                      </label>
-                      <select
-                        value={selectedBicycleId}
-                        onChange={(e) => setSelectedBicycleId(e.target.value)}
-                        className='bicycle-select'
-                        disabled={actionLoading}
-                      >
-                        <option value=''>Seleccione una bicicleta</option>
-                        {foundUser.bicycles?.map((bici) => (
-                          <option
-                            key={bici.id}
-                            value={bici.id}
-                          >
-                            {bici.brand} {bici.model} ({bici.color})
-                          </option>
-                        ))}
-                      </select>
-                      <div className='help-text'>
-                        {foundUser.bicycles?.length === 0
-                          ? 'Usuario sin bicicletas registradas'
-                          : `${
-                              foundUser.bicycles?.length || 0
-                            } bicicleta(s) disponible(s)`}
+                      <div className='form-group'>
+                        <label className='form-label'>
+                          <FiBattery className='label-icon' />
+                          Seleccionar Bicicleta
+                        </label>
+                        <select
+                          className='form-select'
+                          value={selectedBicycleId}
+                          onChange={(e) => setSelectedBicycleId(e.target.value)}
+                          disabled={isProcessingAction}
+                        >
+                          <option value=''>Seleccione una bicicleta</option>
+                          {foundUser.bicycles.map((bicycle) => (
+                            <option
+                              key={bicycle.id}
+                              value={bicycle.id}
+                            >
+                              {bicycle.brand} {bicycle.model} ({bicycle.color})
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -477,98 +429,86 @@ const SpaceModal = ({ spaceId, onClose }) => {
               )}
 
               <div className='form-group'>
-                <label>
-                  <Clock
-                    size={16}
-                    style={{ marginRight: '8px' }}
-                  />
-                  Horas estimadas de estadía:
+                <label className='form-label'>
+                  <FiClock className='label-icon' />
+                  Horas estimadas de estadía
                 </label>
                 <input
                   type='number'
-                  value={hours}
+                  className='form-input'
+                  value={estimatedHours}
                   onChange={(e) => {
                     const value = e.target.value;
-                    const cleanValue = value.replace(/[eE+-.]/g, '');
-                    if (cleanValue === '' || /^\d+$/.test(cleanValue)) {
-                      const num = parseInt(cleanValue);
-                      if (cleanValue === '' || (num >= 1 && num <= 24)) {
-                        setHours(cleanValue);
-                      }
+                    if (value === '' || /^\d+$/.test(value)) {
+                      setEstimatedHours(value);
                     }
                   }}
                   min='1'
                   max='24'
                   placeholder='Ej: 4'
-                  disabled={actionLoading}
+                  disabled={isProcessingAction}
                 />
-                <small className='help-text'>
-                  Máximo 24 horas (solo números enteros)
-                </small>
+                <small className='form-help-text'>Máximo 24 horas</small>
               </div>
 
               <button
+                className='btn-occupy-space'
                 onClick={handleOccupyManual}
                 disabled={
-                  actionLoading || !foundUser || !selectedBicycleId || !hours
+                  isProcessingAction ||
+                  !foundUser ||
+                  !selectedBicycleId ||
+                  !isValidHours ||
+                  !!hoursError
                 }
-                className='btn-action btn-occupy'
               >
-                {actionLoading ? (
-                  <>
-                    <Loader2
-                      size={16}
-                      className='loading-spinner'
-                    />
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <Lock size={16} />
-                    Marcar como Ocupado
-                  </>
-                )}
+                <FiLock />
+                {isProcessingAction ? 'Procesando...' : 'Marcar como Ocupado'}
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ESPACIO OCUPADO/EN INFRACCIÓN */}
-        {(isOccupied || isInfraction) && (
-          <div className='modal-body'>
-            <div className='info-section'>
-              <h3 className='section-title'>
-                <FileText size={18} />
-                Información del Espacio
-              </h3>
+          {/* ESPACIO OCUPADO O EN INFRACCIÓN */}
+          {(isSpaceOccupied || isSpaceInInfraction) && (
+            <div className='occupied-space-section'>
+              <div className='section-header'>
+                <FiAlertCircle className='section-icon' />
+                <h3>Información del Espacio</h3>
+              </div>
 
-              <div className='info-card user-card'>
-                <h4>
-                  <User size={18} />
-                  Datos del Usuario
-                </h4>
-                <div className='user-details'>
-                  <div className='detail-row'>
-                    <strong>Nombre:</strong>
-                    <span>{getUserFullName(user)}</span>
-                  </div>
-                  <div className='detail-row'>
-                    <strong>RUT:</strong>
-                    <span>{user?.rut || 'No disponible'}</span>
-                  </div>
+              {/* Información del usuario */}
+              <div className='info-card'>
+                <div className='info-card-header'>
+                  <FiUser className='card-icon' />
+                  <h4>Datos del Usuario</h4>
+                </div>
+                <div className='info-card-content'>
+                  <p>
+                    <strong>Nombre:</strong> {formatUserName(spaceDetails.user)}
+                  </p>
+                  <p>
+                    <strong>RUT:</strong>{' '}
+                    {spaceDetails.user?.rut || 'No disponible'}
+                  </p>
+                  {spaceDetails.user?.email && (
+                    <p>
+                      <strong>Email:</strong> {spaceDetails.user.email}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              <div className='info-card time-card'>
-                <h4>
-                  <Clock size={18} />
-                  Registro de Tiempos
-                </h4>
-                <div className='time-details'>
+              {/* Registro de tiempos */}
+              <div className='info-card'>
+                <div className='info-card-header'>
+                  <FiClock className='card-icon' />
+                  <h4>Registro de Tiempos</h4>
+                </div>
+                <div className='info-card-content'>
                   <div className='time-row'>
                     <span className='time-label'>Fecha-Hora de Llegada:</span>
                     <span className='time-value'>
-                      {formatDateTime(times?.checkin)}
+                      {formatDateTime(spaceDetails.times?.checkin)}
                     </span>
                   </div>
                   <div className='time-row'>
@@ -576,52 +516,63 @@ const SpaceModal = ({ spaceId, onClose }) => {
                       Fecha-Hora Estimada de Retiro:
                     </span>
                     <span className='time-value'>
-                      {formatDateTime(times?.estimatedCheckout)}
+                      {formatDateTime(spaceDetails.times?.estimatedCheckout)}
                     </span>
                   </div>
 
-                  {isInfraction && (
-                    <div className='time-row infraction-highlight'>
-                      <span className='time-label'>Tiempo en Infracción:</span>
+                  {isSpaceInInfraction && (
+                    <div className='time-row infraction-row'>
+                      <span className='time-label'>
+                        <FiAlertTriangle className='infraction-icon' />
+                        Tiempo en Infracción:
+                      </span>
                       <span className='time-value infraction-time'>
-                        {formatInfractionTime(times?.infractionMinutes || 0)}
+                        {formatInfractionTime(
+                          spaceDetails.times?.infractionMinutes || 0
+                        )}
                       </span>
                     </div>
                   )}
 
-                  {times?.infractionStart && (
+                  {spaceDetails.times?.infractionStart && (
                     <div className='time-row'>
                       <span className='time-label'>Inicio de Infracción:</span>
                       <span className='time-value'>
-                        {formatDateTime(times.infractionStart)}
+                        {formatDateTime(spaceDetails.times.infractionStart)}
                       </span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Sección bicicleta */}
-              <div className='info-card bicycle-card'>
-                <h4>
-                  <Bike size={18} />
-                  Datos de la Bicicleta
-                </h4>
-                <div className='bicycle-details'>
+              {/* Información de la bicicleta */}
+              <div className='info-card'>
+                <div className='info-card-header'>
+                  <FiBattery className='card-icon' />
+                  <h4>Datos de la Bicicleta</h4>
+                </div>
+                <div className='info-card-content'>
                   <p>
-                    <strong>Marca:</strong> {bicycle?.brand || 'No disponible'}
+                    <strong>Marca:</strong>{' '}
+                    {spaceDetails.bicycle?.brand || 'No disponible'}
                   </p>
                   <p>
-                    <strong>Modelo:</strong> {bicycle?.model || 'No disponible'}
+                    <strong>Modelo:</strong>{' '}
+                    {spaceDetails.bicycle?.model || 'No disponible'}
                   </p>
                   <p>
-                    <strong>Color:</strong> {bicycle?.color || 'No disponible'}
+                    <strong>Color:</strong>{' '}
+                    {spaceDetails.bicycle?.color || 'No disponible'}
                   </p>
-
-                  {(bicycle?.urlImage || bicycle?.photo) && (
+                  {(spaceDetails.bicycle?.urlImage ||
+                    spaceDetails.bicycle?.photo) && (
                     <div className='bicycle-image-container'>
                       <img
-                        src={bicycle.urlImage || `/uploads/${bicycle.photo}`}
-                        alt={`Bicicleta ${bicycle.brand} ${bicycle.model}`}
+                        src={
+                          spaceDetails.bicycle.urlImage ||
+                          `/uploads/${spaceDetails.bicycle.photo}`
+                        }
+                        alt={`Bicicleta ${spaceDetails.bicycle.brand} ${spaceDetails.bicycle.model}`}
                         className='bicycle-image'
                       />
                     </div>
@@ -629,58 +580,39 @@ const SpaceModal = ({ spaceId, onClose }) => {
                 </div>
               </div>
 
-              {/* acción para liberar */}
+              {/* Proceso de retiro */}
               <div className='action-section'>
-                <h4>
-                  <Unlock size={18} />
-                  Proceso de Retiro
-                </h4>
+                <div className='section-header'>
+                  <FiUnlock className='section-icon' />
+                  <h4>Proceso de Retiro</h4>
+                </div>
                 <div className='input-group'>
                   <input
                     type='text'
+                    className='form-input'
                     placeholder='Ingrese código de retiro'
                     value={retrievalCode}
                     onChange={(e) => setRetrievalCode(e.target.value)}
-                    className='retrieval-input'
-                    disabled={actionLoading}
+                    disabled={isProcessingAction}
                   />
                   <button
-                    onClick={handleLiberate}
-                    className={`btn-action btn-liberate ${
-                      isInfraction ? 'infraction-btn' : ''
+                    className={`btn-liberate-space ${
+                      isSpaceInInfraction ? 'infraction-btn' : ''
                     }`}
-                    disabled={actionLoading || !retrievalCode.trim()}
+                    onClick={handleLiberateSpace}
+                    disabled={isProcessingAction || !retrievalCode.trim()}
                   >
-                    {actionLoading ? (
-                      <>
-                        <Loader2
-                          size={16}
-                          className='loading-spinner'
-                        />
-                        Procesando...
-                      </>
-                    ) : (
-                      <>
-                        <Unlock size={16} />
-                        Liberar Espacio
-                      </>
-                    )}
+                    <FiArrowRight />
+                    {isProcessingAction ? 'Procesando...' : 'Liberar Espacio'}
                   </button>
                 </div>
-                <small className='help-text'>
-                  <Mail
-                    size={14}
-                    style={{ marginRight: '6px', verticalAlign: 'middle' }}
-                  />
+                <small className='form-help-text'>
                   El código de retiro fue enviado al correo del usuario
                 </small>
 
-                {isInfraction && (
-                  <div className='infraction-notice'>
-                    <AlertCircle
-                      size={16}
-                      style={{ marginRight: '8px', verticalAlign: 'middle' }}
-                    />
+                {isSpaceInInfraction && (
+                  <div className='infraction-alert'>
+                    <FiAlertTriangle className='alert-icon' />
                     <p>
                       Este espacio ha excedido el tiempo estimado de estadía.
                     </p>
@@ -688,186 +620,146 @@ const SpaceModal = ({ spaceId, onClose }) => {
                 )}
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ESPACIO RESERVADO */}
-        {isReserved && (
-          <div className='modal-body'>
-            <div className='info-section'>
-              <h3 className='section-title'>
-                <Calendar size={18} />
-                Reserva Pendiente
-              </h3>
+          {/* ESPACIO RESERVADO */}
+          {isSpaceReserved && (
+            <div className='reserved-space-section'>
+              <div className='section-header'>
+                <FiCalendar className='section-icon' />
+                <h3>Reserva Pendiente</h3>
+              </div>
 
-              {!details?.user?.rut ||
-              !details?.bicycle?.brand ||
-              !details?.reservation?.code ? (
+              {!spaceDetails?.user?.rut ||
+              !spaceDetails?.bicycle?.brand ||
+              !spaceDetails?.reservation?.code ? (
                 <div className='error-card'>
-                  <AlertCircle
-                    size={20}
-                    style={{ marginRight: '8px', verticalAlign: 'middle' }}
-                  />
+                  <FiAlertTriangle className='error-icon' />
                   <p>
                     No se pudo cargar la información completa de la reserva.
                   </p>
-                  <p className='help-text'>
+                  <p className='form-help-text'>
                     Verifica que el espacio tenga una reserva activa en el
                     sistema.
                   </p>
                 </div>
               ) : (
                 <>
+                  {/* Información del usuario */}
                   <div className='info-card'>
-                    <h4>
-                      <User size={18} />
-                      Datos del Usuario
-                    </h4>
-                    <div className='detail-row'>
-                      <strong>Nombre:</strong>
-                      <span>
-                        {details.user.name ||
-                          `${details.user.names} ${details.user.lastName}`}
-                      </span>
+                    <div className='info-card-header'>
+                      <FiUser className='card-icon' />
+                      <h4>Datos del Usuario</h4>
                     </div>
-                    <div className='detail-row'>
-                      <strong>RUT:</strong>
-                      <span>{details.user.rut}</span>
-                    </div>
-                    <div className='detail-row'>
-                      <strong>Email:</strong>
-                      <span>{details.user.email || 'No disponible'}</span>
-                    </div>
-                  </div>
-
-                  <div className='info-card'>
-                    <h4>
-                      <ClipboardCheck size={18} />
-                      Información de la Reserva
-                    </h4>
-                    <div className='detail-row'>
-                      <strong>Horas Estimadas:</strong>
-                      <span>{details.reservation.estimatedHours} horas</span>
-                    </div>
-                    <div className='detail-row'>
-                      <strong>Estado:</strong>
-                      <span
-                        className={`status-badge ${details.reservation.status?.toLowerCase()}`}
-                      >
-                        {details.reservation.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className='info-card'>
-                    <h4>
-                      <Bike size={18} />
-                      Bicicleta Reservada
-                    </h4>
-                    <div className='detail-row'>
-                      <strong>Marca:</strong>
-                      <span>{details.bicycle.brand}</span>
-                    </div>
-                    <div className='detail-row'>
-                      <strong>Modelo:</strong>
-                      <span>{details.bicycle.model}</span>
-                    </div>
-                    <div className='detail-row'>
-                      <strong>Color:</strong>
-                      <span>{details.bicycle.color}</span>
-                    </div>
-
-                    {(details.bicycle.urlImage || details.bicycle.photo) && (
-                      <div className='bicycle-image-container'>
-                        <img
-                          src={
-                            details.bicycle.urlImage ||
-                            `/uploads/${details.bicycle.photo}`
-                          }
-                          alt={`Bicicleta ${details.bicycle.brand} ${details.bicycle.model}`}
-                          className='bicycle-image'
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className='confirmation-section'>
-                    <h4>
-                      <CalendarCheck size={18} />
-                      Confirmar Ingreso
-                    </h4>
-                    <p className='help-text'>
-                      Confirme el ingreso cuando el usuario llegue con la
-                      bicicleta. Se generará un código de retiro
-                      automáticamente.
-                    </p>
-
-                    <button
-                      onClick={handleOccupyReservation}
-                      className='btn-action btn-confirm-reservation'
-                      disabled={actionLoading}
-                    >
-                      {actionLoading ? (
-                        <>
-                          <Loader2
-                            size={16}
-                            className='loading-spinner'
-                          />
-                          Confirmando...
-                        </>
-                      ) : (
-                        <>
-                          <ShieldCheck size={16} />
-                          Confirmar Ingreso de Reserva
-                        </>
-                      )}
-                    </button>
-
-                    <div className='reservation-code-display'>
+                    <div className='info-card-content'>
                       <p>
-                        <strong>Código a verificar:</strong>
+                        <strong>Nombre:</strong>{' '}
+                        {formatUserName(spaceDetails.user)}
                       </p>
-                      <div className='code-box'>
-                        <Hash
-                          size={20}
-                          style={{
-                            marginRight: '8px',
-                            verticalAlign: 'middle',
-                          }}
-                        />
-                        {details.reservation.code}
+                      <p>
+                        <strong>RUT:</strong> {spaceDetails.user.rut}
+                      </p>
+                      <p>
+                        <strong>Email:</strong>{' '}
+                        {spaceDetails.user.email || 'No disponible'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Información de la reserva */}
+                  <div className='info-card'>
+                    <div className='info-card-header'>
+                      <FiPackage className='card-icon' />
+                      <h4>Información de la Reserva</h4>
+                    </div>
+                    <div className='info-card-content'>
+                      <p>
+                        <strong>Horas Estimadas:</strong>{' '}
+                        {spaceDetails.reservation.estimatedHours} horas
+                      </p>
+                      <div className='status-badge-container'>
+                        <span className='status-label'>
+                          <span className='status-label'>
+                            <strong>Estado:</strong>
+                          </span>
+                        </span>
+                        <span className='status-badge reservation-status'>
+                          {spaceDetails.reservation.status}
+                        </span>
                       </div>
-                      <small className='help-text'>
+                    </div>
+                  </div>
+
+                  {/* Información de la bicicleta */}
+                  <div className='info-card'>
+                    <div className='info-card-header'>
+                      <FiBattery className='card-icon' />
+                      <h4>Bicicleta Reservada</h4>
+                    </div>
+                    <div className='info-card-content'>
+                      <p>
+                        <strong>Marca:</strong> {spaceDetails.bicycle.brand}
+                      </p>
+                      <p>
+                        <strong>Modelo:</strong> {spaceDetails.bicycle.model}
+                      </p>
+                      <p>
+                        <strong>Color:</strong> {spaceDetails.bicycle.color}
+                      </p>
+                      {(spaceDetails.bicycle.urlImage ||
+                        spaceDetails.bicycle.photo) && (
+                        <div className='bicycle-image-container'>
+                          <img
+                            src={
+                              spaceDetails.bicycle.urlImage ||
+                              `/uploads/${spaceDetails.bicycle.photo}`
+                            }
+                            alt={`Bicicleta ${spaceDetails.bicycle.brand} ${spaceDetails.bicycle.model}`}
+                            className='bicycle-image'
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Confirmación de ingreso */}
+                  <div className='confirmation-section'>
+                    <div className='section-header'>
+                      <FiCheckCircle className='section-icon' />
+                      <h4>Confirmar Ingreso</h4>
+                    </div>
+
+                    <div className='code-verification'>
+                      <p className='verification-label'>
+                        <FiHash className='label-icon' />
+                        Código a verificar:
+                      </p>
+                      <div className='verification-code-box'>
+                        {spaceDetails.reservation.code}
+                      </div>
+                      <small className='form-help-text'>
                         Este código fue proporcionado al usuario al hacer la
                         reserva
                       </small>
+                      <br />
                     </div>
+
+                    <button
+                      className='btn-confirm-reservation'
+                      onClick={handleOccupyReservation}
+                      disabled={isProcessingAction}
+                    >
+                      <FiCheckCircle />
+                      {isProcessingAction
+                        ? 'Confirmando...'
+                        : 'Confirmar Ingreso de Reserva'}
+                    </button>
                   </div>
                 </>
               )}
             </div>
-          </div>
-        )}
-        <footer className='modal-footer'>
-          <p className='legend'>
-            <span className='legend-item free'>
-              <div className='legend-dot free'></div>
-              Libre
-            </span>
-            <span className='legend-item reserved'>
-              <div className='legend-dot reserved'></div>
-              Reservado
-            </span>
-            <span className='legend-item occupied'>
-              <div className='legend-dot occupied'></div>
-              Ocupado
-            </span>
-            <span className='legend-item infraction'>
-              <div className='legend-dot infraction'></div>
-              En Infracción
-            </span>
-          </p>
-        </footer>
+          )}
+        </div>
       </div>
     </div>
   );

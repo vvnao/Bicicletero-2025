@@ -11,7 +11,7 @@ import BikerackEntity from '../entities/BikerackEntity.js';
 import SpaceEntity from '../entities/SpaceEntity.js';
 import EvidenceEntity from '../entities/EvidenceEntity.js';
 import { validateIncidenceData } from '../validations/incidence.validation.js';
-
+import { buildFileUrl, ensureAbsoluteUrl } from '../helpers/url.helper.js';
 const incidenceRepository = AppDataSource.getRepository(IncidenceEntity);
 const userRepository = AppDataSource.getRepository(UserEntity);
 const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
@@ -102,12 +102,22 @@ export async function getSeverityLevels() {
 //! función para obtener las incidencias reportadas por un guardia específico
 export async function getIncidencesByGuard(guardId) {
   try {
-    return await incidenceRepository.find({
+    const incidences = await incidenceRepository.find({
       where: {
         reporter: { id: guardId },
       },
       order: { dateTimeReport: 'DESC' },
       relations: ['bikerack', 'involvedUser', 'space', 'evidences'],
+    });
+
+    return incidences.map((incidence) => {
+      if (incidence.evidences && incidence.evidences.length > 0) {
+        incidence.evidences = incidence.evidences.map((evidence) => ({
+          ...evidence,
+          url: ensureAbsoluteUrl(evidence.url),
+        }));
+      }
+      return incidence;
     });
   } catch (error) {
     console.error('Error en getIncidencesByGuard:', error);
@@ -150,3 +160,12 @@ export async function deleteIncidence(incidenceId, guardId) {
     throw new Error(`Error al eliminar incidencia: ${error.message}`);
   }
 }
+
+export const transformEvidenceUrls = (evidences) => {
+  if (!evidences || !Array.isArray(evidences)) return evidences;
+
+  return evidences.map((evidence) => ({
+    ...evidence,
+    url: ensureAbsoluteUrl(evidence.url),
+  }));
+};

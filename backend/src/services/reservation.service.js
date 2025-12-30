@@ -326,21 +326,27 @@ export async function getAvailableSpaces() {
     try {
         const bikerackRepository = AppDataSource.getRepository(BikerackEntity);
         const bikeracks = await bikerackRepository.find({
-        relations: ['spaces'],
+            relations: ['spaces', 'spaces.reservations'],
         });
 
         const availableSummary = bikeracks.map((bikerack) => {
-        const spaces = bikerack.spaces || [];
-        const availableSpaces = spaces.filter(
-            (space) => space.status === SPACE_STATUS.FREE
-        ).length;
+            const spaces = bikerack.spaces || [];
 
-        return {
-            id: bikerack.id,
-            name: bikerack.name,
-            capacity: bikerack.capacity,
-            availableSpaces,
-        };
+            const occupiedSpaces = spaces.filter((space) => {
+                const hasActiveRes = space.reservations?.some(
+                    (res) => res.status === 'Activada'
+                );
+                return hasActiveRes;
+            }).length;
+
+            const availableSpaces = bikerack.capacity - occupiedSpaces;
+
+            return {
+                id: bikerack.id,
+                name: bikerack.name,
+                capacity: bikerack.capacity,
+                availableSpaces: availableSpaces < 0 ? 0 : availableSpaces,
+            };
         });
 
         return availableSummary;
