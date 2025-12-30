@@ -1,749 +1,722 @@
-// frontend/src/pages/admin/GuardiasAdmin.jsx - VERSIÓN CORREGIDA CON API_URL
-import { useState, useEffect } from 'react';
+// BicicletasAdmin.jsx - VERSIÓN COMPLETA Y FUNCIONAL
+"use strict";
+import { useState, useEffect, useCallback } from "react";
 import LayoutAdmin from "../../components/admin/LayoutAdmin";
-import { apiService } from '../../services/api.service';
-import GuardForm from '../../components/admin/GuardForm';  
-import AssignmentForm from '../../components/admin/AssignmentForm';
-import { Alert } from '../../components/admin/common/Alert';
-import { ConfirmModal } from '../../components/admin/common/ConfirmModal'; 
-import { getToken } from '../../services/auth.service';
+import { useNavigate } from "react-router-dom";
+import { getAuthToken } from '../../helpers/authHelper';
+import bikerackService from '../../services/bikerack.service.js';
 
-// URL base desde variable de entorno
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
-
-const GuardiasAdmin = () => {
-    const [activeCards, setActiveCards] = useState({});
-    const [guardias, setGuardias] = useState([]);
-    const [bikeracks, setBikeracks] = useState([]);
-    const [assignments, setAssignments] = useState([]);
+// Importa las imágenes
+import iconoCentral from '../../assets/BicicleteroCentral.png';
+import iconoNorte from '../../assets/BicicleteroNorte.png';
+import iconoSur from '../../assets/BicicleteroSur.png';
+import iconoEste from '../../assets/BicicleteroEste.png';
 
 function BicicletasAdmin() {
     const navigate = useNavigate();
     
-    // URL base
-    const API_URL = import.meta.env.VITE_API_URL;
-    
     // Estados
-
     const [loading, setLoading] = useState(true);
+    const [bicicleteros, setBicicleteros] = useState([]);
+    const [bicicleteroSeleccionado, setBicicleteroSeleccionado] = useState(null);
+    const [accionesBicicletero, setAccionesBicicletero] = useState([]);
+    const [cargandoAcciones, setCargandoAcciones] = useState(false);
     const [error, setError] = useState(null);
-    const [showGuardForm, setShowGuardForm] = useState(false);
-    const [showAssignmentForm, setShowAssignmentForm] = useState(false);
-    const [selectedGuardia, setSelectedGuardia] = useState(null);
-    const [refresh, setRefresh] = useState(false);
-    const [assignmentToEdit, setAssignmentToEdit] = useState(null);
+    
+    // Tipos de acciones
+    const tiposAccion = {
+        'ingreso': { nombre: 'Ingreso Usuario', color: '#10B981', icono: '⬇️' },
+        'salida': { nombre: 'Salida Usuario', color: '#EF4444', icono: '⬆️' },
+        'reserva': { nombre: 'Reserva Realizada', color: '#3B82F6', icono: '📅' },
+        'cancelacion': { nombre: 'Reserva Cancelada', color: '#F59E0B', icono: '❌' },
+        'asignacion': { nombre: 'Guardia Asignado', color: '#8B5CF6', icono: '🛡️' },
+        'registro': { nombre: 'Bicicleta Registrada', color: '#10B981', icono: '🚲' },
+        'incidente': { nombre: 'Reporte Incidente', color: '#DC2626', icono: '⚠️' },
+        'default': { nombre: 'Movimiento', color: '#6B7280', icono: '📝' }
+    };
 
-    const token = getToken();
+    // Asignar iconos según el nombre del bicicletero
+    const asignarIcono = (nombre) => {
+        if (!nombre) return iconoNorte;
+        const nombreLower = nombre.toLowerCase();
+        if (nombreLower.includes('norte')) return iconoSur;
+        if (nombreLower.includes('sur')) return iconoEste;
+        if (nombreLower.includes('este')) return iconoCentral;
+        return iconoNorte;
+    };
 
-    useEffect(() => {
-        fetchData();
-    }, [refresh]);
+    // Determinar color de estado
+    const getEstadoColor = (estado) => {
+        if (!estado) return '#9CA3AF';
+        const est = estado.toLowerCase();
+        switch(est) {
+            case 'lleno': return '#DC2626';
+            case 'casi lleno': return '#F59E0B';
+            case 'activo': return '#10B981';
+            case 'vacío': 
+            case 'vacio': return '#6B7280';
+            default: return '#9CA3AF';
+        }
+    };
 
-    const fetchData = async () => {
+    // Función para obtener bicicleteros
+    const fetchBicicleteros = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
             
-            console.log('🔄 Iniciando fetchData...');
+            console.log("🔄 Obteniendo bicicleteros...");
+            const bicicleterosData = await bikerackService.getAll();
+            console.log("✅ Bicicleteros obtenidos:", bicicleterosData);
             
-            // Cargar datos en paralelo
-            const [guardsRes, bikeracksRes, assignmentsRes] = await Promise.allSettled([
-                apiService.getGuards(token),
-                apiService.getBikeracks(token),
-                apiService.getGuardAssignments(token)
-            ]);
-
-            console.log('Resultados Promise.allSettled:', { guardsRes, bikeracksRes, assignmentsRes });
-
-            // PROCESAR GUARDIAS
-            if (guardsRes.status === 'fulfilled' && guardsRes.value?.success) {
-                const guardsData = Array.isArray(guardsRes.value.data) ? guardsRes.value.data : [];
-                console.log(`✅ ${guardsData.length} guardias cargados`);
-                setGuardias(guardsData);
+            if (Array.isArray(bicicleterosData) && bicicleterosData.length > 0) {
+                setBicicleteros(bicicleterosData);
             } else {
-                console.error('❌ Error en guards:', guardsRes.reason || guardsRes.value?.message);
-                setGuardias([]);
+                setError("No se encontraron bicicleteros en el sistema");
+                setBicicleteros([]);
             }
-
-            // PROCESAR BICICLETEROS
-            if (bikeracksRes.status === 'fulfilled' && bikeracksRes.value?.success) {
-                const bikeracksData = Array.isArray(bikeracksRes.value.data) ? bikeracksRes.value.data : [];
-                console.log(`✅ ${bikeracksData.length} bicicleteros cargados`);
-                if (bikeracksData.length > 0) {
-                    console.log('🔍 Primer bicicletero:', bikeracksData[0]);
-                }
-                setBikeracks(bikeracksData);
+            
+        } catch (error) {
+            console.error("❌ Error cargando bicicleteros:", error);
+            let errorMessage = 'Error al cargar bicicleteros';
+            if (error.response) {
+                errorMessage = `Error ${error.response.status}: ${error.response.data?.message || 'Error del servidor'}`;
+            } else if (error.request) {
+                errorMessage = 'No se pudo conectar con el servidor';
             } else {
-                console.error('❌ Error en bikeracks:', bikeracksRes.reason || bikeracksRes.value?.message);
-                setBikeracks([]);
+                errorMessage = error.message;
             }
-
-            // PROCESAR ASIGNACIONES
-            if (assignmentsRes.status === 'fulfilled' && assignmentsRes.value?.success) {
-                const assignmentsData = Array.isArray(assignmentsRes.value.data) ? assignmentsRes.value.data : [];
-                console.log(`✅ ${assignmentsData.length} asignaciones cargadas`);
-                if (assignmentsData.length > 0) {
-                    console.log('🔍 Primera asignación:', assignmentsData[0]);
-                }
-                setAssignments(assignmentsData);
-            } else {
-                console.error('❌ Error en assignments:', assignmentsRes.reason || assignmentsRes.value?.message);
-                setAssignments([]);
-            }
-     
-        } catch (err) {
-            console.error('❌ Error general en fetchData:', err);
-            setError('Error al cargar los datos');
+            setError(errorMessage);
+            setBicicleteros([]);
         } finally {
             setLoading(false);
-            console.log('✅ fetchData completado');
         }
-    };
+    }, []);
 
-    const handleCreateGuard = async (guardData) => {
-        try {
-            const cleanData = Object.fromEntries(
-                Object.entries(guardData).filter(([_, v]) => v !== '')
-            );
-
-            const response = await apiService.createGuard(cleanData, token);
-            
-            if (response.success) {
-                alert(`✅ Guardia creado exitosamente: ${response.data.guard.user.names}`);
-                setShowGuardForm(false);
-                setRefresh(prev => !prev);
-            } else {
-                alert(`❌ Error: ${response.message}`);
-            }
-        } catch (err) {
-            console.error('Error creating guard:', err);
-            alert('❌ Error al crear el guardia');
-        }
-    };
-
-    const handleCreateAssignment = async (assignmentData) => {
-        try {
-            const response = await apiService.createAssignment(assignmentData, token);
-            
-            if (response.success) {
-                alert('✅ Asignación creada exitosamente');
-                setShowAssignmentForm(false);
-                setSelectedGuardia(null);
-                setRefresh(prev => !prev);
-            } else {
-                alert(`❌ Error: ${response.message}`);
-            }
-        } catch (err) {
-            console.error('Error creating assignment:', err);
-            alert('❌ Error al crear la asignación');
-        }
-    };
-
-    const handleUpdateAssignment = async (assignmentData, assignmentId) => {
-        try {
-            const token = getToken();
-            
-           
-            const result = await apiService.updateAssignment(assignmentId, assignmentData, token);
-            
-            if (result.success) {
-                alert('✅ Asignación actualizada exitosamente');
-                setShowAssignmentForm(false);
-                setSelectedGuardia(null);
-                setAssignmentToEdit(null);
-                setRefresh(prev => !prev);
-            } else {
-                alert(`❌ Error: ${result.message}`);
-            }
-        } catch (err) {
-            console.error('Error updating assignment:', err);
-            alert('❌ Error al actualizar la asignación');
-        }
-    };
-
-    const handleToggleAvailability = async (guardId, isAvailable) => {
-        try {
-            const response = await apiService.toggleGuardAvailability(
-                guardId, 
-                isAvailable, 
-                token
-            );
-            
-            if (response.success) {
-                setRefresh(prev => !prev);
-            } else {
-                alert(`❌ Error: ${response.message}`);
-            }
-        } catch (err) {
-            console.error('Error toggling availability:', err);
-            alert('❌ Error al cambiar disponibilidad');
-        }
-    };
-
-    const getGuardAssignments = (guardId) => {
-        console.log(`\n=== BUSCANDO ASIGNACIONES PARA GUARDIA ${guardId} ===`);
-        
-        if (assignments.length === 0) {
-            console.log('⚠️ No hay asignaciones en el estado');
-            return [];
+    // Fetch acciones - Versión mejorada
+    const fetchAcciones = useCallback(async (bicicleteroId) => {
+        if (!bicicleteroId) {
+            console.log("⚠️ No hay bicicletero ID");
+            setAccionesBicicletero([]);
+            return;
         }
         
-        const filtered = assignments.filter(a => {
-            // Normalizar el guardId de la asignación
-            const assignmentGuardId = a.guardId || a.guard?.id;
-            const match = parseInt(assignmentGuardId) === parseInt(guardId);
-            return match;
-        });
-        
-        console.log(`🎯 RESULTADO: ${filtered.length} asignaciones encontradas`);
-        return filtered;
-    };
-
-    // ESTILOS
-    const styles = {
-        container: {
-            padding: '25px',
-            backgroundColor: '#242d4b',
-            minHeight: 'calc(100vh - 80px)'
-        },
-        header: {
-            color: '#ffffffff',
-            marginBottom: '10px',
-            fontSize: '32px',
-            fontWeight: '700'
-        },
-        subtitle: {
-            color: '#ffffffff',
-            marginBottom: '30px',
-            fontSize: '18px'
-        },
-        sectionTitle: {
-            color: '#ebedf5ff',
-            marginBottom: '20px',
-            fontSize: '22px',
-            fontWeight: '600',
-            borderBottom: '2px solid #4361ee',
-            paddingBottom: '8px',
-            display: 'inline-block'
-        },
-        cardsContainer: {
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-            gap: '25px',
-            marginTop: '20px'
-        },
-        card: {
-            background: 'white',
-            borderRadius: '15px',
-            boxShadow: '0 8px 25px rgba(0,0,0,0.08)',
-            overflow: 'hidden',
-            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-            border: '1px solid #eaeaea'
-        },
-        cardHeader: {
-            background: 'linear-gradient(135deg, #4361ee 0%, #3a56d4 100%)',
-            color: 'white',
-            padding: '20px',
-            textAlign: 'center'
-        },
-        cardTitle: {
-            fontSize: '20px',
-            fontWeight: '600',
-            marginBottom: '5px'
-        },
-        cardSubtitle: {
-            fontSize: '14px',
-            opacity: '0.9'
-        },
-        cardId: {
-            fontSize: '12px',
-            backgroundColor: 'rgba(255,255,255,0.2)',
-            padding: '3px 10px',
-            borderRadius: '12px',
-            display: 'inline-block',
-            marginTop: '8px'
-        },
-        cardBody: {
-            padding: '20px'
-        },
-        tabsContainer: {
-            display: 'flex',
-            borderBottom: '2px solid #f0f0f0',
-            marginBottom: '20px'
-        },
-        tab: {
-            flex: 1,
-            textAlign: 'center',
-            padding: '12px 0',
-            cursor: 'pointer',
-            fontWeight: '500',
-            color: '#6c757d',
-            transition: 'all 0.3s ease',
-            borderBottom: '3px solid transparent',
-            fontSize: '14px'
-        },
-        activeTab: {
-            color: '#4361ee',
-            borderBottom: '3px solid #4361ee',
-            fontWeight: '600'
-        },
-        contentSection: {
-            minHeight: '150px'
-        },
-        infoItem: {
-            marginBottom: '12px',
-            display: 'flex',
-            alignItems: 'center'
-        },
-        infoLabel: {
-            fontWeight: '600',
-            color: '#272e4b',
-            minWidth: '100px',
-            fontSize: '14px'
-        },
-        infoValue: {
-            color: '#495057',
-            fontSize: '14px',
-            wordBreak: 'break-word'
-        },
-        badge: {
-            padding: '4px 12px',
-            borderRadius: '20px',
-            fontSize: '12px',
-            fontWeight: '500',
-            display: 'inline-block'
-        },
-        badgeActive: {
-            backgroundColor: '#e7f7ef',
-            color: '#2a8c5a'
-        },
-        badgeInactive: {
-            backgroundColor: '#fee',
-            color: '#e74c3c'
-        },
-        button: {
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            cursor: 'pointer',
-            fontWeight: '500',
-            transition: 'all 0.3s ease',
-            fontSize: '14px',
-            marginTop: '10px'
-        },
-        buttonPrimary: {
-            backgroundColor: '#4361ee',
-            color: 'white',
-            width: '100%'
-        },
-        buttonSecondary: {
-            backgroundColor: '#6c757d',
-            color: 'white',
-            width: '100%'
-        },
-        icon: {
-            marginRight: '8px',
-            fontSize: '16px'
-        },
-        loading: {
-            textAlign: 'center',
-            padding: '50px',
-            color: '#4361ee'
-        },
-        error: {
-            textAlign: 'center',
-            padding: '20px',
-            backgroundColor: '#fee',
-            color: '#e74c3c',
-            borderRadius: '8px',
-            margin: '20px 0'
-        },
-        modalOverlay: {
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000
-        },
-        modal: {
-            background: 'white',
-            borderRadius: '15px',
-            padding: '30px',
-            maxWidth: '500px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflowY: 'auto',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-        },
-        modalHeader: {
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '20px'
-        },
-        modalTitle: {
-            fontSize: '24px',
-            fontWeight: '600',
-            color: '#272e4b'
-        },
-        closeButton: {
-            background: 'none',
-            border: 'none',
-            fontSize: '24px',
-            cursor: 'pointer',
-            color: '#6c757d'
-        },
-        emptyState: {
-            gridColumn: '1 / -1', 
-            textAlign: 'center', 
-            padding: '40px',
-            color: '#6c757d',
-            backgroundColor: 'white',
-            borderRadius: '15px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-        }
-    };
-
-    const CardGuardia = ({ guardia }) => {
-        const activeTab = activeCards[guardia.id] || 'informacion';
-        const guardAssignments = getGuardAssignments(guardia.id);
-
-        const handleTabClick = (tab) => {
-            setActiveCards(prev => ({
-                ...prev,
-                [guardia.id]: tab
-            }));
-        };
-
-        const formatSchedule = (assignments) => {
-            if (!assignments || assignments.length === 0) return [];
+        try {
+            setCargandoAcciones(true);
+            console.log(`🔍 Buscando acciones para bicicletero ID: ${bicicleteroId}`);
             
-            const daysMap = {
-                0: 'domingo', 1: 'lunes', 2: 'martes', 3: 'miércoles',
-                4: 'jueves', 5: 'viernes', 6: 'sábado'
-            };
+            const resultado = await bikerackService.getBikerackActions(bicicleteroId);
+            console.log(`📊 Resultado de acciones:`, resultado);
             
-            return assignments.map(a => ({
-                dia: daysMap[a.dayOfWeek] || `Día ${a.dayOfWeek}`,
-                horario: `${a.startTime || '??:??'} - ${a.endTime || '??:??'}`,
-                bicicletero: a.bikerack?.name || 'Sin nombre',
-                id: a.id
-            }));
-        };
-
-        const guardSchedule = formatSchedule(guardAssignments);
-
-        return (
-            <div style={styles.card}>
-                <div style={styles.cardHeader}>
-                    <div style={styles.cardTitle}>
-                        {guardia.user?.names} {guardia.user?.lastName}
-                    </div>
-                    <div style={styles.cardSubtitle}>
-                        Guardia #{guardia.guardNumber || guardia.id}
-                    </div>
-                    <div style={styles.cardId}>
-                        ID: {guardia.id} | {guardAssignments.length} asignaciones
-                    </div>
-                </div>
+            if (resultado && Array.isArray(resultado) && resultado.length > 0) {
+                // Formatear las acciones para la tabla
+                const accionesFormateadas = resultado.map((accion, index) => {
+                    // Determinar tipo basado en descripción si no viene
+                    let tipo = accion.tipo || 'default';
+                    const descLower = (accion.descripcion || '').toLowerCase();
+                    
+                    if (descLower.includes('reserva') && descLower.includes('cancel')) {
+                        tipo = 'cancelacion';
+                    } else if (descLower.includes('reserva')) {
+                        tipo = 'reserva';
+                    } else if (descLower.includes('ingreso') || descLower.includes('check-in')) {
+                        tipo = 'ingreso';
+                    } else if (descLower.includes('salida') || descLower.includes('check-out')) {
+                        tipo = 'salida';
+                    }
+                    
+                    return {
+                        id: accion.id || `temp-${index}`,
+                        tipo: tipo,
+                        descripcion: accion.descripcion || 'Sin descripción',
+                        usuario: accion.usuario || 'Sistema',
+                        fecha: accion.fecha || new Date().toISOString(),
+                        rut: accion.rut || 'N/A',
+                        bicicleta: accion.bicicleta || 'N/A',
+                        guardia: accion.guardia || null,
+                        espacio: accion.espacio || 'N/A',
+                        reservationCode: accion.reservationCode || null
+                    };
+                });
                 
-                <div style={styles.cardBody}>
-                    <div style={styles.tabsContainer}>
-                        <div 
-                            style={{
-                                ...styles.tab,
-                                ...(activeTab === 'informacion' && styles.activeTab)
-                            }}
-                            onClick={() => handleTabClick('informacion')}
-                        >
-                            📋 Info
-                        </div>
-                        <div 
-                            style={{
-                                ...styles.tab,
-                                ...(activeTab === 'horario' && styles.activeTab)
-                            }}
-                            onClick={() => handleTabClick('horario')}
-                        >
-                            🕐 Horario ({guardSchedule.length})
-                        </div>
-                        <div 
-                            style={{
-                                ...styles.tab,
-                                ...(activeTab === 'contacto' && styles.activeTab)
-                            }}
-                            onClick={() => handleTabClick('contacto')}
-                        >
-                            📞 Contacto
-                        </div>
-                    </div>
+                console.log(`✅ ${accionesFormateadas.length} acciones formateadas`);
+                setAccionesBicicletero(accionesFormateadas);
+            } else {
+                console.log("📭 No hay acciones disponibles");
+                setAccionesBicicletero([]);
+            }
+        } catch (error) {
+            console.error('❌ Error en fetchAcciones:', error);
+            setAccionesBicicletero([]);
+        } finally {
+            setCargandoAcciones(false);
+        }
+    }, []);
 
-                    <div style={styles.contentSection}>
-                        {activeTab === 'informacion' && (
-                            <div>
-                                <div style={styles.infoItem}>
-                                    <span style={styles.infoLabel}>Email:</span>
-                                    <span style={styles.infoValue}>{guardia.user?.email}</span>
-                                </div>
-                                <div style={styles.infoItem}>
-                                    <span style={styles.infoLabel}>RUT:</span>
-                                    <span style={styles.infoValue}>{guardia.user?.rut}</span>
-                                </div>
-                                <div style={styles.infoItem}>
-                                    <span style={styles.infoLabel}>Estado:</span>
-                                    <span style={{
-                                        ...styles.badge,
-                                        ...(guardia.isAvailable ? styles.badgeActive : styles.badgeInactive)
-                                    }}>
-                                        {guardia.isAvailable ? '✅ Disponible' : '❌ No disponible'}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'horario' && (
-                            <div>
-                                {guardSchedule.length > 0 ? (
-                                    <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                        {guardSchedule.map((schedule, index) => (
-                                            <div 
-                                                key={schedule.id || index} 
-                                                style={{
-                                                    backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white',
-                                                    padding: '10px',
-                                                    borderRadius: '8px',
-                                                    marginBottom: '8px',
-                                                    borderLeft: '4px solid #4361ee',
-                                                    cursor: 'pointer'
-                                                }}
-                                                onClick={() => {
-                                                    const fullAssignment = assignments.find(a => a.id === schedule.id);
-                                                    if (fullAssignment) {
-                                                        setSelectedGuardia(guardia);
-                                                        setAssignmentToEdit(fullAssignment);
-                                                        setShowAssignmentForm(true);
-                                                    }
-                                                }}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <span style={{ 
-                                                        fontSize: '12px', 
-                                                        backgroundColor: '#4361ee', 
-                                                        color: 'white',
-                                                        padding: '2px 8px',
-                                                        borderRadius: '4px'
-                                                    }}>
-                                                        {schedule.dia}
-                                                    </span>
-                                                    <span style={{ fontWeight: '600', color: '#272e4b' }}>
-                                                        {schedule.horario}
-                                                    </span>
-                                                    <span style={{ 
-                                                        marginLeft: 'auto',
-                                                        fontSize: '12px',
-                                                        color: '#3498db'
-                                                    }}>
-                                                        ✏️ Editar
-                                                    </span>
-                                                </div>
-                                                <div style={{ 
-                                                    fontSize: '14px', 
-                                                    color: '#495057',
-                                                    marginTop: '5px'
-                                                }}>
-                                                    📍 {schedule.bicicletero}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div style={{ 
-                                        textAlign: 'center', 
-                                        padding: '20px',
-                                        backgroundColor: '#f8f9fa',
-                                        borderRadius: '8px'
-                                    }}>
-                                        <div style={{ fontSize: '48px' }}>📅</div>
-                                        <h4>Sin asignaciones</h4>
-                                        <button 
-                                            style={{ 
-                                                ...styles.button, 
-                                                ...styles.buttonPrimary,
-                                                width: 'auto',
-                                                marginTop: '15px'
-                                            }}
-                                            onClick={() => {
-                                                setSelectedGuardia(guardia);
-                                                setShowAssignmentForm(true);
-                                            }}
-                                        >
-                                            + Asignar primer horario
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {activeTab === 'contacto' && (
-                            <div>
-                                <div style={styles.infoItem}>
-                                    <span style={styles.infoLabel}>Teléfono:</span>
-                                    <span style={styles.infoValue}>{guardia.phone || 'No registrado'}</span>
-                                </div>
-                                <div style={styles.infoItem}>
-                                    <span style={styles.infoLabel}>Dirección:</span>
-                                    <span style={styles.infoValue}>{guardia.address || 'No registrada'}</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                        <button 
-                            style={{ ...styles.button, ...styles.buttonPrimary, flex: 1 }}
-                            onClick={() => {
-                                setSelectedGuardia(guardia);
-                                setShowAssignmentForm(true);
-                            }}
-                        >
-                            📅 Asignar Horario
-                        </button>
-                        <button 
-                            style={{ 
-                                ...styles.button, 
-                                backgroundColor: guardia.isAvailable ? '#f39c12' : '#2ecc71',
-                                color: 'white',
-                                flex: 1
-                            }}
-                            onClick={() => handleToggleAvailability(guardia.id, !guardia.isAvailable)}
-                        >
-                            {guardia.isAvailable ? '🔴 Desactivar' : '🟢 Activar'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
+    // Handlers
+    const handleSeleccionarBicicletero = (bicicletero) => {
+        console.log("🎯 Bicicletero seleccionado:", bicicletero);
+        setBicicleteroSeleccionado(bicicletero);
+        fetchAcciones(bicicletero.id);
     };
 
-    if (loading) {
+    const handleRefrescarAcciones = () => {
+        if (bicicleteroSeleccionado) {
+            console.log("🔄 Refrescando acciones...");
+            fetchAcciones(bicicleteroSeleccionado.id);
+        }
+    };
+
+    const handleRecargarTodo = () => {
+        console.log("🔄 Recargando todo...");
+        fetchBicicleteros();
+    };
+
+    // Componentes auxiliares
+    const LoadingSpinner = () => (
+        <div style={{ 
+            padding: '60px 20px', 
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '400px'
+        }}>
+            <div style={{ 
+                width: '50px', 
+                height: '50px', 
+                border: '5px solid #f3f3f3',
+                borderTop: '5px solid #3B82F6',
+                borderRadius: '50%',
+                marginBottom: '20px',
+                animation: 'spin 1s linear infinite'
+            }}></div>
+            <div style={{ fontSize: '1.2rem', color: '#6B7280' }}>
+                Cargando bicicleteros...
+            </div>
+        </div>
+    );
+
+    const ErrorDisplay = ({ message, onRetry }) => (
+        <div style={{
+            backgroundColor: '#FEE2E2',
+            border: '2px solid #DC2626',
+            borderRadius: '12px',
+            padding: '30px',
+            margin: '20px 0',
+            textAlign: 'center'
+        }}>
+            <div style={{ fontSize: '3rem', marginBottom: '15px' }}>⚠️</div>
+            <h3 style={{ color: '#DC2626', margin: '0 0 10px 0' }}>Error al cargar datos</h3>
+            <p style={{ color: '#7F1D1D', margin: '0 0 20px 0' }}>{message}</p>
+            <button 
+                onClick={onRetry}
+                style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#DC2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: '500'
+                }}
+            >
+                🔄 Reintentar
+            </button>
+        </div>
+    );
+
+    // Efectos
+    useEffect(() => {
+        console.log("🚀 Componente BicicletasAdmin montado");
+        const token = getAuthToken();
+        
+        if (!token) {
+            setError('No estás autenticado. Redirigiendo...');
+            setTimeout(() => navigate('/auth/login'), 2000);
+            return;
+        }
+        
+        fetchBicicleteros();
+    }, [fetchBicicleteros, navigate]);
+
+    useEffect(() => {
+        if (bicicleteros.length > 0 && !bicicleteroSeleccionado) {
+            const primerBicicletero = bicicleteros[0];
+            console.log("🎯 Auto-seleccionando primer bicicletero:", primerBicicletero);
+            setBicicleteroSeleccionado(primerBicicletero);
+            fetchAcciones(primerBicicletero.id);
+        }
+    }, [bicicleteros, bicicleteroSeleccionado, fetchAcciones]);
+
+    // Render
+    if (loading && !bicicleteroSeleccionado) {
         return (
             <LayoutAdmin>
-                <div style={styles.container}>
-                    <div style={styles.loading}>
-                        <h2>Cargando datos...</h2>
-                    </div>
-                </div>
+                <LoadingSpinner />
             </LayoutAdmin>
         );
     }
 
     return (
         <LayoutAdmin>
-            <div style={styles.container}>
-                <h1 style={styles.header}>Gestión de Guardias</h1>
-                <p style={styles.subtitle}>
-                    Total de guardias: {guardias.length} | Asignaciones activas: {assignments.length}
-                </p>
-                
-                {error && <div style={styles.error}>{error}</div>}
-                
-                <h3 style={styles.sectionTitle}>Guardias Registrados</h3>
-                
-                <div style={styles.cardsContainer}>
-                    {guardias.length > 0 ? (
-                        guardias.map(guardia => (
-                            <CardGuardia key={guardia.id} guardia={guardia} />
-                        ))
-                    ) : (
-                        <div style={styles.emptyState}>
-                            <h3>No hay guardias registrados</h3>
-                            <button 
-                                style={{ ...styles.button, ...styles.buttonPrimary, width: 'auto', margin: '50px' }}
-                                onClick={() => setShowGuardForm(true)}
-                            >
-                                + Agregar Primer Guardia
-                            </button>
+            <div style={{ padding: '20px' }}>
+                {/* Encabezado */}
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '30px',
+                    flexWrap: 'wrap',
+                    gap: '15px'
+                }}>
+                    <div>
+                        <h1 style={{
+                            fontSize: '1.8rem',
+                            fontWeight: 'bold',
+                            color: '#ffffff',
+                            margin: 0
+                        }}>
+                            Gestión de Bicicleteros
+                        </h1>
+                        <div style={{ 
+                            fontSize: '0.8rem', 
+                            color: '#9CA3AF',
+                            marginTop: '5px'
+                        }}>
+                            {bicicleteros.length} bicicleteros registrados
                         </div>
-                    )}
-                </div>
-
-                <div style={{ marginTop: '40px', textAlign: 'center' }}>
-                    <button 
-                        style={{ ...styles.button, ...styles.buttonPrimary, width: '200px' }}
-                        onClick={() => setShowGuardForm(true)}
-                    >
-                        + Agregar Nuevo Guardia
-                    </button>
-                </div>
-            </div>
-
-            {showGuardForm && (
-                <div style={styles.modalOverlay}>
-                    <div style={styles.modal}>
-                        <div style={styles.modalHeader}>
-                            <h2 style={styles.modalTitle}>Nuevo Guardia</h2>
-                            <button 
-                                style={styles.closeButton}
-                                onClick={() => setShowGuardForm(false)}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <GuardForm 
-                            onSubmit={handleCreateGuard}
-                            onCancel={() => setShowGuardForm(false)}
-                        />
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                            onClick={handleRefrescarAcciones}
+                            disabled={cargandoAcciones || !bicicleteroSeleccionado}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: (cargandoAcciones || !bicicleteroSeleccionado) ? '#9CA3AF' : '#10B981',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: (cargandoAcciones || !bicicleteroSeleccionado) ? 'not-allowed' : 'pointer',
+                                fontSize: '0.9rem',
+                                fontWeight: '500'
+                            }}
+                        >
+                            {cargandoAcciones ? '↻ Actualizando...' : '↻ Refrescar Tabla'}
+                        </button>
+                        
+                        <button 
+                            onClick={handleRecargarTodo}
+                            disabled={loading}
+                            style={{
+                                padding: '8px 16px',
+                                backgroundColor: loading ? '#9CA3AF' : '#3B82F6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                fontSize: '0.9rem',
+                                fontWeight: '500'
+                            }}
+                        >
+                            {loading ? '↻ Cargando...' : '↻ Actualizar Todo'}
+                        </button>
                     </div>
                 </div>
-            )}
 
-            {showAssignmentForm && (
-                <div style={styles.modalOverlay}>
-                    <div style={styles.modal}>
-                        <div style={styles.modalHeader}>
-                            <h2 style={styles.modalTitle}>
-                                {assignmentToEdit ? '✏️ Editar' : '📅 Nueva'} Asignación - {selectedGuardia?.user?.names}
-                            </h2>
-                            <button 
-                                style={styles.closeButton}
-                                onClick={() => {
-                                    setShowAssignmentForm(false);
-                                    setSelectedGuardia(null);
-                                    setAssignmentToEdit(null);
-                                }}
-                            >
-                                ×
-                            </button>
+                {error && <ErrorDisplay message={error} onRetry={handleRecargarTodo} />}
+
+                {/* Grid de bicicleteros */}
+                {bicicleteros.length > 0 ? (
+                    <>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                            gap: '20px',
+                            marginBottom: '30px'
+                        }}>
+                            {bicicleteros.map((bicicletero) => {
+                                const isSelected = bicicleteroSeleccionado?.id === bicicletero.id;
+                                const iconoBicicletero = asignarIcono(bicicletero.name);
+                                
+                                return (
+                                    <div
+                                        key={bicicletero.id}
+                                        onClick={() => handleSeleccionarBicicletero(bicicletero)}
+                                        style={{
+                                            backgroundColor: '#ffffff',
+                                            borderRadius: '16px',
+                                            cursor: 'pointer',
+                                            border: isSelected ? `3px solid ${bicicletero.colorContenedor}` : '2px solid #E5E7EB',
+                                            boxShadow: isSelected ? `0 8px 20px ${bicicletero.colorContenedor}50` : '0 2px 8px rgba(0,0,0,0.1)',
+                                            transition: 'all 0.3s ease',
+                                            transform: isSelected ? 'translateY(-5px)' : 'none',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        <div style={{
+                                            backgroundColor: bicicletero.colorContenedor,
+                                            padding: '15px 20px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
+                                        }}>
+                                            <h3 style={{
+                                                margin: 0,
+                                                fontSize: '1.2rem',
+                                                color: 'white',
+                                                fontWeight: '700'
+                                            }}>
+                                                {bicicletero.name}
+                                            </h3>
+                                            <span style={{
+                                                padding: '5px 12px',
+                                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                                color: getEstadoColor(bicicletero.status),
+                                                borderRadius: '20px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '700',
+                                                textTransform: 'uppercase'
+                                            }}>
+                                                {bicicletero.status}
+                                            </span>
+                                        </div>
+
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            padding: '20px',
+                                            backgroundColor: 'white'
+                                        }}>
+                                            <img 
+                                                src={iconoBicicletero} 
+                                                alt={bicicletero.name}
+                                                style={{
+                                                    width: '100px',
+                                                    height: '100px',
+                                                    objectFit: 'contain'
+                                                }}
+                                            />
+                                        </div>
+                                        
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-around',
+                                            padding: '15px 20px',
+                                            backgroundColor: 'white',
+                                            borderTop: '2px solid #F3F4F6'
+                                        }}>
+                                            <div style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.7rem', color: '#6B7280', fontWeight: '600', textTransform: 'uppercase', marginBottom: '5px' }}>Capacidad</div>
+                                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1F2937' }}>{bicicletero.capacidad || 0}</div>
+                                            </div>
+                                            <div style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.7rem', color: '#6B7280', fontWeight: '600', textTransform: 'uppercase', marginBottom: '5px' }}>Ocupados</div>
+                                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#DC2626' }}>{bicicletero.occupied || 0}</div>
+                                            </div>
+                                            <div style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.7rem', color: '#6B7280', fontWeight: '600', textTransform: 'uppercase', marginBottom: '5px' }}>Libres</div>
+                                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10B981' }}>{bicicletero.free || 0}</div>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ padding: '10px 20px 20px 20px', backgroundColor: 'white', borderTop: '2px solid #F3F4F6' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                                <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>Ocupación</span>
+                                                <span style={{ 
+                                                    fontSize: '0.8rem', 
+                                                    fontWeight: '600',
+                                                    color: bicicletero.occupationPercentage >= 80 ? '#DC2626' : 
+                                                           bicicletero.occupationPercentage >= 50 ? '#F59E0B' : '#10B981'
+                                                }}>
+                                                    {bicicletero.occupationPercentage || 0}%
+                                                </span>
+                                            </div>
+                                            <div style={{ height: '8px', backgroundColor: '#E5E7EB', borderRadius: '4px', overflow: 'hidden' }}>
+                                                <div style={{
+                                                    height: '100%',
+                                                    width: `${Math.min(bicicletero.occupationPercentage || 0, 100)}%`,
+                                                    backgroundColor: bicicletero.occupationPercentage >= 80 ? '#DC2626' : 
+                                                                   bicicletero.occupationPercentage >= 50 ? '#F59E0B' : '#10B981',
+                                                    borderRadius: '4px',
+                                                    transition: 'width 0.5s ease'
+                                                }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                         
-                        <AssignmentForm 
-                            guardId={selectedGuardia?.id}
-                            bikeracks={bikeracks}
-                            onSubmit={assignmentToEdit ? 
-                                (data) => handleUpdateAssignment(data, assignmentToEdit.id) : 
-                                handleCreateAssignment}
-                            onCancel={() => {
-                                setShowAssignmentForm(false);
-                                setSelectedGuardia(null);
-                                setAssignmentToEdit(null);
+                        {/* TABLA DE ACCIONES */}
+                        {bicicleteroSeleccionado && (
+                            <div style={{
+                                backgroundColor: 'white',
+                                borderRadius: '12px',
+                                padding: '25px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                            }}>
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'flex-start',
+                                    marginBottom: '25px',
+                                    paddingBottom: '15px',
+                                    borderBottom: '1px solid #E5E7EB',
+                                    flexWrap: 'wrap',
+                                    gap: '20px'
+                                }}>
+                                    <div>
+                                        <h2 style={{
+                                            fontSize: '1.4rem',
+                                            fontWeight: 'bold',
+                                            color: '#1F2937',
+                                            margin: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '10px'
+                                        }}>
+                                            <span style={{ 
+                                                backgroundColor: bicicleteroSeleccionado.colorContenedor,
+                                                color: 'white',
+                                                padding: '8px 12px',
+                                                borderRadius: '8px'
+                                            }}>
+                                                📋
+                                            </span>
+                                            Historial - {bicicleteroSeleccionado.name}
+                                        </h2>
+                                        <div style={{ marginTop: '8px', color: '#6B7280', fontSize: '0.9rem' }}>
+                                            {bicicleteroSeleccionado.ubicacion || 'Sin ubicación especificada'}
+                                        </div>
+                                    </div>
+                                    
+                                    <div style={{ fontSize: '0.85rem', color: '#6B7280', backgroundColor: '#F3F4F6', padding: '4px 10px', borderRadius: '6px' }}>
+                                        ID: {bicicleteroSeleccionado.id}
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: '15px'
+                                    }}>
+                                        <h3 style={{
+                                            fontSize: '1.1rem',
+                                            fontWeight: '600',
+                                            color: '#374151',
+                                            margin: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}>
+                                            📋 Registro de Actividades
+                                            <span style={{
+                                                padding: '2px 8px',
+                                                backgroundColor: '#F3F4F6',
+                                                borderRadius: '12px',
+                                                fontSize: '0.8rem',
+                                                color: '#6B7280'
+                                            }}>
+                                                {cargandoAcciones ? 'Cargando...' : `${accionesBicicletero.length} registros`}
+                                            </span>
+                                        </h3>
+                                    </div>
+                                    
+                                    {cargandoAcciones ? (
+                                        <div style={{ textAlign: 'center', padding: '40px' }}>
+                                            <div style={{ 
+                                                width: '30px', 
+                                                height: '30px', 
+                                                border: '3px solid #f3f3f3',
+                                                borderTop: '3px solid #3B82F6',
+                                                borderRadius: '50%',
+                                                margin: '0 auto 15px',
+                                                animation: 'spin 1s linear infinite'
+                                            }}></div>
+                                            <p style={{ color: '#6B7280' }}>Cargando historial...</p>
+                                        </div>
+                                    ) : accionesBicicletero.length > 0 ? (
+                                        <>
+                                            <div style={{ overflowX: 'auto', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+                                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+                                                    <thead>
+                                                        <tr style={{ backgroundColor: '#F9FAFB' }}>
+                                                            <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: '600', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Tipo</th>
+                                                            <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: '600', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Usuario</th>
+                                                            <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: '600', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Código Reserva</th>
+                                                            <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: '600', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Detalles</th>
+                                                            <th style={{ padding: '12px 15px', textAlign: 'left', fontWeight: '600', color: '#4B5563', borderBottom: '2px solid #E5E7EB' }}>Fecha/Hora</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {accionesBicicletero.map((accion, index) => {
+                                                            const tipoInfo = tiposAccion[accion.tipo] || tiposAccion.default;
+                                                            
+                                                            return (
+                                                                <tr key={accion.id || index} style={{
+                                                                    borderBottom: '1px solid #E5E7EB',
+                                                                    backgroundColor: index % 2 === 0 ? 'white' : '#F9FAFB'
+                                                                }}>
+                                                                    <td style={{ padding: '12px 15px', verticalAlign: 'top' }}>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                            <span style={{ fontSize: '1.2rem' }}>{tipoInfo.icono}</span>
+                                                                            <span style={{
+                                                                                display: 'inline-block',
+                                                                                padding: '4px 10px',
+                                                                                backgroundColor: tipoInfo.color + '20',
+                                                                                color: tipoInfo.color,
+                                                                                borderRadius: '12px',
+                                                                                fontSize: '0.8rem',
+                                                                                fontWeight: '600'
+                                                                            }}>
+                                                                                {tipoInfo.nombre}
+                                                                            </span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td style={{ padding: '12px 15px', verticalAlign: 'top' }}>
+                                                                        <div style={{ fontWeight: '500', color: '#1F2937' }}>
+                                                                            👤 {accion.usuario}
+                                                                        </div>
+                                                                        {accion.rut && accion.rut !== 'N/A' && (
+                                                                            <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                                                                                RUT: {accion.rut}
+                                                                            </div>
+                                                                        )}
+                                                                    </td>
+                                                                    <td style={{ padding: '12px 15px', verticalAlign: 'top' }}>
+                                                                        {accion.reservationCode ? (
+                                                                            <div style={{ 
+                                                                                padding: '4px 8px', 
+                                                                                backgroundColor: '#F3F4F6',
+                                                                                borderRadius: '6px',
+                                                                                fontFamily: 'monospace',
+                                                                                fontSize: '0.85rem'
+                                                                            }}>
+                                                                                {accion.reservationCode}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <span style={{ color: '#9CA3AF' }}>Sin código</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td style={{ padding: '12px 15px', verticalAlign: 'top' }}>
+                                                                        <div style={{ marginBottom: '4px', color: '#1F2937' }}>
+                                                                            {accion.descripcion}
+                                                                        </div>
+                                                                        {accion.bicicleta && accion.bicicleta !== 'N/A' && (
+                                                                            <div style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '2px' }}>
+                                                                                <strong>Bicicleta:</strong> {accion.bicicleta}
+                                                                            </div>
+                                                                        )}
+                                                                        {accion.espacio && (
+                                                                            <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>
+                                                                                <strong>Espacio:</strong> {accion.espacio}
+                                                                            </div>
+                                                                        )}
+                                                                    </td>
+                                                                    <td style={{ padding: '12px 15px', verticalAlign: 'top' }}>
+                                                                        {accion.fecha ? (
+                                                                            <>
+                                                                                <div style={{ fontSize: '0.9rem', color: '#1F2937' }}>
+                                                                                    {new Date(accion.fecha).toLocaleDateString('es-CL')}
+                                                                                </div>
+                                                                                <div style={{ fontSize: '0.85rem', color: '#6B7280' }}>
+                                                                                    {new Date(accion.fecha).toLocaleTimeString('es-CL', { 
+                                                                                        hour: '2-digit', 
+                                                                                        minute: '2-digit' 
+                                                                                    })}
+                                                                                </div>
+                                                                            </>
+                                                                        ) : (
+                                                                            <span style={{ color: '#9CA3AF' }}>Sin fecha</span>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div style={{
+                                            textAlign: 'center',
+                                            padding: '60px 40px',
+                                            backgroundColor: '#F9FAFB',
+                                            borderRadius: '8px',
+                                            color: '#6B7280'
+                                        }}>
+                                            <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📭</div>
+                                            <h4 style={{ margin: '0 0 10px 0', color: '#4B5563' }}>
+                                                No hay registros de actividades
+                                            </h4>
+                                            <p>No se han realizado movimientos en este bicicletero aún.</p>
+                                            <button 
+                                                onClick={handleRefrescarAcciones}
+                                                style={{
+                                                    marginTop: '15px',
+                                                    padding: '8px 16px',
+                                                    backgroundColor: '#3B82F6',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                🔄 Intentar de nuevo
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                ) : !loading && !error && (
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '60px 20px',
+                        backgroundColor: 'white',
+                        borderRadius: '12px',
+                        marginTop: '20px'
+                    }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '15px' }}>🚲</div>
+                        <h3 style={{ color: '#4B5563', margin: '0 0 10px 0' }}>No hay bicicleteros registrados</h3>
+                        <p style={{ color: '#6B7280', marginBottom: '20px' }}>
+                            Parece que no hay bicicleteros disponibles en el sistema.
+                        </p>
+                        <button 
+                            onClick={handleRecargarTodo}
+                            style={{
+                                padding: '10px 20px',
+                                backgroundColor: '#3B82F6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '1rem'
                             }}
-                            existingAssignments={assignments}
-                            assignmentToEdit={assignmentToEdit}
-                            onAssignmentUpdated={() => setRefresh(prev => !prev)}
-                        />
+                        >
+                            🔄 Recargar
+                        </button>
                     </div>
-                </div>
-            )}
+                )}
+
+                {/* Estilos CSS */}
+                <style>{`
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `}</style>
+            </div>
         </LayoutAdmin>
     );
-};
+}
 
-};
-
-export default GuardiasAdmin;
+export default BicicletasAdmin;
